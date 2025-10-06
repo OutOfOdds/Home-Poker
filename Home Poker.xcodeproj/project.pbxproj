@@ -6,17 +6,40 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXFileReference section */
-		6BCB94732E8ED0BF007212D5 /* Home Poker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Home Poker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
+/* Begin PBXBuildFile section */
+		6B852C9A2E8EFEC70086ACA2 /* AddPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B852C992E8EFEC70086ACA2 /* AddPlayerView.swift */; };
+		6B852C9C2E8EFEF90086ACA2 /* AddExpenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B852C9B2E8EFEF90086ACA2 /* AddExpenseView.swift */; };
+		6B9924F52E8FF9A300BADD6B /* NewSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B9924F42E8FF9A300BADD6B /* NewSessionView.swift */; };
+		6B9924F72E905EE400BADD6B /* Expense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B9924F62E905EDC00BADD6B /* Expense.swift */; };
+		6BBA47F92E8ED5FD00A3CADE /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBA47F82E8ED5FD00A3CADE /* SessionDetailView.swift */; };
+		6BBA48012E8ED74200A3CADE /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBA48002E8ED74200A3CADE /* GameModel.swift */; };
+		6BBA48032E8EDAC000A3CADE /* PlayerRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBA48022E8EDAC000A3CADE /* PlayerRow.swift */; };
+		6BBA48052E8EDC1F00A3CADE /* AddOnSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBA48042E8EDC1F00A3CADE /* AddOnSheet.swift */; };
+		6BBA48072E8EDC3900A3CADE /* CashOutSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBA48062E8EDC3900A3CADE /* CashOutSheet.swift */; };
+		6BCB94882E8ED12E007212D5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6BCB94832E8ED12E007212D5 /* Assets.xcassets */; };
+		6BCB94892E8ED12E007212D5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BCB94842E8ED12E007212D5 /* ContentView.swift */; };
+		6BCB948A2E8ED12E007212D5 /* Home_PokerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BCB94852E8ED12E007212D5 /* Home_PokerApp.swift */; };
+		6BCB948F2E8ED16A007212D5 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BCB948E2E8ED16A007212D5 /* Player.swift */; };
+		6BCB94912E8ED1A3007212D5 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BCB94902E8ED1A2007212D5 /* Session.swift */; };
+/* End PBXBuildFile section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		6BCB94752E8ED0BF007212D5 /* Home Poker */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Home Poker";
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
+/* Begin PBXFileReference section */
+		6B852C992E8EFEC70086ACA2 /* AddPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPlayerView.swift; sourceTree = "<group>"; };
+		6B852C9B2E8EFEF90086ACA2 /* AddExpenseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExpenseView.swift; sourceTree = "<group>"; };
+		6B9924F42E8FF9A300BADD6B /* NewSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionView.swift; sourceTree = "<group>"; };
+		6B9924F62E905EDC00BADD6B /* Expense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expense.swift; sourceTree = "<group>"; };
+		6BBA47F82E8ED5FD00A3CADE /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
+		6BBA48002E8ED74200A3CADE /* GameModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModel.swift; sourceTree = "<group>"; };
+		6BBA48022E8EDAC000A3CADE /* PlayerRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerRow.swift; sourceTree = "<group>"; };
+		6BBA48042E8EDC1F00A3CADE /* AddOnSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddOnSheet.swift; sourceTree = "<group>"; };
+		6BBA48062E8EDC3900A3CADE /* CashOutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CashOutSheet.swift; sourceTree = "<group>"; };
+		6BCB94732E8ED0BF007212D5 /* Home Poker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Home Poker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6BCB94832E8ED12E007212D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		6BCB94842E8ED12E007212D5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		6BCB94852E8ED12E007212D5 /* Home_PokerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Home_PokerApp.swift; sourceTree = "<group>"; };
+		6BCB948E2E8ED16A007212D5 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		6BCB94902E8ED1A2007212D5 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		6BCB94702E8ED0BF007212D5 /* Frameworks */ = {
@@ -29,10 +52,32 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6BBA47FA2E8ED66C00A3CADE /* SessionDetails */ = {
+			isa = PBXGroup;
+			children = (
+				6B9924F42E8FF9A300BADD6B /* NewSessionView.swift */,
+				6BBA47F82E8ED5FD00A3CADE /* SessionDetailView.swift */,
+				6BBA48022E8EDAC000A3CADE /* PlayerRow.swift */,
+				6BBA48042E8EDC1F00A3CADE /* AddOnSheet.swift */,
+				6BBA48062E8EDC3900A3CADE /* CashOutSheet.swift */,
+				6B852C992E8EFEC70086ACA2 /* AddPlayerView.swift */,
+				6B852C9B2E8EFEF90086ACA2 /* AddExpenseView.swift */,
+			);
+			path = SessionDetails;
+			sourceTree = "<group>";
+		};
+		6BBA47FF2E8ED71000A3CADE /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				6BBA48002E8ED74200A3CADE /* GameModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
 		6BCB946A2E8ED0BF007212D5 = {
 			isa = PBXGroup;
 			children = (
-				6BCB94752E8ED0BF007212D5 /* Home Poker */,
+				6BCB94872E8ED12E007212D5 /* Home Poker */,
 				6BCB94742E8ED0BF007212D5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -43,6 +88,37 @@
 				6BCB94732E8ED0BF007212D5 /* Home Poker.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		6BCB94872E8ED12E007212D5 /* Home Poker */ = {
+			isa = PBXGroup;
+			children = (
+				6BCB94832E8ED12E007212D5 /* Assets.xcassets */,
+				6BCB94852E8ED12E007212D5 /* Home_PokerApp.swift */,
+				6BCB948C2E8ED133007212D5 /* Views */,
+				6BCB948D2E8ED146007212D5 /* Models */,
+				6BBA47FF2E8ED71000A3CADE /* ViewModel */,
+			);
+			path = "Home Poker";
+			sourceTree = "<group>";
+		};
+		6BCB948C2E8ED133007212D5 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				6BCB94842E8ED12E007212D5 /* ContentView.swift */,
+				6BBA47FA2E8ED66C00A3CADE /* SessionDetails */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		6BCB948D2E8ED146007212D5 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				6BCB94902E8ED1A2007212D5 /* Session.swift */,
+				6BCB948E2E8ED16A007212D5 /* Player.swift */,
+				6B9924F62E905EDC00BADD6B /* Expense.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -59,9 +135,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				6BCB94752E8ED0BF007212D5 /* Home Poker */,
 			);
 			name = "Home Poker";
 			packageProductDependencies = (
@@ -86,11 +159,12 @@
 				};
 			};
 			buildConfigurationList = 6BCB946E2E8ED0BF007212D5 /* Build configuration list for PBXProject "Home Poker" */;
-			developmentRegion = en;
+			developmentRegion = ru;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = 6BCB946A2E8ED0BF007212D5;
 			minimizedProjectReferenceProxies = 1;
@@ -109,6 +183,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6BCB94882E8ED12E007212D5 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +194,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6B852C9C2E8EFEF90086ACA2 /* AddExpenseView.swift in Sources */,
+				6BBA48072E8EDC3900A3CADE /* CashOutSheet.swift in Sources */,
+				6BCB94912E8ED1A3007212D5 /* Session.swift in Sources */,
+				6BBA48012E8ED74200A3CADE /* GameModel.swift in Sources */,
+				6B852C9A2E8EFEC70086ACA2 /* AddPlayerView.swift in Sources */,
+				6BCB948F2E8ED16A007212D5 /* Player.swift in Sources */,
+				6B9924F52E8FF9A300BADD6B /* NewSessionView.swift in Sources */,
+				6BBA48052E8EDC1F00A3CADE /* AddOnSheet.swift in Sources */,
+				6BBA48032E8EDAC000A3CADE /* PlayerRow.swift in Sources */,
+				6BCB94892E8ED12E007212D5 /* ContentView.swift in Sources */,
+				6BCB948A2E8ED12E007212D5 /* Home_PokerApp.swift in Sources */,
+				6B9924F72E905EE400BADD6B /* Expense.swift in Sources */,
+				6BBA47F92E8ED5FD00A3CADE /* SessionDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,9 +350,8 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -306,9 +393,8 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;

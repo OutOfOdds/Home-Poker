@@ -1,0 +1,107 @@
+import SwiftUI
+
+struct PlayerRow: View {
+    var player: Player
+    
+    @State private var showingBuyInSheet = false
+    @State private var showingCashOutSheet = false
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(player.name)
+                            .font(.headline)
+                        if !player.isActive {
+                            Text("(вышел)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    Text("Закупка: \(formatCurrency(player.buyIn))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                if player.isActive {
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 6) {
+                        Text(formatCurrency(player.cashOut))
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(player.profit >= 0 ? .green : .red)
+                        
+                        Text("В игре: \(formatCurrency(player.balance))")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                } else {
+                    Spacer()
+                    VStack(alignment: .center, spacing: 6) {
+                        Text(formatCurrency(player.profit))
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(player.profit >= 0 ? .green : .red)
+                        if player.cashOut > 0 {
+                            Text("Вышел с: \(formatCurrency(player.cashOut))")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    Spacer()
+                    Button {
+                        player.isActive = true
+                    } label: {
+                        Image(systemName: "arrow.uturn.left")
+                            .font(.title3)
+                            .foregroundColor(.blue)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            
+            if player.isActive {
+                HStack(spacing: 12) {
+                    Button {
+                        showingBuyInSheet = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Докупка")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.green)
+                    
+                    Button {
+                        showingCashOutSheet = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "minus.circle.fill")
+                            Text("Завершить")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                    
+                    Spacer()
+                }
+            }
+        }
+        .sheet(isPresented: $showingBuyInSheet) {
+            AddOnSheet(player: player)
+        }
+        .sheet(isPresented: $showingCashOutSheet) {
+            CashOutSheet(player: player)
+        }
+    }
+    
+    private func formatCurrency(_ amount: Int) -> String {
+        return "₽\(amount)"
+    }
+}
+
+#Preview {
+    PlayerRow(player: Player(name: "Илья", isActive: true, buyIn: 2000))
+}
