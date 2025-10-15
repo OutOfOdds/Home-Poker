@@ -23,6 +23,8 @@ struct ContentView: View {
                         VStack(alignment: .leading) {
                             Text(session.startTime, format: .dateTime)
                             Text("Игра: \(session.gameType.rawValue)")
+                            Text("Блайнды: \(session.smallBlind)/\(session.bigBlind)")
+
                             if session.status == .active {
                                 Text(session.status.rawValue)
                                     .foregroundStyle(.green)

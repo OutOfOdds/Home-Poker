@@ -1,31 +1,35 @@
-//
-//  Player.swift
-//  Home Poker
-//
-//  Created by Odds on 02.10.2025.
-//
-
 import Foundation
 import SwiftData
 
 @Model
 class Player {
-    // Данные игрока
     @Attribute(.unique) var id: UUID = UUID()
     var name: String
-    var isActive: Bool = true
-    var buyIn: Int
-    var cashOut: Int = 0
+    var inGame: Bool = true
+
+    // Финансовые операции теперь через транзакции
+    @Relationship(deleteRule: .cascade, inverse: \Transaction.player)
+    var transactions: [Transaction] = []
+
     var getsRakeback: Bool = false
     var rakeback: Int = 0
-    
-    init(name: String, isActive: Bool = true, buyIn: Int) {
+
+    init(name: String, inGame: Bool = true) {
         self.name = name
-        self.isActive = isActive
-        self.buyIn = buyIn
+        self.inGame = inGame
     }
-    
+
+    // Суммы считаются на лету из транзакций
+    var buyIn: Int {
+        transactions.filter { $0.type == .buyIn || $0.type == .addOn }
+            .map { $0.amount }
+            .reduce(0, +)
+    }
+    var cashOut: Int {
+        // Последний cashOut или 0
+        transactions.filter { $0.type == .cashOut }.last?.amount ?? 0
+    }
     var profit: Int { cashOut - buyIn }
-    var balance: Int { isActive ? buyIn - cashOut : 0 }
+    var balance: Int { inGame ? buyIn - cashOut : 0 }
     var profitAfterRakeback: Int { profit - rakeback }
 }

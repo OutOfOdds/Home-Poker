@@ -22,7 +22,10 @@ struct AddOnSheet: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Добавить") {
                         if let amount = Int(buyInAmount), amount > 0 {
-                            player.buyIn += amount
+                            // Добавляем транзакцию докупки
+                            let tx = Transaction(type: .addOn, amount: amount, player: player)
+                            // Опционально фиксируем порядок в массиве
+                            player.transactions.append(tx)
                             dismiss()
                         }
                     }
@@ -34,5 +37,7 @@ struct AddOnSheet: View {
 }
 
 #Preview {
-    AddOnSheet(player: Player(name: "Илья", isActive: true, buyIn: 2000))
+    let player = Player(name: "Илья", inGame: true)
+    _ = Transaction(type: .buyIn, amount: 2000, player: player)
+    return AddOnSheet(player: player)
 }

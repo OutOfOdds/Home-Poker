@@ -8,9 +8,14 @@ final class Expense {
     var note: String
     var createdAt: Date
     
-    init(amount: Int, note: String, createdAt: Date = Date(), session: Session? = nil) {
+    // Плательщик расхода (один)
+    @Relationship var payer: Player?
+    
+    init(amount: Int, note: String, createdAt: Date = Date(), payer: Player? = nil) {
         self.amount = amount
         self.note = note
         self.createdAt = createdAt
+        self.payer = payer
     }
 }
+

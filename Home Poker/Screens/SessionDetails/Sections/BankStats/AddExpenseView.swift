@@ -15,13 +15,14 @@ struct AddExpenseView: View {
                     TextField("Описание расхода", text: $expenseDescription)
                         .textInputAutocapitalization(.sentences)
 
-                    // Ввод целого числа через формат
                     TextField("Сумма", value: $expenseAmount, format: .number)
                         .keyboardType(.numberPad)
+                
                 } header: {
                     Text("Информация о расходе")
+                        .font(.caption)
                 } footer: {
-                    Text("Расход будет добавлен в общий котел игры")
+                    Text("Расход будет добавлен в общий котел без указания плательщика. Распределение можно будет выполнить позже.")
                         .foregroundColor(.secondary)
                         .font(.footnote)
                 }
@@ -38,7 +39,7 @@ struct AddExpenseView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Добавить") {
                         let note = expenseDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                        let expense = Expense(amount: expenseAmount, note: note, createdAt: Date())
+                        let expense = Expense(amount: expenseAmount, note: note, createdAt: Date(), payer: nil)
                         session.expenses.append(expense)
                         dismiss()
                     }
@@ -60,6 +61,6 @@ struct AddExpenseView: View {
         location: "Test Location",
         gameType: .NLHoldem, status: .active
     )
-    AddExpenseView(session: session)
+    return AddExpenseView(session: session)
         .modelContainer(for: [Session.self, Player.self, Expense.self], inMemory: true)
 }

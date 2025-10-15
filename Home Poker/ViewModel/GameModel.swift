@@ -5,18 +5,11 @@ import Observation
 
 @Observable
 final class GameModel {
-    let context: ModelContext?
-
-    init(context: ModelContext? = nil) {
-        self.context = context
-    }
 
     // MARK: - Редактирование реквизитов сессии
 
     func setStartTime(for session: Session, to date: Date) {
         session.startTime = date
-        // Если у вас duration — хранимое поле, пересчитайте его здесь.
-        // Если duration вычисляется из startTime/endTime — ничего делать не нужно.
     }
 
     func setLocation(for session: Session, to location: String) {
@@ -43,29 +36,27 @@ final class GameModel {
 
     func setPlayerActive(_ player: Player, in session: Session, active: Bool) {
         // Если нужна логика при деактивации (автокэш-аут), добавьте её здесь
-        player.isActive = active
+        player.inGame = active
     }
 
     // MARK: - Денежные операции
 
     func addBuyIn(to player: Player, amount: Int) {
         guard amount > 0 else { return }
-        player.buyIn += amount
-        // Если агрегаты (totalBuyIns/bankInGame/...) — хранимые поля в Session,
-        // можно централизованно пересчитывать их здесь.
+        let tx = Transaction(type: .buyIn, amount: amount, player: player)
+        player.transactions.append(tx)
+    }
+
+    func addOn(to player: Player, amount: Int) {
+        guard amount > 0 else { return }
+        let tx = Transaction(type: .addOn, amount: amount, player: player)
+        player.transactions.append(tx)
     }
 
     func cashOut(player: Player, amount: Int) {
         guard amount >= 0 else { return }
-        // При необходимости добавьте проверку: amount <= текущего стека игрока
-        player.cashOut = amount
-        player.isActive = false
-    }
-
-
-    // MARK: - Сохранение (опционально)
-
-    func save() throws {
-        try context?.save()
+        let tx = Transaction(type: .cashOut, amount: amount, player: player)
+        player.transactions.append(tx)
+        player.inGame = false
     }
 }

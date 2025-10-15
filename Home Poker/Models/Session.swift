@@ -9,7 +9,6 @@ class Session {
     var gameType: GameType
     @Relationship(deleteRule: .cascade) var players: [Player] = []
     @Relationship(deleteRule: .cascade) var expenses: [Expense] = []
-    var isActive: Bool = true
     var status: SessionStatus
     var smallBlind: Int = 0
     var bigBlind: Int = 0
@@ -20,10 +19,6 @@ class Session {
         self.location = location
         self.gameType = gameType
         self.status = status
-    }
-
-    var duration: TimeInterval {
-        Date().timeIntervalSince(startTime)
     }
     
     // Сумма всех закупов
@@ -38,7 +33,7 @@ class Session {
     
     /// Сумма выведенных средств (по-прежнему, если надо для "Выведено")
     var bankWithdrawn: Int {
-        players.filter { !$0.isActive }.reduce(0) { $0 + $1.cashOut }
+        players.filter { !$0.inGame }.reduce(0) { $0 + $1.cashOut }
     }
     
     var totalProfit: Int {
@@ -46,7 +41,7 @@ class Session {
     }
     
     var activePlayers: [Player] {
-        players.filter { $0.isActive }
+        players.filter { $0.inGame }
     }
     
     

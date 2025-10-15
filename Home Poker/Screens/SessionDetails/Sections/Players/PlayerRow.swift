@@ -13,7 +13,7 @@ struct PlayerRow: View {
                     HStack {
                         Text(player.name)
                             .font(.headline)
-                        if !player.isActive {
+                        if !player.inGame {
                             Text("(вышел)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -24,10 +24,10 @@ struct PlayerRow: View {
                         .foregroundColor(.secondary)
                 }
                 
-                if player.isActive {
+                if player.inGame {
                     Spacer()
                     VStack(alignment: .trailing, spacing: 6) {
-                        Text(formatCurrency(player.cashOut))
+                        Text(formatCurrency(player.profit))
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundColor(player.profit >= 0 ? .green : .red)
@@ -51,7 +51,7 @@ struct PlayerRow: View {
                     }
                     Spacer()
                     Button {
-                        player.isActive = true
+                        player.inGame = true
                     } label: {
                         Image(systemName: "arrow.uturn.left")
                             .font(.title3)
@@ -61,7 +61,7 @@ struct PlayerRow: View {
                 }
             }
             
-            if player.isActive {
+            if player.inGame {
                 HStack(spacing: 12) {
                     Button {
                         showingBuyInSheet = true
@@ -103,5 +103,8 @@ struct PlayerRow: View {
 }
 
 #Preview {
-    PlayerRow(player: Player(name: "Илья", isActive: true, buyIn: 2000))
+    let player = Player(name: "Илья", inGame: true)
+    // Начальный закуп на 2000 через транзакцию
+    _ = Transaction(type: .buyIn, amount: 2000, player: player)
+    return PlayerRow(player: player)
 }

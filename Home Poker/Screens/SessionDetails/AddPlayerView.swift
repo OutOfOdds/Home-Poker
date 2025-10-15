@@ -41,10 +41,12 @@ struct AddPlayerView: View {
                         if let buyIn = Int(buyInAmount), buyIn > 0, !trimmedName.isEmpty {
                             let player = Player(
                                 name: trimmedName,
-                                isActive: true,
-                                buyIn: buyIn
+                                inGame: true
                             )
                             session.players.append(player)
+                            // Начальная закупка как транзакция
+                            let tx = Transaction(type: .buyIn, amount: buyIn, player: player)
+                            player.transactions.append(tx)
                             dismiss()
                         }
                     }

@@ -1,10 +1,3 @@
-//
-//  Home_PokerApp.swift
-//  Home Poker
-//
-//  Created by Odds on 02.10.2025.
-//
-
 import SwiftUI
 import SwiftData
 
