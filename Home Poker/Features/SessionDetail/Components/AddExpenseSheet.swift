@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct AddExpenseView: View {
+struct AddExpenseSheet: View {
     let session: Session
 
     @Environment(\.dismiss) private var dismiss
@@ -9,7 +9,13 @@ struct AddExpenseView: View {
     @State private var expenseAmount: Int = 0
 
     var body: some View {
-        NavigationStack {
+        FormSheetView(
+            title: "Добавить расход",
+            confirmTitle: "Добавить",
+            isConfirmDisabled: !canSubmit,
+            confirmAction: addExpense,
+            cancelAction: dismiss.callAsFunction
+        ) {
             Form {
                 Section {
                     TextField("Описание расхода", text: $expenseDescription)
@@ -17,7 +23,7 @@ struct AddExpenseView: View {
 
                     TextField("Сумма", value: $expenseAmount, format: .number)
                         .keyboardType(.numberPad)
-                
+
                 } header: {
                     Text("Информация о расходе")
                         .font(.caption)
@@ -27,31 +33,20 @@ struct AddExpenseView: View {
                         .font(.footnote)
                 }
             }
-            .navigationTitle("Добавить расход")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
-                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Добавить") {
-                        let note = expenseDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                        let expense = Expense(amount: expenseAmount, note: note, createdAt: Date(), payer: nil)
-                        session.expenses.append(expense)
-                        dismiss()
-                    }
-                    .disabled(!canSubmit)
-                }
-            }
         }
     }
 
     private var canSubmit: Bool {
         let desc = expenseDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         return !desc.isEmpty && expenseAmount > 0
+    }
+
+    private func addExpense() {
+        guard canSubmit else { return }
+        let note = expenseDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        let expense = Expense(amount: expenseAmount, note: note, createdAt: Date(), payer: nil)
+        session.expenses.append(expense)
+        dismiss()
     }
 }
 
@@ -61,6 +56,6 @@ struct AddExpenseView: View {
         location: "Test Location",
         gameType: .NLHoldem, status: .active
     )
-    return AddExpenseView(session: session)
+        return AddExpenseSheet(session: session)
         .modelContainer(for: [Session.self, Player.self, Expense.self], inMemory: true)
 }

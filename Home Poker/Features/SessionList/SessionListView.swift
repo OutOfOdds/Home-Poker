@@ -1,18 +1,12 @@
-//
-//  ContentView.swift
-//  Home Poker
-//
-//  Created by Odds on 02.10.2025.
-//
-
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
-    @Environment(\.modelContext) private var context
+struct SessionListView: View {
+
     @Query private var sessions: [Session]
+    @State private var viewModel = SessionListViewModel()
     @State private var showingNewSession = false
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -20,29 +14,19 @@ struct ContentView: View {
                     NavigationLink {
                         SessionDetailView(session: session)
                     } label: {
-                        VStack(alignment: .leading) {
-                            Text(session.startTime, format: .dateTime)
-                            Text("Игра: \(session.gameType.rawValue)")
-                            Text("Блайнды: \(session.smallBlind)/\(session.bigBlind)")
-
-                            if session.status == .active {
-                                Text(session.status.rawValue)
-                                    .foregroundStyle(.green)
-                            }
-                        }
+                        sessionRow(session)
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
-                            delete(session)
+                            viewModel.delete(session)
                         } label: {
                             Label("Удалить", systemImage: "trash")
                         }
                     }
                 }
-                .onDelete(perform: deleteSessions)
-            }
-            .onAppear {
-                print(sessions)
+                .onDelete { offsets in
+                    viewModel.deleteSessions(at: offsets, from: sessions)
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -54,25 +38,27 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showingNewSession) {
-                NewSessionView()
+                NewSessionSheet()
             }
             .navigationTitle("Сессии")
         }
     }
-    
-    private func deleteSessions(at offsets: IndexSet) {
-        for index in offsets {
-            let session = sessions[index]
-            context.delete(session)
+
+    private func sessionRow(_ session: Session) -> some View {
+        VStack(alignment: .leading) {
+            Text(session.startTime, format: .dateTime)
+            Text("Игра: \(session.gameType.rawValue)")
+            Text("Блайнды: \(session.smallBlind)/\(session.bigBlind)")
+
+            if session.status == .active {
+                Text(session.status.rawValue)
+                    .foregroundStyle(.green)
+            }
         }
-    }
-    
-    private func delete(_ session: Session) {
-        context.delete(session)
     }
 }
 
 #Preview {
-    ContentView()
+    SessionListView()
         .modelContainer(for: Session.self, inMemory: true)
 }

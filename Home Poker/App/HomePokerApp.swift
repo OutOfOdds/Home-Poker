@@ -6,8 +6,8 @@ import SwiftData
 struct Home_PokerApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SessionListView()
         }
-        .modelContainer(for: [Player.self,Session.self, Expense.self])
+        .modelContainer(for: [Player.self, Session.self, PlayerTransaction.self, Expense.self])
     }
 }

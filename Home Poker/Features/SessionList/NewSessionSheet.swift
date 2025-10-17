@@ -1,16 +1,14 @@
 import SwiftUI
 import SwiftData
 
-struct NewSessionView: View {
+struct NewSessionSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     
-    // Поля формы
     @State private var startTime: Date = Date()
     @State private var location: String = ""
     @State private var gameType: GameType = .NLHoldem
     
-    // Блайнды (ввод текстом с авто-расчётом BB = 2×SB)
     @State private var smallBlindText: String = ""
     @State private var bigBlindText: String = ""
     @State private var anteText: String = ""
@@ -121,7 +119,7 @@ struct NewSessionView: View {
                     Button("Отмена") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Сохранить", action: save)
+                    Button("Сохранить", action: createNewSession)
                         .disabled(!canSave)
                 }
             }
@@ -132,7 +130,7 @@ struct NewSessionView: View {
         !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
-    private func save() {
+    private func createNewSession() {
         let session = Session(
             startTime: startTime,
             location: location.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -153,6 +151,6 @@ struct NewSessionView: View {
 }
 
 #Preview {
-    NewSessionView()
+    NewSessionSheet()
         .modelContainer(for: Session.self, inMemory: true)
 }

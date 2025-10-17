@@ -125,4 +125,3 @@ private struct ExpenseRow: View {
 //    }
 //    .modelContainer(for: [Session.self, Player.self, Expense.self], inMemory: true)
 //}
-

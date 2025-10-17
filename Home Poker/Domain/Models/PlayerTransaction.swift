@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Transaction {
+final class PlayerTransaction {
     @Attribute(.unique) var id: UUID = UUID()
     var timestamp: Date
     var type: TransactionType

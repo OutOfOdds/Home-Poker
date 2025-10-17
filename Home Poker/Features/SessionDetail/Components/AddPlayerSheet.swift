@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct AddPlayerView: View {
+struct AddPlayerSheet: View {
     let session: Session
     
     @Environment(\.dismiss) private var dismiss
@@ -9,48 +9,26 @@ struct AddPlayerView: View {
     @State private var buyInAmount = ""
     
     var body: some View {
-        NavigationStack {
+        FormSheetView(
+            title: "Добавить игрока",
+            confirmTitle: "Добавить",
+            isConfirmDisabled: !canSubmit,
+            confirmAction: addPlayer,
+            cancelAction: dismiss.callAsFunction
+        ) {
             Form {
                 Section("Информация об игроке") {
                     TextField("Имя игрока", text: $playerName)
                         .textInputAutocapitalization(.words)
-                    
+
                     TextField("Сумма закупа", text: $buyInAmount)
                         .keyboardType(.numberPad)
                         .onChange(of: buyInAmount) { _, newValue in
-                            // Фильтруем ввод до цифр, чтобы избежать невалидного Int
                             let digits = digitsOnly(newValue)
                             if digits != newValue {
                                 buyInAmount = digits
                             }
                         }
-                }
-            }
-            .navigationTitle("Добавить игрока")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Отмена") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Добавить") {
-                        let trimmedName = playerName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if let buyIn = Int(buyInAmount), buyIn > 0, !trimmedName.isEmpty {
-                            let player = Player(
-                                name: trimmedName,
-                                inGame: true
-                            )
-                            session.players.append(player)
-                            // Начальная закупка как транзакция
-                            let tx = Transaction(type: .buyIn, amount: buyIn, player: player)
-                            player.transactions.append(tx)
-                            dismiss()
-                        }
-                    }
-                    .disabled(!canSubmit)
                 }
             }
         }
@@ -59,6 +37,19 @@ struct AddPlayerView: View {
     private var canSubmit: Bool {
         let trimmedName = playerName.trimmingCharacters(in: .whitespacesAndNewlines)
         return !trimmedName.isEmpty && (Int(buyInAmount) ?? 0) > 0
+    }
+
+    private func addPlayer() {
+        let trimmedName = playerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let buyIn = Int(buyInAmount), buyIn > 0, !trimmedName.isEmpty else { return }
+        let player = Player(
+            name: trimmedName,
+            inGame: true
+        )
+        session.players.append(player)
+        let tx = PlayerTransaction(type: .buyIn, amount: buyIn, player: player)
+        player.transactions.append(tx)
+        dismiss()
     }
     
     private func digitsOnly(_ text: String) -> String {
@@ -74,6 +65,6 @@ struct AddPlayerView: View {
         location: "Test Location",
         gameType: .NLHoldem, status: .active
     )
-    return AddPlayerView(session: session)
+    return AddPlayerSheet(session: session)
         .modelContainer(for: [Session.self, Player.self], inMemory: true)
 }

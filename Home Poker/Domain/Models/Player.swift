@@ -8,8 +8,8 @@ class Player {
     var inGame: Bool = true
 
     // Финансовые операции теперь через транзакции
-    @Relationship(deleteRule: .cascade, inverse: \Transaction.player)
-    var transactions: [Transaction] = []
+    @Relationship(deleteRule: .cascade, inverse: \PlayerTransaction.player)
+    var transactions: [PlayerTransaction] = []
 
     var getsRakeback: Bool = false
     var rakeback: Int = 0

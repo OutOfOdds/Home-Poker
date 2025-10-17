@@ -105,6 +105,6 @@ struct PlayerRow: View {
 #Preview {
     let player = Player(name: "Илья", inGame: true)
     // Начальный закуп на 2000 через транзакцию
-    _ = Transaction(type: .buyIn, amount: 2000, player: player)
+    _ = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
     return PlayerRow(player: player)
 }
