@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AddOnSheet: View {
+struct PlayerAddOnSheet: View {
     @Bindable var player: Player
     @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
@@ -37,6 +37,6 @@ struct AddOnSheet: View {
 #Preview {
     let player = Player(name: "Илья", inGame: true)
     _ = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
-    return AddOnSheet(player: player)
+    return PlayerAddOnSheet(player: player)
         .environment(SessionDetailViewModel())
 }

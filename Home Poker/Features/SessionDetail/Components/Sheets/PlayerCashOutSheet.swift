@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CashOutSheet: View {
+struct PlayerCashOutSheet: View {
     @Bindable var player: Player
     let session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
@@ -45,6 +45,6 @@ struct CashOutSheet: View {
         status: .active
     )
     session.players.append(player)
-    return CashOutSheet(player: player, session: session)
+    return PlayerCashOutSheet(player: player, session: session)
         .environment(SessionDetailViewModel())
 }

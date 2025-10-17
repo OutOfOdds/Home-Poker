@@ -15,47 +15,35 @@ final class SessionDetailViewModel {
     // MARK: - Игроки
     
     func addPlayer(to session: Session, name: String, buyInText: String) -> Bool {
-        guard let buyIn = parsePositiveAmount(buyInText) else {
+        guard let buyIn = parseAmount(buyInText, requirement: .positive) else {
             setInvalidAmountError()
             return false
         }
         
-        do {
+        return performServiceCall {
             try service.addPlayer(name: name, buyIn: buyIn, to: session)
-            return true
-        } catch {
-            setError(error)
-            return false
         }
     }
     
     func addOn(for player: Player, amountText: String) -> Bool {
-        guard let amount = parsePositiveAmount(amountText) else {
+        guard let amount = parseAmount(amountText, requirement: .positive) else {
             setInvalidAmountError()
             return false
         }
         
-        do {
+        return performServiceCall {
             try service.addOn(player: player, amount: amount)
-            return true
-        } catch {
-            setError(error)
-            return false
         }
     }
     
     func cashOut(session: Session, player: Player, amountText: String) -> Bool {
-        guard let amount = parseNonNegativeAmount(amountText) else {
+        guard let amount = parseAmount(amountText, requirement: .nonNegative) else {
             setInvalidAmountError()
             return false
         }
         
-        do {
+        return performServiceCall {
             try service.cashOut(player: player, amount: amount, in: session)
-            return true
-        } catch {
-            setError(error)
-            return false
         }
     }
     
@@ -63,24 +51,24 @@ final class SessionDetailViewModel {
         service.returnToGame(player: player)
     }
     
+    func removePlayer(_ player: Player, from session: Session) {
+        service.removePlayer(player, from: session)
+    }
+    
     func isValidCashOutInput(_ text: String) -> Bool {
-        parseNonNegativeAmount(text) != nil
+        parseAmount(text, requirement: .nonNegative) != nil
     }
     
     // MARK: - Расходы
     
     func addExpense(to session: Session, note: String, amountText: String, payer: Player? = nil) -> Bool {
-        guard let amount = parsePositiveAmount(amountText) else {
+        guard let amount = parseAmount(amountText, requirement: .positive) else {
             setInvalidAmountError()
             return false
         }
         
-        do {
+        return performServiceCall {
             try service.addExpense(note: note, amount: amount, payer: payer, to: session)
-            return true
-        } catch {
-            setError(error)
-            return false
         }
     }
     
@@ -92,20 +80,16 @@ final class SessionDetailViewModel {
     
     func updateBlinds(for session: Session, smallText: String, bigText: String, anteText: String) -> Bool {
         guard
-            let small = parsePositiveAmount(smallText),
-            let big = parsePositiveAmount(bigText)
+            let small = parseAmount(smallText, requirement: .positive),
+            let big = parseAmount(bigText, requirement: .positive)
         else {
             setInvalidAmountError()
             return false
         }
-        let ante = parseNonNegativeAmount(anteText) ?? 0
+        let ante = parseAmount(anteText, requirement: .nonNegative) ?? 0
         
-        do {
+        return performServiceCall {
             try service.updateBlinds(for: session, small: small, big: big, ante: ante)
-            return true
-        } catch {
-            setError(error)
-            return false
         }
     }
     
@@ -117,14 +101,29 @@ final class SessionDetailViewModel {
     
     // MARK: - Helpers
     
-    private func parsePositiveAmount(_ text: String) -> Int? {
-        guard let value = Int(text), value > 0 else { return nil }
-        return value
+    private enum AmountRequirement {
+        case positive
+        case nonNegative
     }
     
-    private func parseNonNegativeAmount(_ text: String) -> Int? {
-        guard let value = Int(text), value >= 0 else { return nil }
-        return value
+    private func parseAmount(_ text: String, requirement: AmountRequirement) -> Int? {
+        guard let value = Int(text) else { return nil }
+        switch requirement {
+        case .positive:
+            return value > 0 ? value : nil
+        case .nonNegative:
+            return value >= 0 ? value : nil
+        }
+    }
+    
+    private func performServiceCall(_ action: () throws -> Void) -> Bool {
+        do {
+            try action()
+            return true
+        } catch {
+            setError(error)
+            return false
+        }
     }
     
     private func setInvalidAmountError() {

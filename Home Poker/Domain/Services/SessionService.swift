@@ -28,9 +28,8 @@ final class SessionService {
     // MARK: - Players
     
     func addPlayer(name: String, buyIn: Int, to session: Session) throws {
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { throw SessionServiceError.emptyPlayerName }
-        guard buyIn > 0 else { throw SessionServiceError.invalidAmount }
+        let trimmedName = try normalizePlayerName(name)
+        try validatePositiveAmount(buyIn)
         
         let player = Player(name: trimmedName, inGame: true)
         let transaction = PlayerTransaction(type: .buyIn, amount: buyIn, player: player)
@@ -39,13 +38,13 @@ final class SessionService {
     }
     
     func addOn(player: Player, amount: Int) throws {
-        guard amount > 0 else { throw SessionServiceError.invalidAmount }
+        try validatePositiveAmount(amount)
         let transaction = PlayerTransaction(type: .addOn, amount: amount, player: player)
         player.transactions.append(transaction)
     }
     
     func cashOut(player: Player, amount: Int, in session: Session) throws {
-        guard amount >= 0 else { throw SessionServiceError.invalidAmount }
+        try validateNonNegativeAmount(amount)
         guard amount <= session.bankInGame else {
             throw SessionServiceError.insufficientBank
         }
@@ -59,10 +58,14 @@ final class SessionService {
         player.inGame = true
     }
     
+    func removePlayer(_ player: Player, from session: Session) {
+        session.players.removeAll { $0.id == player.id }
+    }
+    
     // MARK: - Expenses
     
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date = Date()) throws {
-        guard amount > 0 else { throw SessionServiceError.invalidAmount }
+        try validatePositiveAmount(amount)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let expense = Expense(amount: amount, note: trimmedNote, createdAt: createdAt, payer: payer)
         session.expenses.append(expense)
@@ -83,5 +86,21 @@ final class SessionService {
         session.smallBlind = small
         session.bigBlind = big
         session.ante = max(0, ante)
+    }
+
+    // MARK: - Validation Helpers
+    
+    private func normalizePlayerName(_ name: String) throws -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw SessionServiceError.emptyPlayerName }
+        return trimmed
+    }
+    
+    private func validatePositiveAmount(_ amount: Int) throws {
+        guard amount > 0 else { throw SessionServiceError.invalidAmount }
+    }
+    
+    private func validateNonNegativeAmount(_ amount: Int) throws {
+        guard amount >= 0 else { throw SessionServiceError.invalidAmount }
     }
 }

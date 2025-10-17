@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct BlindsEditorView: View {
+struct BlindsEditorSheet: View {
     let session: Session
     
     @Environment(SessionDetailViewModel.self) private var viewModel

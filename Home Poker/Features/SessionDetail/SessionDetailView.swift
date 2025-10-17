@@ -25,26 +25,6 @@ struct SessionDetailView: View {
             if !session.players.isEmpty {
                 PlayersSectionView(session: session)
             }
-            
-            addPlayerSection
-                .listSectionSpacing(.custom(8))
-            
-            addExpenseSection
-                .listSectionSpacing(.custom(8))
-            
-            Section {
-                Button {
-                    // Считаем прямо здесь и только потом показываем экран
-                    settlementVM.calculate(for: session)
-                    showSettlementSheet = true
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                        Text("Рассчитать переводы")
-                    }
-                }
-                .disabled(!allPlayersFinished)
-            }
         }
         .navigationTitle(session.status == .active ? "Активная сессия" : "Завершенная сессия")
         .navigationBarTitleDisplayMode(.large)
@@ -57,12 +37,41 @@ struct SessionDetailView: View {
             AddExpenseSheet(session: session)
         }
         .sheet(isPresented: $showingBlindsSheet) {
-            BlindsEditorView(session: session)
+            BlindsEditorSheet(session: session)
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSettlementSheet) {
             SettlementView(viewModel: settlementVM)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        showAddPlayer = true
+                    } label: {
+                        Label("Добавить игрока", systemImage: "person.badge.plus")
+                    }
+                    
+                    Button {
+                        showAddExpense = true
+                    } label: {
+                        Label("Добавить расходы", systemImage: "cart.fill.badge.plus")
+                    }
+                    
+                    Divider()
+                    
+                    Button {
+                        settlementVM.calculate(for: session)
+                        showSettlementSheet = true
+                    } label: {
+                        Label("Рассчитать переводы", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .disabled(!allPlayersFinished)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
         }
         .alert(
             "Ошибка",
@@ -79,35 +88,6 @@ struct SessionDetailView: View {
             Text(message)
         }
         .environment(detailViewModel)
-    }
-}
-
-// MARK: - Sections
-private extension SessionDetailView {
-    var addPlayerSection: some View {
-        Section {
-            Button {
-                showAddPlayer = true
-            } label: {
-                HStack {
-                    Image(systemName: "person.badge.plus")
-                    Text("Добавить игрока")
-                }
-            }
-        }
-    }
-    
-    var addExpenseSection: some View {
-        Section {
-            Button {
-                showAddExpense = true
-            } label: {
-                HStack {
-                    Image(systemName: "cart.fill.badge.plus")
-                    Text("Добавить расходы")
-                }
-            }
-        }
     }
 }
 
