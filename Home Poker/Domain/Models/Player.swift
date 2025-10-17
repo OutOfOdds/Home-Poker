@@ -32,4 +32,6 @@ class Player {
     var profit: Int { cashOut - buyIn }
     var balance: Int { inGame ? buyIn - cashOut : 0 }
     var profitAfterRakeback: Int { profit - rakeback }
+    
+
 }

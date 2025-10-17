@@ -3,9 +3,8 @@ import SwiftUI
 struct PlayersSectionView: View {
     let session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
-    @State private var playerToDelete: Player?
-    @State private var showDeleteAlert = false
-    
+    @State private var pendingDeletion: DeletionTarget?
+
     var body: some View {
         Section {
             ForEach(session.players, id: \.id) { player in
@@ -16,8 +15,7 @@ struct PlayersSectionView: View {
                 }
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
-                        playerToDelete = player
-                        showDeleteAlert = true
+                        pendingDeletion = DeletionTarget(player: player)
                     } label: {
                         Label("Удалить", systemImage: "trash")
                     }
@@ -27,25 +25,24 @@ struct PlayersSectionView: View {
             HStack {
                 Text("Игроки (\(session.players.count))")
                 Spacer()
-                // Text("Активных: \(activeCount)")
-                .foregroundColor(.secondary)
+                    .foregroundColor(.secondary)
             }
             .font(.caption)
         }
-        .alert("Удалить игрока?", isPresented: $showDeleteAlert) {
-            Button("Удалить", role: .destructive) {
-                if let player = playerToDelete {
-                    viewModel.removePlayer(player, from: session)
-                }
-                playerToDelete = nil
-                showDeleteAlert = false
-            }
-            Button("Отмена", role: .cancel) {
-                playerToDelete = nil
-                showDeleteAlert = false
-            }
-        } message: {
-            Text("Все транзакции и данные игрока будут удалены из сессии.")
+        .alert(item: $pendingDeletion) { target in
+            Alert(
+                title: Text("Удалить игрока?"),
+                message: Text("Все транзакции и данные игрока будут удалены из сессии."),
+                primaryButton: .destructive(Text("Удалить")) {
+                    viewModel.removePlayer(target.player, from: session)
+                },
+                secondaryButton: .cancel()
+            )
         }
     }
+}
+
+private struct DeletionTarget: Identifiable {
+    let id = UUID()
+    let player: Player
 }

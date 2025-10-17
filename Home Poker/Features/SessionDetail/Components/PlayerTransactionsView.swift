@@ -14,7 +14,7 @@ struct PlayerTransactionsView: View {
                             .fontWeight(.medium)
                         Spacer()
                         Text("₽\(transaction.amount)")
-                            .foregroundColor(transaction.type == .cashOut ? .red : .green)
+                            .foregroundColor(.secondary)
                         Text(transaction.timestamp, style: .time)
                             .font(.caption)
                             .foregroundColor(.secondary)

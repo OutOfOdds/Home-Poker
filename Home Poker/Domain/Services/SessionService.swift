@@ -25,8 +25,9 @@ final class SessionService {
     
     static let shared = SessionService()
     
-    // MARK: - Players
-    
+    // MARK: - Игрок
+
+    // Добавляем игрока 
     func addPlayer(name: String, buyIn: Int, to session: Session) throws {
         let trimmedName = try normalizePlayerName(name)
         try validatePositiveAmount(buyIn)
@@ -37,12 +38,14 @@ final class SessionService {
         session.players.append(player)
     }
     
+    // Добавить игроку денег
     func addOn(player: Player, amount: Int) throws {
         try validatePositiveAmount(amount)
         let transaction = PlayerTransaction(type: .addOn, amount: amount, player: player)
         player.transactions.append(transaction)
     }
     
+    // Игрок встал из за стола/завершил сессию
     func cashOut(player: Player, amount: Int, in session: Session) throws {
         try validateNonNegativeAmount(amount)
         guard amount <= session.bankInGame else {
@@ -53,7 +56,8 @@ final class SessionService {
         player.transactions.append(transaction)
         player.inGame = false
     }
-    
+
+    // Вернуть игрока в игру после завершения
     func returnToGame(player: Player) {
         player.inGame = true
     }
@@ -62,8 +66,8 @@ final class SessionService {
         session.players.removeAll { $0.id == player.id }
     }
     
-    // MARK: - Expenses
-    
+    // MARK: - Расходы
+    // Добавить расход (прим.: диллер, аренда комнаты и т.п)
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date = Date()) throws {
         try validatePositiveAmount(amount)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -76,8 +80,7 @@ final class SessionService {
         session.expenses.removeAll { ids.contains($0.id) }
     }
     
-    // MARK: - Session Settings
-    
+    // MARK: - Настройки сессии
     func updateBlinds(for session: Session, small: Int, big: Int, ante: Int) throws {
         guard small > 0, big > 0, small <= big else {
             throw SessionServiceError.invalidBlinds
@@ -88,7 +91,7 @@ final class SessionService {
         session.ante = max(0, ante)
     }
 
-    // MARK: - Validation Helpers
+    // MARK: - Вспомогательные методы
     
     private func normalizePlayerName(_ name: String) throws -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)

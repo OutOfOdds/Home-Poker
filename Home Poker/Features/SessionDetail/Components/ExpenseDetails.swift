@@ -25,6 +25,7 @@ struct ExpenseDetails: View {
                                 .foregroundStyle(.secondary)
                         }
                         .font(.caption)
+                        .fontDesign(.monospaced)
                     }
                     
                     // Секция игроков и их взносов в расходы

@@ -47,6 +47,7 @@ struct SessionInfoSectionView: View {
                 Spacer()
                 Text(blindsDisplayText)
                     .foregroundColor(.secondary)
+                    .fontDesign(.monospaced)
                     .onTapGesture { showingBlindsSheet = true }
             }
         }

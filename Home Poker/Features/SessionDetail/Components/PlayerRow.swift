@@ -9,62 +9,48 @@ struct PlayerRow: View {
     @State private var showingCashOutSheet = false
     
     var body: some View {
-        VStack(spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading) {
                     HStack {
                         Text(player.name)
                             .font(.headline)
+                            .opacity(player.inGame ? 1 : 0.5)
                         if !player.inGame {
-                            Text("(вышел)")
+                            Text("(завершил сессию)")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.pink.opacity(0.5))
                         }
                     }
-                    Text("Закупка: \(formatCurrency(player.buyIn))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                if player.inGame {
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 6) {
-                        Text(formatCurrency(player.profit))
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(player.profit >= 0 ? .green : .red)
-                        
-                        Text("В игре: \(formatCurrency(player.balance))")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
-                } else {
-                    Spacer()
-                    VStack(alignment: .center, spacing: 6) {
-                        Text(formatCurrency(player.profit))
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(player.profit >= 0 ? .green : .red)
-                        if player.cashOut > 0 {
-                            Text("Вышел с: \(formatCurrency(player.cashOut))")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                    HStack {
+                        Text("Закуп: \(player.buyIn)")
+                        if !player.inGame {
+                            Text("-> Вывод: \(player.cashOut)")
                         }
                     }
-                    Spacer()
-                    Button {
-                        viewModel.returnPlayerToGame(player)
-                    } label: {
-                        Image(systemName: "arrow.uturn.left")
-                            .font(.title3)
-                            .foregroundColor(.blue)
+                    .foregroundStyle(.secondary)
+                    .font(.subheadline)
+                    .fontDesign(.monospaced)
+                    
+                    if !player.inGame {
+                        HStack {
+                            Text("\(formatCurrency(player.profit))")
+                                .font(.title3)
+                                .bold()
+                                .foregroundColor(displayedProfitColor)
+                                .fontDesign(.monospaced)
+                            Image(systemName: "banknote")
+                                .font(.title3)
+                                .fontDesign(.monospaced)
+                                .foregroundColor(displayedProfitColor)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             
             if player.inGame {
-                HStack(spacing: 12) {
+                HStack {
                     Button {
                         showingBuyInSheet = true
                     } label: {
@@ -87,9 +73,27 @@ struct PlayerRow: View {
                     .buttonStyle(.bordered)
                     .tint(.red)
                     
-                    Spacer()
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack {
+                    Button {
+                        viewModel.returnPlayerToGame(player)
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.uturn.left")
+                            Text("Вернуть игрока")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.blue)
+                    
+                    Spacer()
+        
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            
         }
         .sheet(isPresented: $showingBuyInSheet) {
             PlayerAddOnSheet(player: player)
@@ -100,14 +104,46 @@ struct PlayerRow: View {
     }
     
     private func formatCurrency(_ amount: Int) -> String {
-        return "₽\(amount)"
+        return "₽ \(amount)"
+    }
+    
+    private var displayedProfitColor: Color {
+        if player.profit == 0 {
+            return .secondary
+        }
+        return player.profit > 0 ? .green : .red
+    }
+    
+    private var cashOutLabel: String? {
+        guard !player.inGame, player.cashOut > 0 else { return nil }
+        return "Вышел с: \(formatCurrency(player.cashOut))"
     }
 }
 
 #Preview {
     let player = Player(name: "Илья", inGame: true)
     // Начальный закуп на 2000 через транзакцию
-    _ = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
+    let t1 = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
+    player.transactions.append(t1)
+    
+    let session = Session(
+        startTime: Date(),
+        location: "Preview Club",
+        gameType: .NLHoldem,
+        status: .active
+    )
+    session.players.append(player)
+    return PlayerRow(player: player, session: session)
+        .environment(SessionDetailViewModel())
+}
+
+#Preview("Игрок вышел") {
+    let player = Player(name: "Алексей", inGame: false)
+    // Закупился и вышел с суммой, чтобы показать "Вышел с:"
+    let t1 = PlayerTransaction(type: .buyIn, amount: 3000, player: player)
+    let t2 = PlayerTransaction(type: .cashOut, amount: 4500, player: player)
+    player.transactions.append(contentsOf: [t1, t2])
+    
     let session = Session(
         startTime: Date(),
         location: "Preview Club",
