@@ -3,6 +3,7 @@ import SwiftData
 
 struct ExpenseDetails: View {
     @Bindable var session: Session
+    @Environment(SessionDetailViewModel.self) private var viewModel
     
     var body: some View {
         Group {
@@ -74,9 +75,8 @@ struct ExpenseDetails: View {
     }
     
     private func delete(at offsets: IndexSet) {
-        // offsets относятся к expensesSorted; удаляем по id из исходного массива
-        let idsToDelete = offsets.map { expensesSorted[$0].id }
-        session.expenses.removeAll { exp in idsToDelete.contains(exp.id) }
+        let expensesToRemove = offsets.map { expensesSorted[$0] }
+        viewModel.removeExpenses(expensesToRemove, from: session)
     }
 }
 

@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct AddPlayerSheet: View {
-    let session: Session
-    
+    let session: Session    
+    @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @State private var playerName = ""
     @State private var buyInAmount = ""
@@ -41,14 +41,7 @@ struct AddPlayerSheet: View {
 
     private func addPlayer() {
         let trimmedName = playerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let buyIn = Int(buyInAmount), buyIn > 0, !trimmedName.isEmpty else { return }
-        let player = Player(
-            name: trimmedName,
-            inGame: true
-        )
-        session.players.append(player)
-        let tx = PlayerTransaction(type: .buyIn, amount: buyIn, player: player)
-        player.transactions.append(tx)
+        guard viewModel.addPlayer(to: session, name: trimmedName, buyInText: buyInAmount) else { return }
         dismiss()
     }
     
@@ -67,4 +60,5 @@ struct AddPlayerSheet: View {
     )
     return AddPlayerSheet(session: session)
         .modelContainer(for: [Session.self, Player.self], inMemory: true)
+        .environment(SessionDetailViewModel())
 }

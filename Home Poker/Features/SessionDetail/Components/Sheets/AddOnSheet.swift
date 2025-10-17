@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AddOnSheet: View {
     @Bindable var player: Player
+    @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @State private var buyInAmount = ""
     
@@ -28,9 +29,7 @@ struct AddOnSheet: View {
     }
 
     private func addOn() {
-        guard let amount = Int(buyInAmount), amount > 0 else { return }
-        let tx = PlayerTransaction(type: .addOn, amount: amount, player: player)
-        player.transactions.append(tx)
+        guard viewModel.addOn(for: player, amountText: buyInAmount) else { return }
         dismiss()
     }
 }
@@ -39,4 +38,5 @@ struct AddOnSheet: View {
     let player = Player(name: "Илья", inGame: true)
     _ = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
     return AddOnSheet(player: player)
+        .environment(SessionDetailViewModel())
 }

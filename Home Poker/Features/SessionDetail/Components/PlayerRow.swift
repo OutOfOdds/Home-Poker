@@ -2,6 +2,8 @@ import SwiftUI
 
 struct PlayerRow: View {
     var player: Player
+    let session: Session
+    @Environment(SessionDetailViewModel.self) private var viewModel
     
     @State private var showingBuyInSheet = false
     @State private var showingCashOutSheet = false
@@ -51,7 +53,7 @@ struct PlayerRow: View {
                     }
                     Spacer()
                     Button {
-                        player.inGame = true
+                        viewModel.returnPlayerToGame(player)
                     } label: {
                         Image(systemName: "arrow.uturn.left")
                             .font(.title3)
@@ -93,7 +95,7 @@ struct PlayerRow: View {
             AddOnSheet(player: player)
         }
         .sheet(isPresented: $showingCashOutSheet) {
-            CashOutSheet(player: player)
+            CashOutSheet(player: player, session: session)
         }
     }
     
@@ -106,5 +108,13 @@ struct PlayerRow: View {
     let player = Player(name: "Илья", inGame: true)
     // Начальный закуп на 2000 через транзакцию
     _ = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
-    return PlayerRow(player: player)
+    let session = Session(
+        startTime: Date(),
+        location: "Preview Club",
+        gameType: .NLHoldem,
+        status: .active
+    )
+    session.players.append(player)
+    return PlayerRow(player: player, session: session)
+        .environment(SessionDetailViewModel())
 }

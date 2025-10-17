@@ -12,7 +12,7 @@ struct SessionDetailView: View {
     
     // VM для расчёта переводов, живёт в этом экране
     @State private var settlementVM: SettlementViewModel = SettlementViewModel()
-    @State private var vm: SessionDetailViewModel = SessionDetailViewModel()
+    @State private var detailViewModel: SessionDetailViewModel = SessionDetailViewModel()
     var body: some View {
         List {
             SessionInfoSectionView(
@@ -64,6 +64,21 @@ struct SessionDetailView: View {
         .sheet(isPresented: $showSettlementSheet) {
             SettlementView(viewModel: settlementVM)
         }
+        .alert(
+            "Ошибка",
+            isPresented: Binding(
+                get: { detailViewModel.alertMessage != nil },
+                set: { if !$0 { detailViewModel.clearAlert() } }
+            ),
+            presenting: detailViewModel.alertMessage
+        ) { _ in
+            Button("OK", role: .cancel) {
+                detailViewModel.clearAlert()
+            }
+        } message: { message in
+            Text(message)
+        }
+        .environment(detailViewModel)
     }
 }
 

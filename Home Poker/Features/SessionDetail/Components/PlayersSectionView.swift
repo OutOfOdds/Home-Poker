@@ -9,7 +9,7 @@ struct PlayersSectionView: View {
                 NavigationLink {
                     PlayerTransactionsView(player: player)
                 } label: {
-                    PlayerRow(player: player)
+                    PlayerRow(player: player, session: session)
                 }
             }
         } header: {

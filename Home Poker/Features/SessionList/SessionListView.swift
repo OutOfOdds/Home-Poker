@@ -3,8 +3,8 @@ import SwiftData
 
 struct SessionListView: View {
 
+    @Environment(\.modelContext) private var context
     @Query private var sessions: [Session]
-    @State private var viewModel = SessionListViewModel()
     @State private var showingNewSession = false
 
     var body: some View {
@@ -18,14 +18,16 @@ struct SessionListView: View {
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
-                            viewModel.delete(session)
+                            context.delete(session)
                         } label: {
                             Label("Удалить", systemImage: "trash")
                         }
                     }
                 }
                 .onDelete { offsets in
-                    viewModel.deleteSessions(at: offsets, from: sessions)
+                    offsets
+                        .map { sessions[$0] }
+                        .forEach(context.delete)
                 }
             }
             .toolbar {

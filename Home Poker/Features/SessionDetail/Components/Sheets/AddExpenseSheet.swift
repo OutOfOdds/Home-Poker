@@ -3,7 +3,8 @@ import SwiftData
 
 struct AddExpenseSheet: View {
     let session: Session
-
+    
+    @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @State private var expenseDescription = ""
     @State private var expenseAmount: Int = 0
@@ -44,8 +45,9 @@ struct AddExpenseSheet: View {
     private func addExpense() {
         guard canSubmit else { return }
         let note = expenseDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        let expense = Expense(amount: expenseAmount, note: note, createdAt: Date(), payer: nil)
-        session.expenses.append(expense)
+        guard viewModel.addExpense(to: session, note: note, amountText: String(expenseAmount)) else {
+            return
+        }
         dismiss()
     }
 }
@@ -58,4 +60,5 @@ struct AddExpenseSheet: View {
     )
         return AddExpenseSheet(session: session)
         .modelContainer(for: [Session.self, Player.self, Expense.self], inMemory: true)
+        .environment(SessionDetailViewModel())
 }

@@ -2,9 +2,11 @@ import SwiftUI
 
 struct CashOutSheet: View {
     @Bindable var player: Player
+    let session: Session
+    @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @State private var cashOutAmount = ""
-    
+
     var body: some View {
         FormSheetView(
             title: "Завершить игру",
@@ -23,21 +25,26 @@ struct CashOutSheet: View {
     }
 
     private var canSubmit: Bool {
-        guard let amount = Int(cashOutAmount) else { return false }
-        return amount >= 0
+        viewModel.isValidCashOutInput(cashOutAmount)
     }
 
     private func cashOut() {
-        guard let amount = Int(cashOutAmount), amount >= 0 else { return }
-        let tx = PlayerTransaction(type: .cashOut, amount: amount, player: player)
-        player.transactions.append(tx)
-        player.inGame = false
-        dismiss()
+        if viewModel.cashOut(session: session, player: player, amountText: cashOutAmount) {
+            dismiss()
+        }
     }
 }
 
 #Preview {
     let player = Player(name: "Илья", inGame: true)
     _ = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
-    return CashOutSheet(player: player)
+    let session = Session(
+        startTime: Date(),
+        location: "Preview Club",
+        gameType: .NLHoldem,
+        status: .active
+    )
+    session.players.append(player)
+    return CashOutSheet(player: player, session: session)
+        .environment(SessionDetailViewModel())
 }

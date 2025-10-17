@@ -3,6 +3,7 @@ import SwiftUI
 struct BlindsEditorView: View {
     let session: Session
     
+    @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     
     @State private var smallText: String = ""
@@ -87,10 +88,9 @@ struct BlindsEditorView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Сохранить") {
-                        session.smallBlind = Int(smallText) ?? 0
-                        session.bigBlind = Int(bigText) ?? 0
-                        session.ante = Int(anteText) ?? 0
-                        dismiss()
+                        if viewModel.updateBlinds(for: session, smallText: smallText, bigText: bigText, anteText: anteText) {
+                            dismiss()
+                        }
                     }
                     .disabled(!isValid)
                 }
@@ -106,7 +106,7 @@ struct BlindsEditorView: View {
     
     private var isValid: Bool {
         guard let sb = Int(smallText), let bb = Int(bigText) else { return false }
-        return sb > 0 && bb > 0
+        return sb > 0 && bb > 0 && sb <= bb
     }
     
     private func digitsOnly(_ text: String) -> String {
