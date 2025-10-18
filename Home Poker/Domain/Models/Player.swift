@@ -26,8 +26,10 @@ class Player {
             .reduce(0, +)
     }
     var cashOut: Int {
-        // Последний cashOut или 0
-        transactions.filter { $0.type == .cashOut }.last?.amount ?? 0
+        // Суммарная сумма всех выводов игрока
+        transactions.filter { $0.type == .cashOut }
+            .map(\.amount)
+            .reduce(0, +)
     }
     var profit: Int { cashOut - buyIn }
     var balance: Int { inGame ? buyIn - cashOut : 0 }

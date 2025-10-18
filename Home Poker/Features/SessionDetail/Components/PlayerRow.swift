@@ -12,14 +12,15 @@ struct PlayerRow: View {
         VStack(spacing: 10) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading) {
+                    
                     HStack {
                         Text(player.name)
                             .font(.headline)
                             .opacity(player.inGame ? 1 : 0.5)
                         if !player.inGame {
-                            Text("(завершил сессию)")
+                            Text("(вышел)")
                                 .font(.caption)
-                                .foregroundColor(.pink.opacity(0.5))
+                                .foregroundColor(.secondary)
                         }
                     }
                     HStack {
@@ -89,7 +90,7 @@ struct PlayerRow: View {
                     .tint(.blue)
                     
                     Spacer()
-        
+                    
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

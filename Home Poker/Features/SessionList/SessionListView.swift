@@ -6,7 +6,6 @@ struct SessionListView: View {
     @Environment(\.modelContext) private var context
     @Query private var sessions: [Session]
     @State private var showingNewSession = false
-    
     var body: some View {
         NavigationStack {
             Group {
@@ -80,4 +79,5 @@ struct SessionListView: View {
 #Preview {
     SessionListView()
         .modelContainer(for: Session.self, inMemory: true)
+        .environment(SessionDetailViewModel())
 }

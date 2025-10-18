@@ -104,4 +104,5 @@ struct BankStatsSectionView: View {
         .navigationTitle("Превью статистики банка")
     }
     .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self], inMemory: true)
+    .environment(SessionDetailViewModel())
 }
