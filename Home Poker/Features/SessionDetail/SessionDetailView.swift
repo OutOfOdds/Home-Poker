@@ -8,7 +8,6 @@ struct SessionDetailView: View {
     @State private var showAddPlayer = false
     @State private var showAddExpense = false
     @State private var showingBlindsSheet = false
-    @State private var showSessionBankSheet = false
     
     @Environment(SessionDetailViewModel.self) var viewModel
     
@@ -55,13 +54,20 @@ struct SessionDetailView: View {
                     Button {
                         showAddPlayer = true
                     } label: {
-                        Label("Добавить игрока", systemImage: "person.badge.plus.fill")
+                        Label("Добавить игрока", systemImage: "person.badge.plus")
                     }
                     
                     Button {
                         showAddExpense = true
                     } label: {
                         Label("Добавить расход", systemImage: "cart.fill.badge.plus")
+                    }
+                    
+                    NavigationLink {
+                        SessionBankView(session: session)
+                            .environment(viewModel)
+                    } label: {
+                        Label("Банк сессии", systemImage: "building.columns")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -91,16 +97,14 @@ private extension SessionDetailView {
         if session.smallBlind == 0 && session.bigBlind == 0 && session.ante == 0 {
             return "Нажмите для указания"
         }
-        var base = "\(formatCurrency(session.smallBlind))/\(formatCurrency(session.bigBlind))"
+        var base = "\(session.smallBlind.asCurrency())/\(session.bigBlind.asCurrency())"
         if session.ante > 0 {
-            base += " (Анте: \(formatCurrency(session.ante)))"
+            base += " (Анте: \(session.ante.asCurrency()))"
         }
         return base
     }
     
-    func formatCurrency(_ amount: Int) -> String {
-        "₽\(amount)"
-    }
+    func formatCurrency(_ amount: Int) -> String { amount.asCurrency() }
 }
 
 #Preview {

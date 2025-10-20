@@ -24,9 +24,9 @@ struct PlayerRow: View {
                         }
                     }
                     HStack {
-                        Text("Закуп: \(player.buyIn)")
+                        Text("Закуп: \(player.buyIn.asCurrency())")
                         if !player.inGame {
-                            Text("-> Вывод: \(player.cashOut)")
+                            Text("-> Вывод: \(player.cashOut.asCurrency())")
                         }
                     }
                     .foregroundStyle(.secondary)
@@ -35,7 +35,7 @@ struct PlayerRow: View {
                     
                     if !player.inGame {
                         HStack {
-                            Text("\(formatCurrency(player.profit))")
+                            Text(player.profit.asCurrency())
                                 .font(.title3)
                                 .bold()
                                 .foregroundColor(displayedProfitColor)
@@ -105,7 +105,7 @@ struct PlayerRow: View {
     }
     
     private func formatCurrency(_ amount: Int) -> String {
-        return "₽ \(amount)"
+        return amount.asCurrency()
     }
     
     private var displayedProfitColor: Color {
@@ -117,7 +117,7 @@ struct PlayerRow: View {
     
     private var cashOutLabel: String? {
         guard !player.inGame, player.cashOut > 0 else { return nil }
-        return "Вышел с: \(formatCurrency(player.cashOut))"
+        return "Вышел с: \(player.cashOut.asCurrency())"
     }
 }
 

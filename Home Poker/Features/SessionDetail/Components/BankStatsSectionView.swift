@@ -14,7 +14,7 @@ struct BankStatsSectionView: View {
                     
                     Spacer()
                     
-                    Text("\(session.totalBuyIns)")
+                    Text(session.totalBuyIns.asCurrency())
                         .font(.title2).fontWeight(.semibold)
                         .foregroundStyle(.green)
                         .fontDesign(.monospaced)
@@ -32,7 +32,7 @@ struct BankStatsSectionView: View {
                     
                     Spacer()
                     
-                    Text("\(session.bankInGame)")
+                    Text(session.bankInGame.asCurrency())
                         .font(.title2).fontWeight(.semibold)
                         .foregroundColor(.blue)
                         .fontDesign(.monospaced)
@@ -50,7 +50,7 @@ struct BankStatsSectionView: View {
                     
                     Spacer()
                     
-                    Text("\(session.bankWithdrawn)")
+                    Text(session.bankWithdrawn.asCurrency())
                         .font(.title2).fontWeight(.semibold)
                         .foregroundColor(.orange)
                         .fontDesign(.monospaced)
@@ -67,10 +67,9 @@ struct BankStatsSectionView: View {
                         Image(systemName: "cart.fill.badge.plus")
                         Text("Расходы")
                         Spacer()
-                        Text("\(session.expenses.reduce(0) { $0 + $1.amount })")
+                        Text(session.expenses.reduce(0) { $0 + $1.amount }.asCurrency())
                     }
                     .font(.caption)
-                    .italic()
                     .foregroundStyle(.secondary)
                     .fontDesign(.monospaced)
                 }
@@ -80,11 +79,11 @@ struct BankStatsSectionView: View {
                 SessionBankView(session: session)
             } label: {
                 HStack {
-                    Image(systemName: "dollarsign.bank.building")
+                    Image(systemName: "building.columns")
                     Text("Банк сессии")
                     Spacer()
                     if let bank = session.bank {
-                        Text("Долг банку: ₽\(bank.remainingToCollect)")
+                        Text("Долг банку: \(bank.remainingToCollect.asCurrency())")
                             .fontDesign(.monospaced)
                             .foregroundStyle(bank.remainingToCollect == 0 ? .secondary : Color.red)
                     } else {
@@ -94,7 +93,6 @@ struct BankStatsSectionView: View {
                     }
                 }
                 .font(.caption)
-                .italic()
                 .foregroundStyle(.secondary)
                 .fontDesign(.monospaced)
             }

@@ -64,9 +64,9 @@ struct SessionInfoSectionView: View {
         if session.smallBlind == 0 && session.bigBlind == 0 && session.ante == 0 {
             return "Нажмите для указания"
         }
-        var base = "₽\(session.smallBlind)/₽\(session.bigBlind)"
+        var base = "\(session.smallBlind.asCurrency())/\(session.bigBlind.asCurrency())"
         if session.ante > 0 {
-            base += " (Анте: ₽\(session.ante))"
+            base += " (Анте: \(session.ante.asCurrency()))"
         }
         return base
     }

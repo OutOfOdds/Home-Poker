@@ -63,7 +63,7 @@ struct SessionListView: View {
             }
             .fontDesign(.monospaced)
             Text("Игра: \(session.gameType.rawValue)")
-            Text("Блайнды: \(session.smallBlind) / \(session.bigBlind)")
+            Text("Блайнды: \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
                 .fontDesign(.monospaced)
             
             if session.status == .active {

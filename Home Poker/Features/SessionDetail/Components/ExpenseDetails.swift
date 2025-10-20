@@ -21,7 +21,7 @@ struct ExpenseDetails: View {
                         HStack {
                             Text("Расходы (\(session.expenses.count))")
                             Spacer()
-                            Text("Итого: ₽\(totalAmount)")
+                            Text("Итого: \(totalAmount.asCurrency())")
                                 .foregroundStyle(.secondary)
                         }
                         .font(.caption)
@@ -34,7 +34,7 @@ struct ExpenseDetails: View {
                             HStack {
                                 Text(player.name)
                                 Spacer()
-                                Text("₽\(contributedAmount(for: player))")
+                                Text(contributedAmount(for: player).asCurrency())
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.primary)
                             }
@@ -46,7 +46,7 @@ struct ExpenseDetails: View {
                         HStack {
                             Text("Всего оплачено игроками")
                             Spacer()
-                            Text("₽\(totalAmount)")
+                            Text(totalAmount.asCurrency())
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -99,7 +99,7 @@ private struct ExpenseRow: View {
                 .foregroundStyle(.secondary)
             }
             Spacer()
-            Text("₽\(expense.amount)")
+            Text(expense.amount.asCurrency())
                 .font(.body.weight(.semibold))
         }
         .padding(.vertical, 4)

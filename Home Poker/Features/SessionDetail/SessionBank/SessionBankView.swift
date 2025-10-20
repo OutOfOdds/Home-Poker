@@ -206,7 +206,7 @@ struct SessionBankView: View {
                 Text(entry.type.displayName)
                 Image(systemName: entry.type.systemImage)
                 Spacer()
-                Text("₽\(entry.amount)")
+                Text(entry.amount.asCurrency())
                     .fontWeight(.semibold)
             }
             .foregroundColor(entry.type == .deposit ? .green : .orange)
@@ -236,9 +236,7 @@ struct SessionBankView: View {
         }
     }
     
-    private func formatCurrency(_ value: Int) -> String {
-        "₽\(value)"
-    }
+    private func formatCurrency(_ value: Int) -> String { value.asCurrency() }
 }
 
 private extension SessionBankEntryType {

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		6B2316AC2E94EDA00071259C /* SettlementCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B2316AB2E94EDA00071259C /* SettlementCalculator.swift */; };
+		6B2577432EA68E0000E7BB70 /* MoneyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B2577412EA68E0000E7BB70 /* MoneyFormatter.swift */; };
 		6B366A742E9E833900B69DA2 /* PlayerTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B366A732E9E833900B69DA2 /* PlayerTransaction.swift */; };
 		6B366A762E9E84F000B69DA2 /* PlayerTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B366A752E9E84F000B69DA2 /* PlayerTransactionsView.swift */; };
 		6B38E1C32EA6380300B66D69 /* SessionBankView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B38E1C12EA6380300B66D69 /* SessionBankView.swift */; };
@@ -41,6 +42,7 @@
 
 /* Begin PBXFileReference section */
 		6B2316AB2E94EDA00071259C /* SettlementCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementCalculator.swift; sourceTree = "<group>"; };
+		6B2577412EA68E0000E7BB70 /* MoneyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyFormatter.swift; sourceTree = "<group>"; };
 		6B366A732E9E833900B69DA2 /* PlayerTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTransaction.swift; sourceTree = "<group>"; };
 		6B366A752E9E84F000B69DA2 /* PlayerTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTransactionsView.swift; sourceTree = "<group>"; };
 		6B38E1C02EA6380300B66D69 /* SessionBankTransactionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionBankTransactionSheet.swift; sourceTree = "<group>"; };
@@ -84,6 +86,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6B2577422EA68E0000E7BB70 /* Formatters */ = {
+			isa = PBXGroup;
+			children = (
+				6B2577412EA68E0000E7BB70 /* MoneyFormatter.swift */,
+			);
+			path = Formatters;
+			sourceTree = "<group>";
+		};
 		6B38E1C22EA6380300B66D69 /* SessionBank */ = {
 			isa = PBXGroup;
 			children = (
@@ -207,6 +217,7 @@
 			isa = PBXGroup;
 			children = (
 				6BDB00072EB0AAAA00AA0007 /* Components */,
+				6B2577422EA68E0000E7BB70 /* Formatters */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -329,6 +340,7 @@
 				6B366A762E9E84F000B69DA2 /* PlayerTransactionsView.swift in Sources */,
 				6BCB94912E8ED1A3007212D5 /* Session.swift in Sources */,
 				6BBA48012E8ED74200A3CADE /* SessionService.swift in Sources */,
+				6B2577432EA68E0000E7BB70 /* MoneyFormatter.swift in Sources */,
 				6B852C9A2E8EFEC70086ACA2 /* AddPlayerSheet.swift in Sources */,
 				6B2316AC2E94EDA00071259C /* SettlementCalculator.swift in Sources */,
 				6B603CC52E94099900E3CA15 /* ExpenseDetails.swift in Sources */,

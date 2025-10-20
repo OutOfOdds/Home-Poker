@@ -13,7 +13,7 @@ struct PlayerTransactionsView: View {
                         Text(transactionTypeDisplay(transaction.type))
                             .fontWeight(.medium)
                         Spacer()
-                        Text("₽\(transaction.amount)")
+                        Text(transaction.amount.asCurrency())
                             .foregroundColor(.secondary)
                         Text(transaction.timestamp, style: .time)
                             .font(.caption)

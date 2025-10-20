@@ -127,31 +127,31 @@ struct SessionBankTransactionSheet: View {
                     let contributions = bank.contributions(for: player)
                     let deposited = contributions.deposited
                     let withdrawn = contributions.withdrawn
-                    Text("Игрок внёс: ₽\(deposited)")
-                    Text("Игроку выдано: ₽\(withdrawn)")
+                    Text("Игрок внёс: \(deposited.asCurrency())")
+                    Text("Игроку выдано: \(withdrawn.asCurrency())")
                     
                     switch mode {
                     case .deposit:
-                        Text("Осталось внести: ₽\(bank.outstandingAmount(for: player))")
+                        Text("Осталось внести: \(bank.outstandingAmount(for: player).asCurrency())")
                             .foregroundStyle(.secondary)
                     case .withdrawal:
                         let available = max(deposited - withdrawn, 0)
-                        Text("Доступно к выдаче: ₽\(available)")
+                        Text("Доступно к выдаче: \(available.asCurrency())")
                             .foregroundStyle(.secondary)
                     }
                     
                     Divider()
-                    Text("Всего ожидается: ₽\(bank.expectedTotal)")
-                    Text("Получено: ₽\(bank.totalDeposited)")
-                    Text("Осталось собрать: ₽\(bank.remainingToCollect)")
+                    Text("Всего ожидается: \(bank.expectedTotal.asCurrency())")
+                    Text("Получено: \(bank.totalDeposited.asCurrency())")
+                    Text("Осталось собрать: \(bank.remainingToCollect.asCurrency())")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             } else if let bank {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Всего ожидается: ₽\(bank.expectedTotal)")
-                    Text("Получено: ₽\(bank.totalDeposited)")
-                    Text("Осталось собрать: ₽\(bank.remainingToCollect)")
+                    Text("Всего ожидается: \(bank.expectedTotal.asCurrency())")
+                    Text("Получено: \(bank.totalDeposited.asCurrency())")
+                    Text("Осталось собрать: \(bank.remainingToCollect.asCurrency())")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
