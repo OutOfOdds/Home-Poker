@@ -57,8 +57,11 @@ struct SessionListView: View {
     
     private func sessionRow(_ session: Session) -> some View {
         VStack(alignment: .leading) {
-            Text(session.startTime, format: .dateTime)
-                .fontDesign(.monospaced)
+            HStack {
+                Text("Дата:")
+                Text(session.startTime, format: .dateTime)
+            }
+            .fontDesign(.monospaced)
             Text("Игра: \(session.gameType.rawValue)")
             Text("Блайнды: \(session.smallBlind) / \(session.bigBlind)")
                 .fontDesign(.monospaced)
@@ -78,6 +81,6 @@ struct SessionListView: View {
 
 #Preview {
     SessionListView()
-        .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self], inMemory: true)
+        .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
         .environment(SessionDetailViewModel())
 }

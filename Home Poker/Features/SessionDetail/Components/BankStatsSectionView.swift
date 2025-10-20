@@ -64,6 +64,7 @@ struct BankStatsSectionView: View {
                     ExpenseDetails(session: session)
                 } label: {
                     HStack {
+                        Image(systemName: "cart.fill.badge.plus")
                         Text("Расходы")
                         Spacer()
                         Text("\(session.expenses.reduce(0) { $0 + $1.amount })")
@@ -73,6 +74,29 @@ struct BankStatsSectionView: View {
                     .foregroundStyle(.secondary)
                     .fontDesign(.monospaced)
                 }
+            }
+            
+            NavigationLink {
+                SessionBankView(session: session)
+            } label: {
+                HStack {
+                    Image(systemName: "dollarsign.bank.building")
+                    Text("Банк сессии")
+                    Spacer()
+                    if let bank = session.bank {
+                        Text("Долг банку: ₽\(bank.remainingToCollect)")
+                            .fontDesign(.monospaced)
+                            .foregroundStyle(bank.remainingToCollect == 0 ? .secondary : Color.red)
+                    } else {
+                        Text("Создать")
+                            .fontDesign(.monospaced)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .font(.caption)
+                .italic()
+                .foregroundStyle(.secondary)
+                .fontDesign(.monospaced)
             }
         }
     }
@@ -127,6 +151,6 @@ struct Line:Shape{
         }
         .navigationTitle("Превью статистики банка")
     }
-    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self], inMemory: true)
+    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
     .environment(SessionDetailViewModel())
 }

@@ -10,6 +10,6 @@ struct Home_PokerApp: App {
             SessionListView()
                 .environment(sessionDetailVM)
         }
-        .modelContainer(for: [Player.self, Session.self, PlayerTransaction.self, Expense.self, SessionBank.self])
+        .modelContainer(for: [Player.self, Session.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self])
     }
 }

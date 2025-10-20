@@ -95,7 +95,7 @@ struct SettlementView: View {
     
     return SettlementView(viewModel: vm)
         .modelContainer(
-            for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self],
+            for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self],
             inMemory: true
         )
 }

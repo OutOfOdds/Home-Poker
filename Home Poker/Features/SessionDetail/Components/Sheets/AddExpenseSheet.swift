@@ -59,6 +59,6 @@ struct AddExpenseSheet: View {
         gameType: .NLHoldem, status: .active
     )
         return AddExpenseSheet(session: session)
-        .modelContainer(for: [Session.self, Player.self, Expense.self, SessionBank.self], inMemory: true)
+        .modelContainer(for: [Session.self, Player.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
         .environment(SessionDetailViewModel())
 }

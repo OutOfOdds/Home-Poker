@@ -1,33 +1,18 @@
 import Foundation
 import SwiftData
 
-enum SessionServiceError: LocalizedError {
-    case insufficientBank
-    case invalidAmount
-    case emptyPlayerName
-    case invalidBlinds
-    
-    var errorDescription: String? {
-        switch self {
-        case .insufficientBank:
-            return "Нельзя вывести больше, чем осталось в банке игры."
-        case .invalidAmount:
-            return "Сумма должна быть больше нуля."
-        case .emptyPlayerName:
-            return "Введите имя игрока."
-        case .invalidBlinds:
-            return "Укажите корректные значения блайндов."
-        }
-    }
-}
-
 final class SessionService {
     
     static let shared = SessionService()
     
     // MARK: - Игрок
 
-    // Добавляем игрока 
+    /// Создаёт нового игрока, фиксирует первичный buy-in и добавляет его в сессию.
+    /// - Parameters:
+    ///   - name: Имя игрока (валидируется на пустоту и лишние пробелы).
+    ///   - buyIn: Сумма стартового закупа.
+    ///   - session: Сессия, в которую добавляется игрок.
+    /// - Throws: `SessionServiceError.emptyPlayerName`, `SessionServiceError.invalidAmount`.
     func addPlayer(name: String, buyIn: Int, to session: Session) throws {
         let trimmedName = try normalizePlayerName(name)
         try validatePositiveAmount(buyIn)
@@ -36,16 +21,28 @@ final class SessionService {
         let transaction = PlayerTransaction(type: .buyIn, amount: buyIn, player: player)
         player.transactions.append(transaction)
         session.players.append(player)
+        refreshBankExpectation(for: session)
     }
     
-    // Добавить игроку денег
-    func addOn(player: Player, amount: Int) throws {
+    /// Регистрирует докупку (add-on) для игрока в рамках сессии.
+    /// - Parameters:
+    ///   - player: Игрок, который делает докупку.
+    ///   - amount: Сумма докупки.
+    ///   - session: Сессия, к которой относится игрок.
+    /// - Throws: `SessionServiceError.invalidAmount`.
+    func addOn(player: Player, amount: Int, in session: Session) throws {
         try validatePositiveAmount(amount)
         let transaction = PlayerTransaction(type: .addOn, amount: amount, player: player)
         player.transactions.append(transaction)
+        refreshBankExpectation(for: session)
     }
     
-    // Игрок встал из за стола/завершил сессию
+    /// Завершает игру для игрока: фиксирует вывод средств и помечает его как выбывшего.
+    /// - Parameters:
+    ///   - player: Игрок, завершающий участие.
+    ///   - amount: Сумма вывода.
+    ///   - session: Сессия, в которой происходит вывод.
+    /// - Throws: `SessionServiceError.invalidAmount`, `SessionServiceError.insufficientBank`.
     func cashOut(player: Player, amount: Int, in session: Session) throws {
         try validateNonNegativeAmount(amount)
         guard amount <= session.bankInGame else {
@@ -55,19 +52,135 @@ final class SessionService {
         let transaction = PlayerTransaction(type: .cashOut, amount: amount, player: player)
         player.transactions.append(transaction)
         player.inGame = false
+        refreshBankExpectation(for: session)
     }
 
-    // Вернуть игрока в игру после завершения
+    /// Возвращает игрока за стол (используется, если он снова входит в игру).
     func returnToGame(player: Player) {
         player.inGame = true
     }
     
+    /// Удаляет игрока из сессии вместе со всеми связанными транзакциями.
+    /// - Parameters:
+    ///   - player: Игрок, которого требуется удалить.
+    ///   - session: Сессия, из которой удаляется игрок.
     func removePlayer(_ player: Player, from session: Session) {
+        // Очистим связанные записи банка
+        if let bank = session.bank {
+            let relatedEntries = bank.entries.filter { $0.player.id == player.id }
+            for entry in relatedEntries {
+                bank.entries.removeAll { $0.id == entry.id }
+                entry.modelContext?.delete(entry)
+            }
+        }
+        
         session.players.removeAll { $0.id == player.id }
+        player.modelContext?.delete(player)
+        refreshBankExpectation(for: session)
+    }
+    
+    // MARK: - Сессионный банк
+    
+    /// Гарантирует наличие банка у сессии (создаёт при отсутствии) и актуализирует ожидаемую сумму.
+    /// - Parameter session: Сессия, для которой требуется банк.
+    /// - Returns: Экземпляр банка сессии.
+    @discardableResult
+    func ensureBank(for session: Session) -> SessionBank {
+        if let existing = session.bank {
+            existing.expectedTotal = expectedBankTotal(for: session)
+            return existing
+        }
+
+        let bank = SessionBank(session: session, expectedTotal: expectedBankTotal(for: session))
+        session.bank = bank
+        return bank
+    }
+    
+    /// Назначает (или убирает) ответственного за сессионный банк.
+    /// - Parameters:
+    ///   - player: Игрок, который становится ответственным. `nil` снимает назначение.
+    ///   - session: Сессия, чей банк обновляется.
+    func setBankManager(_ player: Player?, for session: Session) {
+        let bank = ensureBank(for: session)
+        bank.manager = player
+    }
+    
+    /// Регистрирует поступление наличных денег в банк от игрока.
+    /// - Parameters:
+    ///   - session: Сессия, к которой относится операция.
+    ///   - player: Игрок, вносящий деньги.
+    ///   - amount: Сумма взноса.
+    ///   - note: Необязательная заметка.
+    /// - Throws: Ошибки валидации суммы или состояния банка.
+    func recordDeposit(for session: Session, player: Player, amount: Int, note: String?) throws {
+        try recordBankEntry(for: session, player: player, amount: amount, note: note, type: .deposit)
+    }
+    
+    /// Регистрирует выдачу денег из банка игроку.
+    /// - Parameters:
+    ///   - session: Сессия, к которой относится операция.
+    ///   - player: Игрок, получающий деньги.
+    ///   - amount: Сумма выплаты.
+    ///   - note: Необязательная заметка.
+    /// - Throws: Ошибки валидации суммы или состояния банка.
+    func recordWithdrawal(for session: Session, player: Player, amount: Int, note: String?) throws {
+        try recordBankEntry(for: session, player: player, amount: amount, note: note, type: .withdrawal)
+    }
+    
+    /// Помечает сессионный банк закрытым, если все расчёты завершены.
+    /// - Parameter session: Сессия, чей банк закрывается.
+    /// - Throws: `SessionServiceError.bankNotBalanced`, если остались долги.
+    func closeBank(for session: Session) throws {
+        let bank = ensureBank(for: session)
+        guard bank.remainingToCollect == 0 else {
+            throw SessionServiceError.bankNotBalanced
+        }
+        bank.isClosed = true
+        bank.closedAt = Date()
+    }
+    
+    /// Повторно открывает банк, разрешая дальнейшие операции.
+    /// - Parameter session: Сессия, чей банк открывается вновь.
+    func reopenBank(for session: Session) {
+        let bank = ensureBank(for: session)
+        bank.isClosed = false
+        bank.closedAt = nil
+    }
+    
+    private func recordBankEntry(
+        for session: Session,
+        player: Player,
+        amount: Int,
+        note: String?,
+        type: SessionBankEntryType
+    ) throws {
+        try validatePositiveAmount(amount)
+        let bank = ensureBank(for: session)
+        guard !bank.isClosed else {
+            throw SessionServiceError.bankClosed
+        }
+        guard session.players.contains(where: { $0.id == player.id }) else {
+            throw SessionServiceError.playerNotInSession
+        }
+        let entry = SessionBankEntry(
+            amount: amount,
+            type: type,
+            player: player,
+            bank: bank,
+            note: trimmedNote(note)
+        )
+        bank.entries.append(entry)
     }
     
     // MARK: - Расходы
-    // Добавить расход (прим.: диллер, аренда комнаты и т.п)
+    /// Регистрирует расход, совершённый в рамках сессии.
+    /// - Parameters:
+    ///   - note: Описание расхода.
+    ///   - amount: Сумма расхода.
+    ///   - payer: Игрок, оплативший расход (опционально).
+    ///   - session: Сессия, к которой относится расход.
+    ///   - createdAt: Дата создания записи.
+    /// - Throws: `SessionServiceError.invalidAmount`.
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date = Date()) throws {
         try validatePositiveAmount(amount)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -75,12 +188,23 @@ final class SessionService {
         session.expenses.append(expense)
     }
     
+    /// Удаляет указанные расходы из сессии.
+    /// - Parameters:
+    ///   - expenses: Массив расходов для удаления.
+    ///   - session: Сессия, из которой удаляются расходы.
     func removeExpenses(_ expenses: [Expense], from session: Session) {
         let ids = expenses.map { $0.id }
         session.expenses.removeAll { ids.contains($0.id) }
     }
     
     // MARK: - Настройки сессии
+    /// Обновляет параметры блайндов и анте у сессии.
+    /// - Parameters:
+    ///   - session: Сессия для обновления.
+    ///   - small: Значение Small Blind.
+    ///   - big: Значение Big Blind.
+    ///   - ante: Значение анте (неотрицательное).
+    /// - Throws: `SessionServiceError.invalidBlinds`, если значения некорректные.
     func updateBlinds(for session: Session, small: Int, big: Int, ante: Int) throws {
         guard small > 0, big > 0, small <= big else {
             throw SessionServiceError.invalidBlinds
@@ -105,5 +229,53 @@ final class SessionService {
     
     private func validateNonNegativeAmount(_ amount: Int) throws {
         guard amount >= 0 else { throw SessionServiceError.invalidAmount }
+    }
+
+    private func refreshBankExpectation(for session: Session) {
+        session.bank?.expectedTotal = expectedBankTotal(for: session)
+    }
+    
+    private func trimmedNote(_ note: String?) -> String {
+        note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    private func expectedBankTotal(for session: Session) -> Int {
+        session.players
+            .filter { !$0.inGame }
+            .reduce(0) { partial, player in
+                partial + max(player.buyIn - player.cashOut, 0)
+            }
+    }
+}
+
+enum SessionServiceError: LocalizedError {
+    case insufficientBank
+    case invalidAmount
+    case emptyPlayerName
+    case invalidBlinds
+    case bankClosed
+    case bankUnavailable
+    case playerNotInSession
+    case bankNotBalanced
+    
+    var errorDescription: String? {
+        switch self {
+        case .insufficientBank:
+            return "Нельзя вывести больше, чем осталось в банке игры."
+        case .invalidAmount:
+            return "Сумма должна быть больше нуля."
+        case .emptyPlayerName:
+            return "Введите имя игрока."
+        case .invalidBlinds:
+            return "Укажите корректные значения блайндов."
+        case .bankClosed:
+            return "Банк закрыт. Откройте его, чтобы продолжить операции."
+        case .bankUnavailable:
+            return "Не удалось получить банк для сессии."
+        case .playerNotInSession:
+            return "Игрок не найден в этой сессии."
+        case .bankNotBalanced:
+            return "Не хватает средств, чтобы закрыть банк."
+        }
     }
 }

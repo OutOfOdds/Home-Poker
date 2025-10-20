@@ -8,9 +8,7 @@ struct SessionDetailView: View {
     @State private var showAddPlayer = false
     @State private var showAddExpense = false
     @State private var showingBlindsSheet = false
-    @State private var showSettlementSheet = false
     
-    @State private var settlementVM: SettlementViewModel = SettlementViewModel()
     @Environment(SessionDetailViewModel.self) var viewModel
     
     var body: some View {
@@ -39,17 +37,16 @@ struct SessionDetailView: View {
         // MARK: Sheets
         .sheet(isPresented: $showAddPlayer) {
             AddPlayerSheet(session: session)
+                .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showAddExpense) {
             AddExpenseSheet(session: session)
+                .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showingBlindsSheet) {
             BlindsEditorSheet(session: session)
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $showSettlementSheet) {
-            SettlementView(viewModel: settlementVM)
         }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -57,24 +54,14 @@ struct SessionDetailView: View {
                     Button {
                         showAddPlayer = true
                     } label: {
-                        Label("Добавить игрока", systemImage: "person.badge.plus")
+                        Label("Добавить игрока", systemImage: "person.badge.plus.fill")
                     }
                     
                     Button {
                         showAddExpense = true
                     } label: {
-                        Label("Добавить расходы", systemImage: "cart.fill.badge.plus")
+                        Label("Добавить расход", systemImage: "cart.fill.badge.plus")
                     }
-                    
-                    Divider()
-                    
-                    Button {
-                        settlementVM.calculate(for: session)
-                        showSettlementSheet = true
-                    } label: {
-                        Label("Рассчитать переводы", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .disabled(!allPlayersFinished)
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -99,11 +86,6 @@ struct SessionDetailView: View {
 
 // MARK: - Helpers
 private extension SessionDetailView {
-    var allPlayersFinished: Bool {
-        // Кнопка доступна только если есть игроки и все они не в игре
-        !session.players.isEmpty && session.players.allSatisfy { !$0.inGame }
-    }
-    
     func blindsDisplayText() -> String {
         if session.smallBlind == 0 && session.bigBlind == 0 && session.ante == 0 {
             return "Нажмите для указания"
@@ -194,5 +176,5 @@ private extension SessionDetailView {
         SessionDetailView(session: session)
             .environment(SessionDetailViewModel())
     }
-    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self], inMemory: true)
+    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
 }

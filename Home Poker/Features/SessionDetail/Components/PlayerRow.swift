@@ -97,7 +97,7 @@ struct PlayerRow: View {
             
         }
         .sheet(isPresented: $showingBuyInSheet) {
-            PlayerAddOnSheet(player: player)
+            PlayerAddOnSheet(player: player, session: session)
         }
         .sheet(isPresented: $showingCashOutSheet) {
             PlayerCashOutSheet(player: player, session: session)

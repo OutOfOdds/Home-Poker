@@ -10,6 +10,9 @@
 		6B2316AC2E94EDA00071259C /* SettlementCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B2316AB2E94EDA00071259C /* SettlementCalculator.swift */; };
 		6B366A742E9E833900B69DA2 /* PlayerTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B366A732E9E833900B69DA2 /* PlayerTransaction.swift */; };
 		6B366A762E9E84F000B69DA2 /* PlayerTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B366A752E9E84F000B69DA2 /* PlayerTransactionsView.swift */; };
+		6B38E1C32EA6380300B66D69 /* SessionBankView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B38E1C12EA6380300B66D69 /* SessionBankView.swift */; };
+		6B38E1C42EA6380300B66D69 /* SessionBankTransactionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B38E1C02EA6380300B66D69 /* SessionBankTransactionSheet.swift */; };
+		6B38E1C62EA6383200B66D69 /* SessionBankEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B38E1C52EA6383200B66D69 /* SessionBankEntry.swift */; };
 		6B603CC52E94099900E3CA15 /* ExpenseDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B603CC42E94099900E3CA15 /* ExpenseDetails.swift */; };
 		6B852C9A2E8EFEC70086ACA2 /* AddPlayerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B852C992E8EFEC70086ACA2 /* AddPlayerSheet.swift */; };
 		6B852C9C2E8EFEF90086ACA2 /* AddExpenseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B852C9B2E8EFEF90086ACA2 /* AddExpenseSheet.swift */; };
@@ -40,6 +43,9 @@
 		6B2316AB2E94EDA00071259C /* SettlementCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementCalculator.swift; sourceTree = "<group>"; };
 		6B366A732E9E833900B69DA2 /* PlayerTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTransaction.swift; sourceTree = "<group>"; };
 		6B366A752E9E84F000B69DA2 /* PlayerTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTransactionsView.swift; sourceTree = "<group>"; };
+		6B38E1C02EA6380300B66D69 /* SessionBankTransactionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionBankTransactionSheet.swift; sourceTree = "<group>"; };
+		6B38E1C12EA6380300B66D69 /* SessionBankView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionBankView.swift; sourceTree = "<group>"; };
+		6B38E1C52EA6383200B66D69 /* SessionBankEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionBankEntry.swift; sourceTree = "<group>"; };
 		6B603CC42E94099900E3CA15 /* ExpenseDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseDetails.swift; sourceTree = "<group>"; };
 		6B852C992E8EFEC70086ACA2 /* AddPlayerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPlayerSheet.swift; sourceTree = "<group>"; };
 		6B852C9B2E8EFEF90086ACA2 /* AddExpenseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddExpenseSheet.swift; sourceTree = "<group>"; };
@@ -78,6 +84,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6B38E1C22EA6380300B66D69 /* SessionBank */ = {
+			isa = PBXGroup;
+			children = (
+				6B38E1C02EA6380300B66D69 /* SessionBankTransactionSheet.swift */,
+				6B38E1C12EA6380300B66D69 /* SessionBankView.swift */,
+			);
+			path = SessionBank;
+			sourceTree = "<group>";
+		};
 		6B6E368E2EA2487100CFE0FC /* Sheets */ = {
 			isa = PBXGroup;
 			children = (
@@ -110,6 +125,7 @@
 				6BBA47F82E8ED5FD00A3CADE /* SessionDetailView.swift */,
 				6BDB00112EB0B0D400AA0011 /* SessionDetailViewModel.swift */,
 				6BA52A542E9522B200742AEB /* Components */,
+				6B38E1C22EA6380300B66D69 /* SessionBank */,
 			);
 			path = SessionDetail;
 			sourceTree = "<group>";
@@ -200,6 +216,7 @@
 			children = (
 				6BCB94902E8ED1A2007212D5 /* Session.swift */,
 				6BE4DA2C2EA632D600E362A9 /* SessionBank.swift */,
+				6B38E1C52EA6383200B66D69 /* SessionBankEntry.swift */,
 				6BCB948E2E8ED16A007212D5 /* Player.swift */,
 				6B366A732E9E833900B69DA2 /* PlayerTransaction.swift */,
 				6B9924F62E905EDC00BADD6B /* Expense.swift */,
@@ -330,7 +347,10 @@
 				6BE4DA2D2EA632D600E362A9 /* SessionBank.swift in Sources */,
 				6B9924F72E905EE400BADD6B /* Expense.swift in Sources */,
 				6BBA47F92E8ED5FD00A3CADE /* SessionDetailView.swift in Sources */,
+				6B38E1C32EA6380300B66D69 /* SessionBankView.swift in Sources */,
+				6B38E1C42EA6380300B66D69 /* SessionBankTransactionSheet.swift in Sources */,
 				6BA52A492E9521D500742AEB /* BlindsEditorSheet.swift in Sources */,
+				6B38E1C62EA6383200B66D69 /* SessionBankEntry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -460,7 +480,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -506,7 +526,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;

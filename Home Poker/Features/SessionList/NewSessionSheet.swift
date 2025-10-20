@@ -152,5 +152,5 @@ struct NewSessionSheet: View {
 
 #Preview {
     NewSessionSheet()
-        .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self], inMemory: true)
+        .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
 }
