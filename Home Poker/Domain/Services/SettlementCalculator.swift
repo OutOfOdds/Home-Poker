@@ -1,20 +1,25 @@
 import Foundation
 
-// MARK: - Result types
-
+/// Описывает агрегированное состояние игрока по итогам сессии.
 struct PlayerBalance {
+    /// Игрок, чьи результаты агрегированы.
     let player: Player
+    /// Совокупный buy-in (закупка + докупки).
     let buyIn: Int
+    /// Совокупный cash-out.
     let cashOut: Int
+    /// Итоговый результат игрока (положительный — выигрыш, отрицательный — проигрыш).
     let net: Int
 }
 
+/// Предложение перевода между двумя игроками, полученное после рассчёта.
 struct TransferProposal {
     let from: Player
     let to: Player
     let amount: Int
 }
 
+/// Совокупный результат работы калькулятора: балансы и список переводов.
 struct SettlementResult {
     let balances: [PlayerBalance]
     let transfers: [TransferProposal]
@@ -24,9 +29,18 @@ struct SettlementResult {
 
 enum SettlementCalculator {
     
-    // Простая калькуляция только по покерным результатам
+    /// Выполняет расчёт балансов и необходимых переводов по данным сессии.
+    ///
+    /// Алгоритм учитывает только покерные результаты (buy-in и cash-out):
+    /// - Вычисляет агрегированные балансы для каждого игрока (`PlayerBalance`).
+    /// - Формирует список переводов между должниками и кредиторами с помощью жадного алгоритма.
+    ///
+    /// Предполагается, что сессия завершена и у всех игроков корректно рассчитаны buy-in/cash-out.
+    /// Операции с сессионным банком здесь не учитываются.
+    ///
+    /// - Parameter session: Сессия, для которой выполняется расчёт.
+    /// - Returns: Структура с балансами игроков и предложениями переводов.
     static func calculate(for session: Session) -> SettlementResult {
-        // 1) Балансы по каждому игроку
         var balances: [PlayerBalance] = []
         for player in session.players {
             let buyIn = player.buyIn
@@ -38,7 +52,6 @@ enum SettlementCalculator {
                                           net: net))
         }
         
-        // 2) Генерация переводов (жадный алгоритм)
         let transfers = greedyTransfers(from: balances)
         
         return SettlementResult(balances: balances, transfers: transfers)
@@ -47,7 +60,9 @@ enum SettlementCalculator {
 
 // MARK: - Helpers
 
-// Жадное сопоставление кредиторов и должников
+/// Жадный алгоритм, сопоставляющий игроков с положительным и отрицательным результатом.
+/// Переводы формируются так, чтобы максимально быстро обнулить долги,
+/// при этом каждый перевод идёт от текущего должника к текущему кредитору.
 private func greedyTransfers(from balances: [PlayerBalance]) -> [TransferProposal] {
     var creditors = balances
         .filter { $0.net > 0 }

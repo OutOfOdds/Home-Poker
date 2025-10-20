@@ -8,6 +8,7 @@ struct SessionDetailView: View {
     @State private var showAddPlayer = false
     @State private var showAddExpense = false
     @State private var showingBlindsSheet = false
+    @State private var showSessionBankSheet = false
     
     @Environment(SessionDetailViewModel.self) var viewModel
     
