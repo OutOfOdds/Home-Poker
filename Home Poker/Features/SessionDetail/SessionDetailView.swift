@@ -25,6 +25,13 @@ struct SessionDetailView: View {
             if !session.players.isEmpty {
                 PlayersSectionView(session: session)
             }
+            
+            Button {
+                showAddPlayer = true
+            } label: {
+                Label("Добавить игрока", systemImage: "person.badge.plus")
+            }
+            .listSectionSpacing(.compact)
         }
         .navigationTitle(session.status == .active ? "Активная сессия" : "Завершенная сессия")
         .navigationBarTitleDisplayMode(.large)
@@ -38,8 +45,8 @@ struct SessionDetailView: View {
         }
         .sheet(isPresented: $showingBlindsSheet) {
             BlindsEditorSheet(session: session)
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSettlementSheet) {
             SettlementView(viewModel: settlementVM)
@@ -185,6 +192,7 @@ private extension SessionDetailView {
     
     return NavigationStack {
         SessionDetailView(session: session)
+            .environment(SessionDetailViewModel())
     }
-    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self], inMemory: true)
+    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self], inMemory: true)
 }

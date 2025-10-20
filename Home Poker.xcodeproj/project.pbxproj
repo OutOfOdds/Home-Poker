@@ -33,6 +33,7 @@
 		6BD32FF62EA0C61300AA0541 /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD32FF52EA0C61300AA0541 /* SessionListView.swift */; };
 		6BD330002EA0D04F00AA0541 /* FormSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD32FFF2EA0D04F00AA0541 /* FormSheetView.swift */; };
 		6BDB00122EB0B0D400AA0012 /* SessionDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BDB00112EB0B0D400AA0011 /* SessionDetailViewModel.swift */; };
+		6BE4DA2D2EA632D600E362A9 /* SessionBank.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE4DA2C2EA632D600E362A9 /* SessionBank.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +64,7 @@
 		6BD32FF52EA0C61300AA0541 /* SessionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListView.swift; sourceTree = "<group>"; };
 		6BD32FFF2EA0D04F00AA0541 /* FormSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormSheetView.swift; sourceTree = "<group>"; };
 		6BDB00112EB0B0D400AA0011 /* SessionDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailViewModel.swift; sourceTree = "<group>"; };
+		6BE4DA2C2EA632D600E362A9 /* SessionBank.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionBank.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -197,6 +199,7 @@
 			isa = PBXGroup;
 			children = (
 				6BCB94902E8ED1A2007212D5 /* Session.swift */,
+				6BE4DA2C2EA632D600E362A9 /* SessionBank.swift */,
 				6BCB948E2E8ED16A007212D5 /* Player.swift */,
 				6B366A732E9E833900B69DA2 /* PlayerTransaction.swift */,
 				6B9924F62E905EDC00BADD6B /* Expense.swift */,
@@ -324,6 +327,7 @@
 				6BA52A512E95227200742AEB /* BankStatsSectionView.swift in Sources */,
 				6BA52A4D2E95221500742AEB /* SettlementViewModel.swift in Sources */,
 				6BCB948A2E8ED12E007212D5 /* HomePokerApp.swift in Sources */,
+				6BE4DA2D2EA632D600E362A9 /* SessionBank.swift in Sources */,
 				6B9924F72E905EE400BADD6B /* Expense.swift in Sources */,
 				6BBA47F92E8ED5FD00A3CADE /* SessionDetailView.swift in Sources */,
 				6BA52A492E9521D500742AEB /* BlindsEditorSheet.swift in Sources */,
@@ -456,7 +460,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -502,7 +506,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;

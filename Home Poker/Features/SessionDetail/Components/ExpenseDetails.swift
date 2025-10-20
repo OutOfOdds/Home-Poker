@@ -124,6 +124,6 @@ private struct ExpenseRow: View {
     return NavigationStack {
         ExpenseDetails(session: session)
     }
-    .modelContainer(for: [Session.self, Player.self, Expense.self], inMemory: true)
+    .modelContainer(for: [Session.self, Player.self, Expense.self, SessionBank.self], inMemory: true)
     .environment(SessionDetailViewModel())
 }

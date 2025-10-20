@@ -59,6 +59,6 @@ struct AddPlayerSheet: View {
         gameType: .NLHoldem, status: .active
     )
     return AddPlayerSheet(session: session)
-        .modelContainer(for: [Session.self, Player.self], inMemory: true)
+        .modelContainer(for: [Session.self, Player.self, SessionBank.self], inMemory: true)
         .environment(SessionDetailViewModel())
 }

@@ -16,10 +16,15 @@ struct BankStatsSectionView: View {
                     
                     Text("\(session.totalBuyIns)")
                         .font(.title2).fontWeight(.semibold)
-                        .foregroundColor(.green)
+                        .foregroundStyle(.green)
                         .fontDesign(.monospaced)
                 }
-                
+
+                Line()
+                    .stroke(style: .init(dash: [5]))
+                    .foregroundStyle(.secondary.opacity(0.5))
+                    .frame(height: 1)
+
                 HStack {
                     Text("В игре:")
                         .font(.subheadline)
@@ -32,6 +37,12 @@ struct BankStatsSectionView: View {
                         .foregroundColor(.blue)
                         .fontDesign(.monospaced)
                 }
+                
+                Line()
+                    .stroke(style: .init(dash: [5]))
+                    .foregroundStyle(.secondary.opacity(0.5))
+                    .frame(height: 1)
+
                 HStack {
                     Text("Выведено:")
                         .font(.subheadline)
@@ -45,6 +56,9 @@ struct BankStatsSectionView: View {
                         .fontDesign(.monospaced)
                 }
             }
+            .italic()
+            .fontDesign(.monospaced)
+
             if !session.expenses.isEmpty {
                 NavigationLink {
                     ExpenseDetails(session: session)
@@ -55,11 +69,21 @@ struct BankStatsSectionView: View {
                         Text("\(session.expenses.reduce(0) { $0 + $1.amount })")
                     }
                     .font(.caption)
+                    .italic()
                     .foregroundStyle(.secondary)
                     .fontDesign(.monospaced)
                 }
             }
         }
+    }
+}
+
+struct Line:Shape{
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: rect.width, y: 0))
+        return path
     }
 }
 
@@ -103,6 +127,6 @@ struct BankStatsSectionView: View {
         }
         .navigationTitle("Превью статистики банка")
     }
-    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self], inMemory: true)
+    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self], inMemory: true)
     .environment(SessionDetailViewModel())
 }

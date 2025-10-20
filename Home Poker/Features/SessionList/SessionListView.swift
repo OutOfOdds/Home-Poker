@@ -78,6 +78,6 @@ struct SessionListView: View {
 
 #Preview {
     SessionListView()
-        .modelContainer(for: Session.self, inMemory: true)
+        .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self], inMemory: true)
         .environment(SessionDetailViewModel())
 }

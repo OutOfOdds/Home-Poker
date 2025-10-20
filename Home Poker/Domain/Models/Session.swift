@@ -9,6 +9,7 @@ class Session {
     var gameType: GameType
     @Relationship(deleteRule: .cascade) var players: [Player] = []
     @Relationship(deleteRule: .cascade) var expenses: [Expense] = []
+    @Relationship(deleteRule: .cascade) var bank: SessionBank?
     var status: SessionStatus
     var smallBlind: Int = 0
     var bigBlind: Int = 0
