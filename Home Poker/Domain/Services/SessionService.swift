@@ -79,7 +79,7 @@ final class SessionService {
         refreshBankExpectation(for: session)
     }
     
-    // MARK: - Сессионный банк
+    // MARK: - Банк сессии
     
     /// Гарантирует наличие банка у сессии (создаёт при отсутствии) и актуализирует ожидаемую сумму.
     /// - Parameter session: Сессия, для которой требуется банк.
