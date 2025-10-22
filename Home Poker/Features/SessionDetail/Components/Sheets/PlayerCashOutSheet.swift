@@ -52,5 +52,5 @@ struct PlayerCashOutSheet: View {
             for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self],
             inMemory: true
         )
-        .environment(SessionDetailViewModel())
+        .environment(SessionDetailViewModel(service: SessionService()))
 }

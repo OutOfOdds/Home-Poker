@@ -11,7 +11,6 @@ final class SessionDetailViewModel {
     init(service: SessionService = .shared) {
         self.service = service
     }
-    
     // MARK: - Игроки
     
     /// Добавляет нового игрока в сессию, если buy-in введён корректно.
