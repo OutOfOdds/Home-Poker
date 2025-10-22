@@ -19,21 +19,42 @@ class Player {
         self.inGame = inGame
     }
 
-    // Суммы считаются на лету из транзакций
-    var buyIn: Int {
-        transactions.filter { $0.type == .buyIn || $0.type == .addOn }
-            .map { $0.amount }
-            .reduce(0, +)
+    /// Вычисляет финансовые показатели игрока за один проход по транзакциям.
+    /// - Returns: Кортеж с buy-in (закупка + докупки) и cash-out (выводы).
+    private func calculateFinancials() -> (buyIn: Int, cashOut: Int) {
+        transactions.reduce((buyIn: 0, cashOut: 0)) { result, transaction in
+            switch transaction.type {
+            case .buyIn, .addOn:
+                return (result.buyIn + transaction.amount, result.cashOut)
+            case .cashOut:
+                return (result.buyIn, result.cashOut + transaction.amount)
+            }
+        }
     }
-    var cashOut: Int {
-        // Суммарная сумма всех выводов игрока
-        transactions.filter { $0.type == .cashOut }
-            .map(\.amount)
-            .reduce(0, +)
-    }
-    var profit: Int { cashOut - buyIn }
-    var balance: Int { inGame ? buyIn - cashOut : 0 }
-    var profitAfterRakeback: Int { profit - rakeback }
-    
 
+    /// Суммарная закупка игрока (buy-in + все add-on).
+    var buyIn: Int {
+        calculateFinancials().buyIn
+    }
+
+    /// Суммарная сумма выводов игрока.
+    var cashOut: Int {
+        calculateFinancials().cashOut
+    }
+
+    /// Итоговая прибыль (или убыток) игрока.
+    var profit: Int {
+        let fin = calculateFinancials()
+        return fin.cashOut - fin.buyIn
+    }
+
+    /// Текущий баланс игрока в игре (если inGame = true).
+    var balance: Int {
+        guard inGame else { return 0 }
+        let fin = calculateFinancials()
+        return fin.buyIn - fin.cashOut
+    }
+
+    /// Прибыль с учётом рейкбека.
+    var profitAfterRakeback: Int { profit - rakeback }
 }

@@ -26,7 +26,8 @@ struct PlayerCashOutSheet: View {
     }
     
     private var canSubmit: Bool {
-        viewModel.isValidCashOutAmount(cashOutAmount)
+        guard let amount = cashOutAmount else { return false }
+        return amount >= 0
     }
 
     private func cashOut() {

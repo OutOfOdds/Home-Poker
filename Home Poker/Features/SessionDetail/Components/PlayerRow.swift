@@ -7,6 +7,7 @@ struct PlayerRow: View {
     
     @State private var showingBuyInSheet = false
     @State private var showingCashOutSheet = false
+    @State private var showingRebuySheet = false
     
     var body: some View {
         VStack(spacing: 10) {
@@ -18,7 +19,7 @@ struct PlayerRow: View {
                             .font(.headline)
                             .opacity(player.inGame ? 1 : 0.5)
                         if !player.inGame {
-                            Text("(вышел)")
+                            Text("(завершил)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -79,18 +80,18 @@ struct PlayerRow: View {
             } else {
                 HStack {
                     Button {
-                        viewModel.returnPlayerToGame(player)
+                        showingRebuySheet = true
                     } label: {
                         HStack {
                             Image(systemName: "arrow.uturn.left")
-                            Text("Вернуть игрока")
+                            Text("Вернуться в игру")
                         }
                     }
                     .buttonStyle(.bordered)
                     .tint(.blue)
-                    
+
                     Spacer()
-                    
+
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -101,6 +102,9 @@ struct PlayerRow: View {
         }
         .sheet(isPresented: $showingCashOutSheet) {
             PlayerCashOutSheet(player: player, session: session)
+        }
+        .sheet(isPresented: $showingRebuySheet) {
+            RebuyPlayerSheet(player: player, session: session)
         }
     }
     

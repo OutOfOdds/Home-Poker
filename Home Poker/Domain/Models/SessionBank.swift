@@ -38,36 +38,47 @@ final class SessionBank {
 }
 
 extension SessionBank {
+    /// Вычисляет общие суммы пополнений и выдач за один проход по всем записям.
+    /// - Returns: Кортеж с суммой пополнений и суммой выдач.
+    private func calculateTotals() -> (deposited: Int, withdrawn: Int) {
+        entries.reduce((deposited: 0, withdrawn: 0)) { result, entry in
+            switch entry.type {
+            case .deposit:
+                return (result.deposited + entry.amount, result.withdrawn)
+            case .withdrawal:
+                return (result.deposited, result.withdrawn + entry.amount)
+            }
+        }
+    }
+
     var totalDeposited: Int {
-        entries
-            .filter { $0.type == .deposit }
-            .reduce(0) { $0 + $1.amount }
+        calculateTotals().deposited
     }
-    
+
     var totalWithdrawn: Int {
-        entries
-            .filter { $0.type == .withdrawal }
-            .reduce(0) { $0 + $1.amount }
+        calculateTotals().withdrawn
     }
-    
+
     func contributions(for player: Player) -> (deposited: Int, withdrawn: Int) {
-        let playerEntries = entries.filter { $0.player.id == player.id }
-        let deposited = playerEntries
-            .filter { $0.type == .deposit }
-            .reduce(0) { $0 + $1.amount }
-        let withdrawn = playerEntries
-            .filter { $0.type == .withdrawal }
-            .reduce(0) { $0 + $1.amount }
-        return (deposited, withdrawn)
+        entries
+            .filter { $0.player.id == player.id }
+            .reduce((deposited: 0, withdrawn: 0)) { result, entry in
+                switch entry.type {
+                case .deposit:
+                    return (result.deposited + entry.amount, result.withdrawn)
+                case .withdrawal:
+                    return (result.deposited, result.withdrawn + entry.amount)
+                }
+            }
     }
-    
+
     func outstandingAmount(for player: Player) -> Int {
         guard !player.inGame else { return 0 }
         let expected = max(player.buyIn - player.cashOut, 0)
         let (deposited, _) = contributions(for: player)
         return max(expected - deposited, 0)
     }
-    
+
     var debtors: [Player] {
         session.players
             .filter { outstandingAmount(for: $0) > 0 }
