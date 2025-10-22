@@ -7,7 +7,7 @@ struct AddExpenseSheet: View {
     @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @State private var expenseDescription = ""
-    @State private var expenseAmount: Int = 0
+    @State private var expenseAmount: Int? = nil
 
     var body: some View {
         FormSheetView(
@@ -38,15 +38,16 @@ struct AddExpenseSheet: View {
     }
 
     private var canSubmit: Bool {
-        expenseDescription.nonEmptyTrimmed != nil && expenseAmount > 0
+        guard expenseDescription.nonEmptyTrimmed != nil else { return false }
+        guard let amount = expenseAmount, amount > 0 else { return false }
+        return true
     }
 
     private func addExpense() {
-        guard let note = expenseDescription.nonEmptyTrimmed, expenseAmount > 0 else { return }
-        guard viewModel.addExpense(to: session, note: note, amountText: String(expenseAmount)) else {
-            return
+        guard let note = expenseDescription.nonEmptyTrimmed else { return }
+        if viewModel.addExpense(to: session, note: note, amount: expenseAmount) {
+            dismiss()
         }
-        dismiss()
     }
 }
 

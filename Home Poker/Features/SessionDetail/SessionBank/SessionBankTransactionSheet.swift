@@ -9,7 +9,7 @@ struct SessionBankTransactionSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var selectedPlayerID: UUID?
-    @State private var amountText: String = ""
+    @State private var amount: Int? = nil
     @State private var note: String = ""
     @State private var amountManuallyEdited = false
     @State private var isUpdatingAmount = false
@@ -29,7 +29,8 @@ struct SessionBankTransactionSheet: View {
     
     private var isFormValid: Bool {
         guard selectedPlayer != nil else { return false }
-        return amountText.positiveInt != nil
+        guard let amount, amount > 0 else { return false }
+        return true
     }
     
     var body: some View {
@@ -48,9 +49,9 @@ struct SessionBankTransactionSheet: View {
                         }
                     }
                     
-                    TextField("Сумма", text: $amountText.digitsOnly())
+                    TextField("Сумма", value: $amount, format: .number)
                         .keyboardType(.numberPad)
-                        .onChange(of: amountText) { _, _ in
+                        .onChange(of: amount) { _, _ in
                             guard !isUpdatingAmount else { return }
                             amountManuallyEdited = true
                         }
@@ -78,19 +79,9 @@ struct SessionBankTransactionSheet: View {
         let didSucceed: Bool
         switch mode {
         case .deposit:
-            didSucceed = viewModel.recordBankDeposit(
-                session: session,
-                player: player,
-                amountText: amountText,
-                note: note
-            )
+            didSucceed = viewModel.recordBankDeposit(session: session, player: player, amount: amount, note: note)
         case .withdrawal:
-            didSucceed = viewModel.recordBankWithdrawal(
-                session: session,
-                player: player,
-                amountText: amountText,
-                note: note
-            )
+            didSucceed = viewModel.recordBankWithdrawal(session: session, player: player, amount: amount, note: note)
         }
         
         if didSucceed {
@@ -150,9 +141,9 @@ struct SessionBankTransactionSheet: View {
     private func updateSuggestedAmountIfNeeded(force: Bool) {
         guard mode == .deposit, let bank, let player = selectedPlayer else { return }
         let outstanding = bank.outstandingAmount(for: player)
-        if force || (!amountManuallyEdited && amountText.isEmpty) {
+        if force || (!amountManuallyEdited && amount == nil) {
             isUpdatingAmount = true
-            amountText = outstanding > 0 ? String(outstanding) : ""
+            amount = outstanding > 0 ? outstanding : nil
             DispatchQueue.main.async {
                 self.isUpdatingAmount = false
             }

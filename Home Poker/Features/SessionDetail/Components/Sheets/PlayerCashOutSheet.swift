@@ -6,7 +6,7 @@ struct PlayerCashOutSheet: View {
     let session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var cashOutAmount = ""
+    @State private var cashOutAmount: Int? = nil
 
     var body: some View {
         FormSheetView(
@@ -18,7 +18,7 @@ struct PlayerCashOutSheet: View {
         ) {
             Form {
                 Section("Завершение игры для \(player.name)") {
-                    TextField("Сумма на вывод", text: $cashOutAmount.digitsOnly())
+                    TextField("Сумма на вывод", value: $cashOutAmount, format: .number)
                         .keyboardType(.numberPad)
                 }
             }
@@ -26,14 +26,13 @@ struct PlayerCashOutSheet: View {
     }
     
     private var canSubmit: Bool {
-        viewModel.isValidCashOutInput(cashOutAmount)
+        viewModel.isValidCashOutAmount(cashOutAmount)
     }
 
     private func cashOut() {
-        guard viewModel.cashOut(session: session, player: player, amountText: cashOutAmount) else {
-            return
+        if viewModel.cashOut(session: session, player: player, amount: cashOutAmount) {
+            dismiss()
         }
-        dismiss()
     }
 }
 

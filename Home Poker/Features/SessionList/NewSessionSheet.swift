@@ -9,9 +9,9 @@ struct NewSessionSheet: View {
     @State private var location: String = ""
     @State private var gameType: GameType = .NLHoldem
     
-    @State private var smallBlindText: String = ""
-    @State private var bigBlindText: String = ""
-    @State private var anteText: String = ""
+    @State private var smallBlind: Int? = nil
+    @State private var bigBlind: Int? = nil
+    @State private var ante: Int? = nil
     @State private var bigManuallyEdited = false
     @FocusState private var focusedField: Field?
     
@@ -34,29 +34,25 @@ struct NewSessionSheet: View {
                     HStack {
                         Text("Small Blind")
                         Spacer()
-                        TextField("SB", text: $smallBlindText.digitsOnly())
+                        TextField("SB", value: $smallBlind, format: .number)
                             .multilineTextAlignment(.trailing)
-                            .keyboardType(.numberPad)
                             .focused($focusedField, equals: .small)
                             .frame(maxWidth: 120)
-                            .onChange(of: smallBlindText) { _, newValue in
+                            .keyboardType(.numberPad)
+                            .onChange(of: smallBlind) { _, newValue in
                                 if !bigManuallyEdited {
-                                    if let sb = newValue.positiveInt {
-                                        bigBlindText = String(sb * 2)
-                                    } else {
-                                        bigBlindText = ""
-                                    }
+                                    bigBlind = newValue.map { $0 * 2 }
                                 }
                             }
                     }
                     HStack {
                         Text("Big Blind")
                         Spacer()
-                        TextField("BB", text: $bigBlindText.digitsOnly())
+                        TextField("BB", value: $bigBlind, format: .number)
                             .multilineTextAlignment(.trailing)
-                            .keyboardType(.numberPad)
                             .focused($focusedField, equals: .big)
                             .frame(maxWidth: 120)
+                            .keyboardType(.numberPad)
                     }
                     .onChange(of: focusedField) { _, newValue in
                         if newValue == .big {
@@ -66,10 +62,10 @@ struct NewSessionSheet: View {
                     HStack {
                         Text("Ante")
                         Spacer()
-                        TextField("Ante", text: $anteText.digitsOnly())
+                        TextField("Ante", value: $ante, format: .number)
                             .multilineTextAlignment(.trailing)
-                            .keyboardType(.numberPad)
                             .frame(maxWidth: 120)
+                            .keyboardType(.numberPad)
                     }
                 }
                 header: {
@@ -77,11 +73,11 @@ struct NewSessionSheet: View {
                         .font(.caption)
                 }
                 footer: {
-                    if let sb = smallBlindText.positiveInt, let bb = bigBlindText.positiveInt {
+                    if let sb = smallBlind, let bb = bigBlind {
                         HStack {
                             Text("Итог")
                             Spacer()
-                            if let ante = anteText.nonNegativeInt, ante > 0 {
+                            if let ante = ante, ante > 0 {
                                 Text("\(sb)/\(bb) (Анте: \(ante))")
                                     .foregroundStyle(.secondary)
                             } else {
@@ -120,9 +116,9 @@ struct NewSessionSheet: View {
             gameType: gameType,
             status: .active
         )
-        if let sb = smallBlindText.positiveInt { session.smallBlind = sb }
-        if let bb = bigBlindText.positiveInt { session.bigBlind = bb }
-        if let ante = anteText.nonNegativeInt { session.ante = ante }
+        if let sb = smallBlind, sb > 0 { session.smallBlind = sb }
+        if let bb = bigBlind, bb > 0 { session.bigBlind = bb }
+        if let ante = ante, ante >= 0 { session.ante = ante }
         
         context.insert(session)
         dismiss()

@@ -16,8 +16,8 @@ final class SessionDetailViewModel {
     
     /// Добавляет нового игрока в сессию, если buy-in введён корректно.
     /// Показывает сообщение об ошибке при неверном вводе.
-    func addPlayer(to session: Session, name: String, buyInText: String) -> Bool {
-        guard let buyIn = buyInText.positiveInt else {
+    func addPlayer(to session: Session, name: String, buyIn: Int?) -> Bool {
+        guard let buyIn, buyIn > 0 else {
             setInvalidAmountError()
             return false
         }
@@ -28,8 +28,8 @@ final class SessionDetailViewModel {
     }
     
     /// Регистрирует докупку игрока, валидируя введённую сумму.
-    func addOn(for player: Player, in session: Session, amountText: String) -> Bool {
-        guard let amount = amountText.positiveInt else {
+    func addOn(for player: Player, in session: Session, amount: Int?) -> Bool {
+        guard let amount, amount > 0 else {
             setInvalidAmountError()
             return false
         }
@@ -41,8 +41,8 @@ final class SessionDetailViewModel {
     
     /// Завершает игру для игрока, добавляя cash-out транзакцию.
     /// Возвращает `false`, если сумма невалидна или операция завершилась ошибкой.
-    func cashOut(session: Session, player: Player, amountText: String) -> Bool {
-        guard let amount = amountText.nonNegativeInt else {
+    func cashOut(session: Session, player: Player, amount: Int?) -> Bool {
+        guard let amount, amount >= 0 else {
             setInvalidAmountError()
             return false
         }
@@ -62,16 +62,17 @@ final class SessionDetailViewModel {
         service.removePlayer(player, from: session)
     }
     
-    /// Проверяет, является ли текст корректной неотрицательной суммой для ввода cash-out.
-    func isValidCashOutInput(_ text: String) -> Bool {
-        text.nonNegativeInt != nil
+    /// Проверяет, является ли сумма корректной неотрицательной для ввода cash-out.
+    func isValidCashOutAmount(_ amount: Int?) -> Bool {
+        guard let amount else { return false }
+        return amount >= 0
     }
     
     // MARK: - Расходы
     
     /// Добавляет расход в сессию и показывает alert при ошибке.
-    func addExpense(to session: Session, note: String, amountText: String, payer: Player? = nil) -> Bool {
-        guard let amount = amountText.positiveInt else {
+    func addExpense(to session: Session, note: String, amount: Int?, payer: Player? = nil) -> Bool {
+        guard let amount, amount > 0 else {
             setInvalidAmountError()
             return false
         }
@@ -89,18 +90,15 @@ final class SessionDetailViewModel {
     // MARK: - Настройки сессии
     
     /// Обновляет значения блайндов/анте в сессии, если ввод корректен.
-    func updateBlinds(for session: Session, smallText: String, bigText: String, anteText: String) -> Bool {
-        guard
-            let small = smallText.positiveInt,
-            let big = bigText.positiveInt
-        else {
+    func updateBlinds(for session: Session, small: Int?, big: Int?, ante: Int?) -> Bool {
+        guard let small, small > 0, let big, big > 0 else {
             setInvalidAmountError()
             return false
         }
-        let ante = anteText.nonNegativeInt ?? 0
+        let anteValue = max(ante ?? 0, 0)
         
         return performServiceCall {
-            try service.updateBlinds(for: session, small: small, big: big, ante: ante)
+            try service.updateBlinds(for: session, small: small, big: big, ante: anteValue)
         }
     }
     
@@ -125,13 +123,13 @@ final class SessionDetailViewModel {
     }
     
     /// Фиксирует взнос игрока в банк. Возвращает `false`, если сумма некорректна.
-    func recordBankDeposit(session: Session, player: Player, amountText: String, note: String) -> Bool {
-        recordBankEntry(session: session, player: player, amountText: amountText, note: note, type: .deposit)
+    func recordBankDeposit(session: Session, player: Player, amount: Int?, note: String) -> Bool {
+        recordBankEntry(session: session, player: player, amount: amount, note: note, type: .deposit)
     }
     
     /// Фиксирует выдачу средств из банка игроку.
-    func recordBankWithdrawal(session: Session, player: Player, amountText: String, note: String) -> Bool {
-        recordBankEntry(session: session, player: player, amountText: amountText, note: note, type: .withdrawal)
+    func recordBankWithdrawal(session: Session, player: Player, amount: Int?, note: String) -> Bool {
+        recordBankEntry(session: session, player: player, amount: amount, note: note, type: .withdrawal)
     }
     
     /// Пытается закрыть сессионный банк. Alert покажется автоматически при ошибке.
@@ -169,11 +167,11 @@ final class SessionDetailViewModel {
     private func recordBankEntry(
         session: Session,
         player: Player,
-        amountText: String,
+        amount: Int?,
         note: String,
         type: SessionBankEntryType
     ) -> Bool {
-        guard let amount = amountText.positiveInt else {
+        guard let amount, amount > 0 else {
             setInvalidAmountError()
             return false
         }

@@ -5,7 +5,7 @@ struct PlayerAddOnSheet: View {
     let session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var buyInAmount = ""
+    @State private var buyInAmount: Int? = nil
     
     var body: some View {
         FormSheetView(
@@ -17,7 +17,7 @@ struct PlayerAddOnSheet: View {
         ) {
             Form {
                 Section("Докупка для \(player.name)") {
-                    TextField("Сумма докупки", text: $buyInAmount.digitsOnly())
+                    TextField("Сумма докупки", value: $buyInAmount, format: .number)
                         .keyboardType(.numberPad)
                 }
             }
@@ -25,12 +25,14 @@ struct PlayerAddOnSheet: View {
     }
 
     private var canSubmit: Bool {
-        return buyInAmount.positiveInt != nil
+        guard let amount = buyInAmount, amount > 0 else { return false }
+        return true
     }
 
     private func addOn() {
-        guard viewModel.addOn(for: player, in: session, amountText: buyInAmount) else { return }
-        dismiss()
+        if viewModel.addOn(for: player, in: session, amount: buyInAmount) {
+            dismiss()
+        }
     }
 }
 
