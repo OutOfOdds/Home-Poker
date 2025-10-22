@@ -29,7 +29,6 @@ struct SessionDetailView: View {
             } label: {
                 Label("Добавить игрока", systemImage: "person.badge.plus")
             }
-            .listSectionSpacing(.compact)
         }
         .navigationTitle(session.status == .active ? "Активная сессия" : "Завершенная сессия")
         .navigationBarTitleDisplayMode(.large)
@@ -89,22 +88,6 @@ struct SessionDetailView: View {
             Text(message)
         }
     }
-}
-
-// MARK: - Helpers
-private extension SessionDetailView {
-    func blindsDisplayText() -> String {
-        if session.smallBlind == 0 && session.bigBlind == 0 && session.ante == 0 {
-            return "Нажмите для указания"
-        }
-        var base = "\(session.smallBlind.asCurrency())/\(session.bigBlind.asCurrency())"
-        if session.ante > 0 {
-            base += " (Анте: \(session.ante.asCurrency()))"
-        }
-        return base
-    }
-    
-    func formatCurrency(_ amount: Int) -> String { amount.asCurrency() }
 }
 
 #Preview {

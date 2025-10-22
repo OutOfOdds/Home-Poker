@@ -16,27 +16,7 @@ struct SessionListView: View {
                         description: Text("Нажмите «+», чтобы добавить новую сессию")
                     )
                 } else {
-                    List {
-                        ForEach(sessions) { session in
-                            NavigationLink {
-                                SessionDetailView(session: session)
-                            } label: {
-                                sessionRow(session)
-                            }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    context.delete(session)
-                                } label: {
-                                    Label("Удалить", systemImage: "trash")
-                                }
-                            }
-                        }
-                        .onDelete { offsets in
-                            offsets
-                                .map { sessions[$0] }
-                                .forEach(context.delete)
-                        }
-                    }
+                    sessionList
                 }
             }
             .toolbar {
@@ -52,6 +32,30 @@ struct SessionListView: View {
                 NewSessionSheet()
             }
             .navigationTitle("Сессии")
+        }
+    }
+    
+    private var sessionList: some View {
+        List {
+            ForEach(sessions) { session in
+                NavigationLink {
+                    SessionDetailView(session: session)
+                } label: {
+                    sessionRow(session)
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        context.delete(session)
+                    } label: {
+                        Label("Удалить", systemImage: "trash")
+                    }
+                }
+            }
+            .onDelete { offsets in
+                offsets
+                    .map { sessions[$0] }
+                    .forEach(context.delete)
+            }
         }
     }
     
