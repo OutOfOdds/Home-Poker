@@ -38,13 +38,11 @@ struct AddExpenseSheet: View {
     }
 
     private var canSubmit: Bool {
-        let desc = expenseDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !desc.isEmpty && expenseAmount > 0
+        expenseDescription.nonEmptyTrimmed != nil && expenseAmount > 0
     }
 
     private func addExpense() {
-        guard canSubmit else { return }
-        let note = expenseDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let note = expenseDescription.nonEmptyTrimmed, expenseAmount > 0 else { return }
         guard viewModel.addExpense(to: session, note: note, amountText: String(expenseAmount)) else {
             return
         }

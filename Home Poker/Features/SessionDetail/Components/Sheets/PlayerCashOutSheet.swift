@@ -18,7 +18,7 @@ struct PlayerCashOutSheet: View {
         ) {
             Form {
                 Section("Завершение игры для \(player.name)") {
-                    TextField("Сумма на вывод", text: $cashOutAmount)
+                    TextField("Сумма на вывод", text: $cashOutAmount.digitsOnly())
                         .keyboardType(.numberPad)
                 }
             }
@@ -34,10 +34,6 @@ struct PlayerCashOutSheet: View {
             return
         }
         dismiss()
-    }
-    
-    private func digitsOnly(_ text: String) -> String {
-        text.filter { $0.isNumber }
     }
 }
 

@@ -17,7 +17,7 @@ struct PlayerAddOnSheet: View {
         ) {
             Form {
                 Section("Докупка для \(player.name)") {
-                    TextField("Сумма докупки", text: $buyInAmount)
+                    TextField("Сумма докупки", text: $buyInAmount.digitsOnly())
                         .keyboardType(.numberPad)
                 }
             }
@@ -25,8 +25,7 @@ struct PlayerAddOnSheet: View {
     }
 
     private var canSubmit: Bool {
-        guard let amount = Int(buyInAmount) else { return false }
-        return amount > 0
+        return buyInAmount.positiveInt != nil
     }
 
     private func addOn() {

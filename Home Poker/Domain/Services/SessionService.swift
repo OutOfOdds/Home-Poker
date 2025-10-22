@@ -183,7 +183,7 @@ final class SessionService {
     /// - Throws: `SessionServiceError.invalidAmount`.
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date = Date()) throws {
         try validatePositiveAmount(amount)
-        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNote = note.trimmed
         let expense = Expense(amount: amount, note: trimmedNote, createdAt: createdAt, payer: payer)
         session.expenses.append(expense)
     }
@@ -218,8 +218,7 @@ final class SessionService {
     // MARK: - Вспомогательные методы
     
     private func normalizePlayerName(_ name: String) throws -> String {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw SessionServiceError.emptyPlayerName }
+        guard let trimmed = name.nonEmptyTrimmed else { throw SessionServiceError.emptyPlayerName }
         return trimmed
     }
     
@@ -236,7 +235,7 @@ final class SessionService {
     }
     
     private func trimmedNote(_ note: String?) -> String {
-        note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        note?.trimmed ?? ""
     }
 
     private func expectedBankTotal(for session: Session) -> Int {

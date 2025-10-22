@@ -20,15 +20,13 @@ struct BlindsEditorSheet: View {
                     HStack {
                         Text("Small Blind")
                         Spacer()
-                        TextField("SB", text: $smallText)
+                        TextField("SB", text: $smallText.digitsOnly())
                             .multilineTextAlignment(.trailing)
                             .keyboardType(.numberPad)
                             .focused($focusedField, equals: .small)
                             .onChange(of: smallText) { _, newValue in
-                                let digits = digitsOnly(newValue)
-                                if digits != newValue { smallText = digits; return }
                                 if !bigManuallyEdited {
-                                    if let sb = Int(digits), sb > 0 {
+                                    if let sb = newValue.positiveInt {
                                         bigText = String(sb * 2)
                                     } else {
                                         bigText = ""
@@ -39,14 +37,10 @@ struct BlindsEditorSheet: View {
                     HStack {
                         Text("Big Blind")
                         Spacer()
-                        TextField("BB", text: $bigText)
+                        TextField("BB", text: $bigText.digitsOnly())
                             .multilineTextAlignment(.trailing)
                             .keyboardType(.numberPad)
                             .focused($focusedField, equals: .big)
-                            .onChange(of: bigText) { _, newValue in
-                                let digits = digitsOnly(newValue)
-                                if digits != newValue { bigText = digits }
-                            }
                     }
                     .onChange(of: focusedField) { _, newValue in
                         if newValue == .big { bigManuallyEdited = true }
@@ -54,13 +48,9 @@ struct BlindsEditorSheet: View {
                     HStack {
                         Text("Ante")
                         Spacer()
-                        TextField("Ante", text: $anteText)
+                        TextField("Ante", text: $anteText.digitsOnly())
                             .multilineTextAlignment(.trailing)
                             .keyboardType(.numberPad)
-                            .onChange(of: anteText) { _, newValue in
-                                let digits = digitsOnly(newValue)
-                                if digits != newValue { anteText = digits }
-                            }
                     }
                 }
                 
@@ -68,8 +58,8 @@ struct BlindsEditorSheet: View {
                     HStack {
                         Text("Итог")
                         Spacer()
-                        if let sb = Int(smallText), let bb = Int(bigText), sb > 0, bb > 0 {
-                            if let ante = Int(anteText), ante > 0 {
+                        if let sb = smallText.positiveInt, let bb = bigText.positiveInt {
+                            if let ante = anteText.nonNegativeInt, ante > 0 {
                                 Text("\(sb)/\(bb) (Анте: \(ante))").foregroundStyle(.secondary)
                             } else {
                                 Text("\(sb)/\(bb)").foregroundStyle(.secondary)
@@ -105,11 +95,7 @@ struct BlindsEditorSheet: View {
     }
     
     private var isValid: Bool {
-        guard let sb = Int(smallText), let bb = Int(bigText) else { return false }
-        return sb > 0 && bb > 0 && sb <= bb
-    }
-    
-    private func digitsOnly(_ text: String) -> String {
-        text.filter { $0.isNumber }
+        guard let sb = smallText.positiveInt, let bb = bigText.positiveInt else { return false }
+        return sb <= bb
     }
 }

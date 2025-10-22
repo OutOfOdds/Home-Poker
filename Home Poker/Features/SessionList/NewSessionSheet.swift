@@ -34,19 +34,14 @@ struct NewSessionSheet: View {
                     HStack {
                         Text("Small Blind")
                         Spacer()
-                        TextField("SB", text: $smallBlindText)
+                        TextField("SB", text: $smallBlindText.digitsOnly())
                             .multilineTextAlignment(.trailing)
                             .keyboardType(.numberPad)
                             .focused($focusedField, equals: .small)
                             .frame(maxWidth: 120)
                             .onChange(of: smallBlindText) { _, newValue in
-                                let digits = digitsOnly(newValue)
-                                if digits != newValue {
-                                    smallBlindText = digits
-                                    return
-                                }
                                 if !bigManuallyEdited {
-                                    if let sb = Int(digits), sb > 0 {
+                                    if let sb = newValue.positiveInt {
                                         bigBlindText = String(sb * 2)
                                     } else {
                                         bigBlindText = ""
@@ -57,17 +52,11 @@ struct NewSessionSheet: View {
                     HStack {
                         Text("Big Blind")
                         Spacer()
-                        TextField("BB", text: $bigBlindText)
+                        TextField("BB", text: $bigBlindText.digitsOnly())
                             .multilineTextAlignment(.trailing)
                             .keyboardType(.numberPad)
                             .focused($focusedField, equals: .big)
                             .frame(maxWidth: 120)
-                            .onChange(of: bigBlindText) { _, newValue in
-                                let digits = digitsOnly(newValue)
-                                if digits != newValue {
-                                    bigBlindText = digits
-                                }
-                            }
                     }
                     .onChange(of: focusedField) { _, newValue in
                         if newValue == .big {
@@ -77,16 +66,10 @@ struct NewSessionSheet: View {
                     HStack {
                         Text("Ante")
                         Spacer()
-                        TextField("Ante", text: $anteText)
+                        TextField("Ante", text: $anteText.digitsOnly())
                             .multilineTextAlignment(.trailing)
                             .keyboardType(.numberPad)
                             .frame(maxWidth: 120)
-                            .onChange(of: anteText) { _, newValue in
-                                let digits = digitsOnly(newValue)
-                                if digits != newValue {
-                                    anteText = digits
-                                }
-                            }
                     }
                 }
                 header: {
@@ -94,11 +77,11 @@ struct NewSessionSheet: View {
                         .font(.caption)
                 }
                 footer: {
-                    if let sb = Int(smallBlindText), let bb = Int(bigBlindText), sb > 0, bb > 0 {
+                    if let sb = smallBlindText.positiveInt, let bb = bigBlindText.positiveInt {
                         HStack {
                             Text("Итог")
                             Spacer()
-                            if let ante = Int(anteText), ante > 0 {
+                            if let ante = anteText.nonNegativeInt, ante > 0 {
                                 Text("\(sb)/\(bb) (Анте: \(ante))")
                                     .foregroundStyle(.secondary)
                             } else {
@@ -127,26 +110,22 @@ struct NewSessionSheet: View {
     }
     
     private var canSave: Bool {
-        !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        location.nonEmptyTrimmed != nil
     }
     
     private func createNewSession() {
         let session = Session(
             startTime: startTime,
-            location: location.trimmingCharacters(in: .whitespacesAndNewlines),
+            location: location.trimmed,
             gameType: gameType,
             status: .active
         )
-        if let sb = Int(smallBlindText) { session.smallBlind = sb }
-        if let bb = Int(bigBlindText) { session.bigBlind = bb }
-        if let ante = Int(anteText) { session.ante = ante }
+        if let sb = smallBlindText.positiveInt { session.smallBlind = sb }
+        if let bb = bigBlindText.positiveInt { session.bigBlind = bb }
+        if let ante = anteText.nonNegativeInt { session.ante = ante }
         
         context.insert(session)
         dismiss()
-    }
-    
-    private func digitsOnly(_ text: String) -> String {
-        text.filter { $0.isNumber }
     }
 }
 

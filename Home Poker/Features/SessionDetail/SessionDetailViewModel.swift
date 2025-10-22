@@ -17,7 +17,7 @@ final class SessionDetailViewModel {
     /// Добавляет нового игрока в сессию, если buy-in введён корректно.
     /// Показывает сообщение об ошибке при неверном вводе.
     func addPlayer(to session: Session, name: String, buyInText: String) -> Bool {
-        guard let buyIn = parseAmount(buyInText, requirement: .positive) else {
+        guard let buyIn = buyInText.positiveInt else {
             setInvalidAmountError()
             return false
         }
@@ -29,7 +29,7 @@ final class SessionDetailViewModel {
     
     /// Регистрирует докупку игрока, валидируя введённую сумму.
     func addOn(for player: Player, in session: Session, amountText: String) -> Bool {
-        guard let amount = parseAmount(amountText, requirement: .positive) else {
+        guard let amount = amountText.positiveInt else {
             setInvalidAmountError()
             return false
         }
@@ -42,7 +42,7 @@ final class SessionDetailViewModel {
     /// Завершает игру для игрока, добавляя cash-out транзакцию.
     /// Возвращает `false`, если сумма невалидна или операция завершилась ошибкой.
     func cashOut(session: Session, player: Player, amountText: String) -> Bool {
-        guard let amount = parseAmount(amountText, requirement: .nonNegative) else {
+        guard let amount = amountText.nonNegativeInt else {
             setInvalidAmountError()
             return false
         }
@@ -64,14 +64,14 @@ final class SessionDetailViewModel {
     
     /// Проверяет, является ли текст корректной неотрицательной суммой для ввода cash-out.
     func isValidCashOutInput(_ text: String) -> Bool {
-        parseAmount(text, requirement: .nonNegative) != nil
+        text.nonNegativeInt != nil
     }
     
     // MARK: - Расходы
     
     /// Добавляет расход в сессию и показывает alert при ошибке.
     func addExpense(to session: Session, note: String, amountText: String, payer: Player? = nil) -> Bool {
-        guard let amount = parseAmount(amountText, requirement: .positive) else {
+        guard let amount = amountText.positiveInt else {
             setInvalidAmountError()
             return false
         }
@@ -91,13 +91,13 @@ final class SessionDetailViewModel {
     /// Обновляет значения блайндов/анте в сессии, если ввод корректен.
     func updateBlinds(for session: Session, smallText: String, bigText: String, anteText: String) -> Bool {
         guard
-            let small = parseAmount(smallText, requirement: .positive),
-            let big = parseAmount(bigText, requirement: .positive)
+            let small = smallText.positiveInt,
+            let big = bigText.positiveInt
         else {
             setInvalidAmountError()
             return false
         }
-        let ante = parseAmount(anteText, requirement: .nonNegative) ?? 0
+        let ante = anteText.nonNegativeInt ?? 0
         
         return performServiceCall {
             try service.updateBlinds(for: session, small: small, big: big, ante: ante)
@@ -148,21 +148,6 @@ final class SessionDetailViewModel {
     
     // MARK: - Helpers
     
-    private enum AmountRequirement {
-        case positive
-        case nonNegative
-    }
-    
-    private func parseAmount(_ text: String, requirement: AmountRequirement) -> Int? {
-        guard let value = Int(text) else { return nil }
-        switch requirement {
-        case .positive:
-            return value > 0 ? value : nil
-        case .nonNegative:
-            return value >= 0 ? value : nil
-        }
-    }
-    
     private func performServiceCall(_ action: () throws -> Void) -> Bool {
         do {
             try action()
@@ -188,17 +173,17 @@ final class SessionDetailViewModel {
         note: String,
         type: SessionBankEntryType
     ) -> Bool {
-        guard let amount = parseAmount(amountText, requirement: .positive) else {
+        guard let amount = amountText.positiveInt else {
             setInvalidAmountError()
             return false
         }
-        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNote = note.nonEmptyTrimmed
         return performServiceCall {
             switch type {
             case .deposit:
-                try service.recordDeposit(for: session, player: player, amount: amount, note: trimmedNote.isEmpty ? nil : trimmedNote)
+                try service.recordDeposit(for: session, player: player, amount: amount, note: trimmedNote)
             case .withdrawal:
-                try service.recordWithdrawal(for: session, player: player, amount: amount, note: trimmedNote.isEmpty ? nil : trimmedNote)
+                try service.recordWithdrawal(for: session, player: player, amount: amount, note: trimmedNote)
             }
         }
     }

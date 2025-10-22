@@ -21,32 +21,22 @@ struct AddPlayerSheet: View {
                     TextField("Имя игрока", text: $playerName)
                         .textInputAutocapitalization(.words)
 
-                    TextField("Сумма закупа", text: $buyInAmount)
+                    TextField("Сумма закупа", text: $buyInAmount.digitsOnly())
                         .keyboardType(.numberPad)
-                        .onChange(of: buyInAmount) { _, newValue in
-                            let digits = digitsOnly(newValue)
-                            if digits != newValue {
-                                buyInAmount = digits
-                            }
-                        }
                 }
             }
         }
     }
     
     private var canSubmit: Bool {
-        let trimmedName = playerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmedName.isEmpty && (Int(buyInAmount) ?? 0) > 0
+        guard playerName.nonEmptyTrimmed != nil else { return false }
+        return buyInAmount.positiveInt != nil
     }
 
     private func addPlayer() {
-        let trimmedName = playerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard viewModel.addPlayer(to: session, name: trimmedName, buyInText: buyInAmount) else { return }
+        guard let name = playerName.nonEmptyTrimmed else { return }
+        guard viewModel.addPlayer(to: session, name: name, buyInText: buyInAmount) else { return }
         dismiss()
-    }
-    
-    private func digitsOnly(_ text: String) -> String {
-        text.filter { $0.isNumber }
     }
 }
 

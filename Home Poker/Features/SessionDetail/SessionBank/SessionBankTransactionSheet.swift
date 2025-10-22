@@ -28,8 +28,8 @@ struct SessionBankTransactionSheet: View {
     }
     
     private var isFormValid: Bool {
-        guard let id = selectedPlayerID, players.contains(where: { $0.id == id }) else { return false }
-        return Int(amountText).map { $0 > 0 } ?? false
+        guard selectedPlayer != nil else { return false }
+        return amountText.positiveInt != nil
     }
     
     var body: some View {
@@ -48,16 +48,11 @@ struct SessionBankTransactionSheet: View {
                         }
                     }
                     
-                    TextField("Сумма", text: $amountText)
+                    TextField("Сумма", text: $amountText.digitsOnly())
                         .keyboardType(.numberPad)
-                        .onChange(of: amountText) { _, newValue in
+                        .onChange(of: amountText) { _, _ in
                             guard !isUpdatingAmount else { return }
-                            let digits = digitsOnly(newValue)
-                            if digits != newValue {
-                                amountText = digits
-                            } else {
-                                amountManuallyEdited = true
-                            }
+                            amountManuallyEdited = true
                         }
                     
                     TextField("Заметка (опционально)", text: $note, axis: .vertical)
@@ -78,10 +73,7 @@ struct SessionBankTransactionSheet: View {
     }
     
     private func submit() {
-        guard
-            isFormValid,
-            let player = players.first(where: { $0.id == selectedPlayerID })
-        else { return }
+        guard isFormValid, let player = selectedPlayer else { return }
         
         let didSucceed: Bool
         switch mode {
@@ -115,11 +107,7 @@ struct SessionBankTransactionSheet: View {
             }
         )
     }
-    
-    private func digitsOnly(_ text: String) -> String {
-        text.filter { $0.isNumber }
-    }
-    
+
     private var footerContent: some View {
         Group {
             if let bank, let player = selectedPlayer {
