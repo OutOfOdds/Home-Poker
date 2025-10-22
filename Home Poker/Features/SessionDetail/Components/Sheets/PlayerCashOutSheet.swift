@@ -17,9 +17,14 @@ struct PlayerCashOutSheet: View {
             cancelAction: dismiss.callAsFunction
         ) {
             Form {
-                Section("Завершение игры для \(player.name)") {
+                Section {
                     TextField("Сумма на вывод", value: $cashOutAmount, format: .number)
                         .keyboardType(.numberPad)
+                } header: {
+                    Text("Завершение игры для \(player.name)")
+                }
+                footer: {
+                    Text("")
                 }
             }
         }
@@ -38,17 +43,10 @@ struct PlayerCashOutSheet: View {
 }
 
 #Preview {
-    let player = Player(name: "Илья", inGame: true)
-    _ = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
-    let session = Session(
-        startTime: Date(),
-        location: "Preview Club",
-        gameType: .NLHoldem,
-        status: .active
-    )
-    session.bank = SessionBank(session: session, expectedTotal: 2000)
-    session.players.append(player)
-    return PlayerCashOutSheet(player: player, session: session)
+    let session = PreviewData.sessionWithBank()
+    let player = session.players.first(where: { $0.inGame }) ?? PreviewData.activePlayer()
+
+    PlayerCashOutSheet(player: player, session: session)
         .modelContainer(
             for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self],
             inMemory: true

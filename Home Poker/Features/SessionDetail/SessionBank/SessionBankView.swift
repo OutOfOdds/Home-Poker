@@ -74,14 +74,19 @@ struct SessionBankView: View {
                 .disabled(!canCalculateSettlement)
                 
                 if isBankClosed {
-                    Button("Открыть") {
+                    Button {
                         viewModel.reopenBank(for: session)
+                    } label: {
+                        Image(systemName: "lock.open.fill")
                     }
                 } else {
-                    Button("Закрыть") {
+                    Button {
                         if !viewModel.closeBank(for: session) {
                             // Ошибка покажется через alert viewModel
                         }
+                    }
+                    label: {
+                        Image(systemName: "lock.fill")
                     }
                 }
             }
@@ -212,7 +217,7 @@ struct SessionBankView: View {
             .foregroundColor(entry.type == .deposit ? .green : .orange)
 
             HStack {
-                Text(entry.player.name)
+                Text(entry.player?.name ?? "Удалённый игрок")
                 Spacer()
                 Text(entry.createdAt, style: .time)
                     .foregroundStyle(.secondary)
@@ -260,41 +265,8 @@ private extension SessionBankEntryType {
 }
 
 #Preview {
-    let session = Session(
-        startTime: Date(),
-        location: "Preview Spot",
-        gameType: .NLHoldem,
-        status: .active
-    )
-    
-    let p1 = Player(name: "Илья", inGame: false)
-    let p2 = Player(name: "Андрей", inGame: false)
-    let p3 = Player(name: "Сергей", inGame: false)
-    session.players = [p1, p2, p3]
-    
-    p1.transactions.append(contentsOf: [
-        PlayerTransaction(type: .buyIn, amount: 3000, player: p1),
-        PlayerTransaction(type: .cashOut, amount: 2000, player: p1)
-    ])
-    p2.transactions.append(contentsOf: [
-        PlayerTransaction(type: .buyIn, amount: 2000, player: p2),
-        PlayerTransaction(type: .cashOut, amount: 3000, player: p2)
-    ])
-    p3.transactions.append(
-        PlayerTransaction(type: .buyIn, amount: 1500, player: p3)
-    )
-    
-    let bank = SessionBank(session: session, manager: p1)
-    bank.expectedTotal = session.players
-        .filter { !$0.inGame }
-        .reduce(0) { $0 + max($1.buyIn - $1.cashOut, 0) }
-    session.bank = bank
-    
-    let entry1 = SessionBankEntry(amount: 1000, type: .deposit, player: p1, bank: bank, note: "Возврат")
-    let entry2 = SessionBankEntry(amount: 1000, type: .deposit, player: p3, bank: bank, note: "Часть долга")
-    let entry3 = SessionBankEntry(amount: 3000, type: .withdrawal, player: p2, bank: bank, note: "Выигрыш")
-    bank.entries = [entry1, entry2, entry3]
-    
+    let session = PreviewData.sessionWithBank()
+
     return NavigationStack {
         SessionBankView(session: session)
             .environment(SessionDetailViewModel())

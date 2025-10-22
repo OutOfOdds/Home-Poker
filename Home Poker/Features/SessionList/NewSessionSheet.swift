@@ -6,6 +6,7 @@ struct NewSessionSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var startTime: Date = Date()
+    @State private var sessionTitle: String = ""
     @State private var location: String = ""
     @State private var gameType: GameType = .NLHoldem
     
@@ -33,6 +34,7 @@ struct NewSessionSheet: View {
     
     private var sessionInfoSection: some View {
         Section {
+            TextField("Название", text: $sessionTitle)
             DatePicker("Начало", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
             TextField("Место проведения", text: $location)
             
@@ -126,12 +128,13 @@ struct NewSessionSheet: View {
             startTime: startTime,
             location: location.trimmed,
             gameType: gameType,
-            status: .active
+            status: .active,
+            sessionTitle: sessionTitle.trimmed
         )
         if let sb = smallBlind, sb > 0 { session.smallBlind = sb }
         if let bb = bigBlind, bb > 0 { session.bigBlind = bb }
         if let ante = ante, ante >= 0 { session.ante = ante }
-        
+
         context.insert(session)
         dismiss()
     }
@@ -139,5 +142,5 @@ struct NewSessionSheet: View {
 
 #Preview {
     NewSessionSheet()
-        .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
+        .modelContainer(PreviewData.previewContainer)
 }

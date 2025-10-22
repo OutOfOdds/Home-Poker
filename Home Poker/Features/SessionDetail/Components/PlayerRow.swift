@@ -125,37 +125,18 @@ struct PlayerRow: View {
     }
 }
 
-#Preview {
-    let player = Player(name: "Илья", inGame: true)
-    // Начальный закуп на 2000 через транзакцию
-    let t1 = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
-    player.transactions.append(t1)
-    
-    let session = Session(
-        startTime: Date(),
-        location: "Preview Club",
-        gameType: .NLHoldem,
-        status: .active
-    )
-    session.players.append(player)
+#Preview("Активный игрок") {
+    let session = PreviewData.activeSession()
+    let player = session.players.first(where: { $0.inGame }) ?? PreviewData.activePlayer()
+
     return PlayerRow(player: player, session: session)
         .environment(SessionDetailViewModel())
 }
 
 #Preview("Игрок вышел") {
-    let player = Player(name: "Алексей", inGame: false)
-    // Закупился и вышел с суммой, чтобы показать "Вышел с:"
-    let t1 = PlayerTransaction(type: .buyIn, amount: 3000, player: player)
-    let t2 = PlayerTransaction(type: .cashOut, amount: 4500, player: player)
-    player.transactions.append(contentsOf: [t1, t2])
-    
-    let session = Session(
-        startTime: Date(),
-        location: "Preview Club",
-        gameType: .NLHoldem,
-        status: .active
-    )
-    session.players.append(player)
+    let session = PreviewData.activeSession()
+    let player = session.players.first(where: { !$0.inGame }) ?? PreviewData.winnerPlayer()
+
     return PlayerRow(player: player, session: session)
         .environment(SessionDetailViewModel())
 }

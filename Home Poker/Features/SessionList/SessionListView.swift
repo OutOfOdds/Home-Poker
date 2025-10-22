@@ -61,15 +61,26 @@ struct SessionListView: View {
     
     private func sessionRow(_ session: Session) -> some View {
         VStack(alignment: .leading) {
+            Text((session.sessionTitle))
+                .font(.title3)
+                .bold()
+                .monospaced()
             HStack {
                 Text("Дата:")
                 Text(session.startTime, format: .dateTime)
             }
             .fontDesign(.monospaced)
+            .foregroundStyle(.secondary)
+            Text("Локация: \(session.location)")
+                .foregroundStyle(.secondary)
+
             Text("Игра: \(session.gameType.rawValue)")
+                .foregroundStyle(.secondary)
+
             Text("Блайнды: \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
                 .fontDesign(.monospaced)
-            
+                .foregroundStyle(.secondary)
+
             if session.status == .active {
                 Text(session.status.rawValue)
                     .foregroundStyle(.green)
@@ -85,6 +96,6 @@ struct SessionListView: View {
 
 #Preview {
     SessionListView()
-        .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
+        .modelContainer(PreviewData.previewContainer)
         .environment(SessionDetailViewModel())
 }

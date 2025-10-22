@@ -37,15 +37,9 @@ struct PlayerAddOnSheet: View {
 }
 
 #Preview {
-    let player = Player(name: "Илья", inGame: true)
-    _ = PlayerTransaction(type: .buyIn, amount: 2000, player: player)
-    let session = Session(
-        startTime: Date(),
-        location: "Preview",
-        gameType: .NLHoldem,
-        status: .active
-    )
-    session.players.append(player)
+    let session = PreviewData.activeSession()
+    let player = session.players.first(where: { $0.inGame }) ?? PreviewData.activePlayer()
+
     return PlayerAddOnSheet(player: player, session: session)
         .environment(SessionDetailViewModel())
 }

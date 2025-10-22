@@ -61,20 +61,10 @@ struct RebuyPlayerSheet: View {
 }
 
 #Preview {
-    let player = Player(name: "Mike", inGame: false)
-    let t1 = PlayerTransaction(type: .buyIn, amount: 1000, player: player)
-    let t2 = PlayerTransaction(type: .cashOut, amount: 500, player: player)
-    player.transactions.append(contentsOf: [t1, t2])
+    let session = PreviewData.activeSession()
+    let player = session.players.first(where: { !$0.inGame }) ?? PreviewData.loserPlayer()
 
-    let session = Session(
-        startTime: Date(),
-        location: "Preview Club",
-        gameType: .NLHoldem,
-        status: .active
-    )
-    session.players.append(player)
-
-    return RebuyPlayerSheet(player: player, session: session)
+    RebuyPlayerSheet(player: player, session: session)
         .modelContainer(
             for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self],
             inMemory: true

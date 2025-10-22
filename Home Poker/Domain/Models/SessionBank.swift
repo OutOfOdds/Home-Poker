@@ -61,7 +61,7 @@ extension SessionBank {
 
     func contributions(for player: Player) -> (deposited: Int, withdrawn: Int) {
         entries
-            .filter { $0.player.id == player.id }
+            .filter { $0.player?.id == player.id }
             .reduce((deposited: 0, withdrawn: 0)) { result, entry in
                 switch entry.type {
                 case .deposit:

@@ -76,19 +76,14 @@ final class SessionService {
     }
     
     /// Удаляет игрока из сессии вместе со всеми связанными транзакциями.
+    /// SwiftData автоматически:
+    /// - Удаляет все PlayerTransaction (deleteRule: .cascade)
+    /// - Обнуляет Expense.payer (deleteRule: .nullify)
+    /// - Обнуляет SessionBankEntry.player (deleteRule: .nullify)
     /// - Parameters:
     ///   - player: Игрок, которого требуется удалить.
     ///   - session: Сессия, из которой удаляется игрок.
     func removePlayer(_ player: Player, from session: Session) {
-        // Очистим связанные записи банка
-        if let bank = session.bank {
-            let relatedEntries = bank.entries.filter { $0.player.id == player.id }
-            for entry in relatedEntries {
-                bank.entries.removeAll { $0.id == entry.id }
-                entry.modelContext?.delete(entry)
-            }
-        }
-        
         session.players.removeAll { $0.id == player.id }
         player.modelContext?.delete(player)
         refreshBankExpectation(for: session)

@@ -107,20 +107,8 @@ private struct ExpenseRow: View {
 }
 
 #Preview {
-    let session = Session(
-        startTime: Date().addingTimeInterval(-60 * 60 * 3),
-        location: "Клуб «Флоп»",
-        gameType: .NLHoldem,
-        status: .active
-    )
-    let p1 = Player(name: "Илья", inGame: true)
-    let p2 = Player(name: "Андрей", inGame: true)
-    session.players = [p1, p2]
-    
-    let e1 = Expense(amount: 800, note: "Напитки", createdAt: Date().addingTimeInterval(-3600), payer: p1)
-    let e2 = Expense(amount: 1200, note: "Закуски", createdAt: Date().addingTimeInterval(-1800), payer: p2)
-    session.expenses = [e1, e2]
-    
+    let session = PreviewData.activeSession()
+
     return NavigationStack {
         ExpenseDetails(session: session)
     }

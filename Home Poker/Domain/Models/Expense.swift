@@ -9,7 +9,7 @@ final class Expense {
     var createdAt: Date
     
     // Плательщик расхода (один)
-    @Relationship var payer: Player?
+    @Relationship(deleteRule: .nullify) var payer: Player?
     
     init(amount: Int, note: String, createdAt: Date = Date(), payer: Player? = nil) {
         self.amount = amount

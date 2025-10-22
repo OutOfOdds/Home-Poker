@@ -178,17 +178,8 @@ enum Mode {
 }
 
 #Preview {
-    let session = Session(
-        startTime: Date(),
-        location: "Preview Spot",
-        gameType: .NLHoldem,
-        status: .active
-    )
-    let p1 = Player(name: "Илья", inGame: false)
-    let p2 = Player(name: "Андрей", inGame: false)
-    session.players = [p1, p2]
-    session.bank = SessionBank(session: session, manager: p1, expectedTotal: 6000)
-    
+    let session = PreviewData.sessionWithBank()
+
     return SessionBankTransactionSheet(session: session, mode: .deposit)
         .modelContainer(
             for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self],

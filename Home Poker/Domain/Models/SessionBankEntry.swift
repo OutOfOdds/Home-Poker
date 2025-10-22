@@ -8,13 +8,13 @@ final class SessionBankEntry {
     var amount: Int
     var type: SessionBankEntryType
     var note: String
-    @Relationship var player: Player
+    @Relationship(deleteRule: .nullify) var player: Player?
     @Relationship(inverse: \SessionBank.entries) var bank: SessionBank
     
     init(
         amount: Int,
         type: SessionBankEntryType,
-        player: Player,
+        player: Player?,
         bank: SessionBank,
         note: String = "",
         createdAt: Date = Date()

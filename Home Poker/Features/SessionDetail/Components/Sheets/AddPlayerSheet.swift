@@ -43,13 +43,8 @@ struct AddPlayerSheet: View {
 }
 
 #Preview {
-    // В превью session не управляемая — это нормально для визуальной проверки UI.
-    // В реальном приложении session будет из SwiftData-контейнера.
-    let session = Session(
-        startTime: Date(),
-        location: "Test Location",
-        gameType: .NLHoldem, status: .active
-    )
+    let session = PreviewData.activeSession()
+
     AddPlayerSheet(session: session)
         .modelContainer(for: [Session.self, Player.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
         .environment(SessionDetailViewModel())

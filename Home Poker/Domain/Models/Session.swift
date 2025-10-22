@@ -5,6 +5,7 @@ import SwiftData
 class Session {
     @Attribute(.unique) var id: UUID = UUID()
     var startTime: Date
+    var sessionTitle: String
     var location: String
     var gameType: GameType
     @Relationship(deleteRule: .cascade) var players: [Player] = []
@@ -15,11 +16,12 @@ class Session {
     var bigBlind: Int = 0
     var ante: Int = 0
 
-    init(startTime: Date, location: String, gameType: GameType, status: SessionStatus) {
+    init(startTime: Date, location: String, gameType: GameType, status: SessionStatus, sessionTitle: String) {
         self.startTime = startTime
         self.location = location
         self.gameType = gameType
         self.status = status
+        self.sessionTitle = sessionTitle
     }
     
     // Сумма всех закупов
@@ -44,13 +46,6 @@ class Session {
     var activePlayers: [Player] {
         players.filter { $0.inGame }
     }
-    
-    
-    // расходы распределить между какими то игроками либо всеми игроками
-    // частичная оплата игроками
-    // автоматическое рапределение кто кому должен
-    // возмоность вносить правки в автоматическое распределение после того как оно сформировалось
-    // статус возврата (должен/вернул)
 }
 
 enum GameType: String, Codable {
@@ -60,5 +55,6 @@ enum GameType: String, Codable {
 
 enum SessionStatus: String, Codable {
     case active = "Активная"
+    case awaitingForSettlements = "Ожидание расчетов"
     case finished = "Завершена"
 }

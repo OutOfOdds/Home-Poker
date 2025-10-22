@@ -7,9 +7,9 @@ final class PlayerTransaction {
     var timestamp: Date
     var type: TransactionType
     var amount: Int
-    @Relationship var player: Player
+    @Relationship var player: Player?
 
-    init(type: TransactionType, amount: Int, player: Player, timestamp: Date = Date()) {
+    init(type: TransactionType, amount: Int, player: Player?, timestamp: Date = Date()) {
         self.type = type
         self.amount = amount
         self.player = player

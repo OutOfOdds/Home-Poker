@@ -52,11 +52,8 @@ struct AddExpenseSheet: View {
 }
 
 #Preview {
-    let session = Session(
-        startTime: Date(),
-        location: "Test Location",
-        gameType: .NLHoldem, status: .active
-    )
+    let session = PreviewData.activeSession()
+
     AddExpenseSheet(session: session)
         .modelContainer(for: [Session.self, Player.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
         .environment(SessionDetailViewModel(service: SessionService()))
