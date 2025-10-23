@@ -1,18 +1,41 @@
 import Foundation
 import SwiftData
 
-final class SessionService {
+protocol SessionServiceProtocol {
+    // Управление игроком
+    func addPlayer(name: String, buyIn: Int, to session: Session) throws
+    func addOn(player: Player, amount: Int, in session: Session) throws
+    func cashOut(player: Player, amount: Int, in session: Session) throws
+    func rebuyPlayer(_ player: Player, amount: Int, in session: Session) throws
+    func removePlayer(_ player: Player, from session: Session)
     
-    static let shared = SessionService()
+    // Управление банком
+    @discardableResult
+    func ensureBank(for session: Session) -> SessionBank
+    func setBankManager(_ player: Player?, for session: Session)
+    func recordBankTransaction(
+        for session: Session,
+        player: Player,
+        amount: Int,
+        note: String?,
+        type: SessionBankTransactionType
+    ) throws
+    func closeBank(for session: Session) throws
+    func reopenBank(for session: Session)
+    
+    // Управление расходами
+    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws
+    func removeExpenses(_ expenses: [Expense], from session: Session)
+    
+    // Настройки сессии
+    func updateBlinds(for session: Session, small: Int, big: Int, ante: Int) throws
+}
+
+struct SessionService: SessionServiceProtocol {
     
     // MARK: - Игрок
 
-    /// Создаёт нового игрока, фиксирует первичный buy-in и добавляет его в сессию.
-    /// - Parameters:
-    ///   - name: Имя игрока (валидируется на пустоту и лишние пробелы).
-    ///   - buyIn: Сумма стартового закупа.
-    ///   - session: Сессия, в которую добавляется игрок.
-    /// - Throws: `SessionServiceError.emptyPlayerName`, `SessionServiceError.invalidAmount`.
+    // Создаёт нового игрока, фиксирует первичный buy-in и добавляет его в сессию.
     func addPlayer(name: String, buyIn: Int, to session: Session) throws {
         let trimmedName = try normalizePlayerName(name)
         try validatePositiveAmount(buyIn)
@@ -24,12 +47,7 @@ final class SessionService {
         refreshBankExpectation(for: session)
     }
     
-    /// Регистрирует докупку (add-on) для игрока в рамках сессии.
-    /// - Parameters:
-    ///   - player: Игрок, который делает докупку.
-    ///   - amount: Сумма докупки.
-    ///   - session: Сессия, к которой относится игрок.
-    /// - Throws: `SessionServiceError.invalidAmount`.
+    // Регистрирует докупку (add-on) для игрока в рамках сессии.
     func addOn(player: Player, amount: Int, in session: Session) throws {
         try validatePositiveAmount(amount)
         let transaction = PlayerTransaction(type: .addOn, amount: amount, player: player)
@@ -37,15 +55,10 @@ final class SessionService {
         refreshBankExpectation(for: session)
     }
     
-    /// Завершает игру для игрока: фиксирует вывод средств и помечает его как выбывшего.
-    /// - Parameters:
-    ///   - player: Игрок, завершающий участие.
-    ///   - amount: Сумма вывода.
-    ///   - session: Сессия, в которой происходит вывод.
-    /// - Throws: `SessionServiceError.invalidAmount`, `SessionServiceError.insufficientBank`.
+    // Завершает игру для игрока: фиксирует вывод средств и помечает его как выбывшего.
     func cashOut(player: Player, amount: Int, in session: Session) throws {
         try validateNonNegativeAmount(amount)
-        guard amount <= session.bankInGame else {
+        guard amount <= session.chipsInGame else {
             throw SessionServiceError.insufficientBank
         }
 
@@ -55,13 +68,8 @@ final class SessionService {
         refreshBankExpectation(for: session)
     }
 
-    /// Возвращает игрока в игру с новой закупкой.
-    /// В реальной покерной игре возврат игрока всегда означает новую закупку фишек.
-    /// - Parameters:
-    ///   - player: Игрок, возвращающийся в игру.
-    ///   - amount: Сумма новой закупки.
-    ///   - session: Сессия, в которую возвращается игрок.
-    /// - Throws: `SessionServiceError.playerAlreadyInGame`, `SessionServiceError.invalidAmount`.
+    // Возвращает игрока в игру с новой закупкой.
+    // В реальной покерной игре возврат игрока всегда означает новую закупку фишек.
     func rebuyPlayer(_ player: Player, amount: Int, in session: Session) throws {
         guard !player.inGame else {
             throw SessionServiceError.playerAlreadyInGame
@@ -75,14 +83,11 @@ final class SessionService {
         refreshBankExpectation(for: session)
     }
     
-    /// Удаляет игрока из сессии вместе со всеми связанными транзакциями.
+    // Удаляет игрока из сессии вместе со всеми связанными транзакциями.
     /// SwiftData автоматически:
     /// - Удаляет все PlayerTransaction (deleteRule: .cascade)
     /// - Обнуляет Expense.payer (deleteRule: .nullify)
-    /// - Обнуляет SessionBankEntry.player (deleteRule: .nullify)
-    /// - Parameters:
-    ///   - player: Игрок, которого требуется удалить.
-    ///   - session: Сессия, из которой удаляется игрок.
+    /// - Обнуляет SessionBankTransactions.player (deleteRule: .nullify)
     func removePlayer(_ player: Player, from session: Session) {
         session.players.removeAll { $0.id == player.id }
         player.modelContext?.delete(player)
@@ -91,9 +96,7 @@ final class SessionService {
     
     // MARK: - Банк сессии
 
-    /// Гарантирует наличие банка у сессии (создаёт при отсутствии) и актуализирует ожидаемую сумму.
-    /// - Parameter session: Сессия, для которой требуется банк.
-    /// - Returns: Экземпляр банка сессии.
+    // Гарантирует наличие банка у сессии (создаёт при отсутствии) и актуализирует ожидаемую сумму.
     @discardableResult
     func ensureBank(for session: Session) -> SessionBank {
         if let existing = session.bank {
@@ -106,29 +109,19 @@ final class SessionService {
         return bank
     }
 
-    /// Назначает (или убирает) ответственного за сессионный банк.
-    /// - Parameters:
-    ///   - player: Игрок, который становится ответственным. `nil` снимает назначение.
-    ///   - session: Сессия, чей банк обновляется.
+    // Назначает (или убирает) ответственного за сессионный банк.
     func setBankManager(_ player: Player?, for session: Session) {
         let bank = ensureBank(for: session)
         bank.manager = player
     }
 
-    /// Регистрирует операцию с банком сессии (пополнение или выдачу).
-    /// - Parameters:
-    ///   - session: Сессия, к которой относится операция.
-    ///   - player: Игрок, выполняющий операцию.
-    ///   - amount: Сумма операции.
-    ///   - note: Необязательная заметка.
-    ///   - type: Тип операции (deposit или withdrawal).
-    /// - Throws: Ошибки валидации суммы или состояния банка.
-    func recordBankEntry(
+    // Регистрирует операцию с банком сессии (пополнение или выдачу).
+    func recordBankTransaction(
         for session: Session,
         player: Player,
         amount: Int,
         note: String?,
-        type: SessionBankEntryType
+        type: SessionBankTransactionType
     ) throws {
         try validatePositiveAmount(amount)
         let bank = ensureBank(for: session)
@@ -138,7 +131,7 @@ final class SessionService {
         guard session.players.contains(where: { $0.id == player.id }) else {
             throw SessionServiceError.playerNotInSession
         }
-        let entry = SessionBankEntry(
+        let entry = SessionBankTransaction(
             amount: amount,
             type: type,
             player: player,
@@ -148,9 +141,7 @@ final class SessionService {
         bank.entries.append(entry)
     }
     
-    /// Помечает сессионный банк закрытым, если все расчёты завершены.
-    /// - Parameter session: Сессия, чей банк закрывается.
-    /// - Throws: `SessionServiceError.bankNotBalanced`, если остались долги.
+    // Помечает наличный банк закрытым, если все расчёты завершены.
     func closeBank(for session: Session) throws {
         let bank = ensureBank(for: session)
         guard bank.remainingToCollect == 0 else {
@@ -160,8 +151,7 @@ final class SessionService {
         bank.closedAt = Date()
     }
 
-    /// Повторно открывает банк, разрешая дальнейшие операции.
-    /// - Parameter session: Сессия, чей банк открывается вновь.
+    // Повторно открывает банк, разрешая дальнейшие операции.
     func reopenBank(for session: Session) {
         let bank = ensureBank(for: session)
         bank.isClosed = false
@@ -169,38 +159,23 @@ final class SessionService {
     }
     
     // MARK: - Расходы
-    /// Регистрирует расход, совершённый в рамках сессии.
-    /// - Parameters:
-    ///   - note: Описание расхода.
-    ///   - amount: Сумма расхода.
-    ///   - payer: Игрок, оплативший расход (опционально).
-    ///   - session: Сессия, к которой относится расход.
-    ///   - createdAt: Дата создания записи.
-    /// - Throws: `SessionServiceError.invalidAmount`.
-    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date = Date()) throws {
+    
+    // Регистрирует расход, совершённый в рамках сессии.
+    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws {
         try validatePositiveAmount(amount)
         let trimmedNote = note.trimmed
         let expense = Expense(amount: amount, note: trimmedNote, createdAt: createdAt, payer: payer)
         session.expenses.append(expense)
     }
     
-    /// Удаляет указанные расходы из сессии.
-    /// - Parameters:
-    ///   - expenses: Массив расходов для удаления.
-    ///   - session: Сессия, из которой удаляются расходы.
+    // Удаляет указанные расходы из сессии.
     func removeExpenses(_ expenses: [Expense], from session: Session) {
         let ids = expenses.map { $0.id }
         session.expenses.removeAll { ids.contains($0.id) }
     }
     
     // MARK: - Настройки сессии
-    /// Обновляет параметры блайндов и анте у сессии.
-    /// - Parameters:
-    ///   - session: Сессия для обновления.
-    ///   - small: Значение Small Blind.
-    ///   - big: Значение Big Blind.
-    ///   - ante: Значение анте (неотрицательное).
-    /// - Throws: `SessionServiceError.invalidBlinds`, если значения некорректные.
+    // Обновляет параметры блайндов и анте у сессии.
     func updateBlinds(for session: Session, small: Int, big: Int, ante: Int) throws {
         guard small > 0, big > 0, small <= big else {
             throw SessionServiceError.invalidBlinds
