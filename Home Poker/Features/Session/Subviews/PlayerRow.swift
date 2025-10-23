@@ -68,7 +68,7 @@ struct PlayerRow: View {
                         showingCashOutSheet = true
                     } label: {
                         HStack {
-                            Image(systemName: "minus.circle.fill")
+                            Image(systemName: "figure.walk.departure")
                             Text("Завершить")
                         }
                     }

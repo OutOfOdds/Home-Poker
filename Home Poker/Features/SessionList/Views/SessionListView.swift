@@ -6,6 +6,8 @@ struct SessionListView: View {
     @Environment(\.modelContext) private var context
     @Query private var sessions: [Session]
     @State private var showingNewSession = false
+    @AppStorage("sessionListShowDetails") private var showSessionDetails = true
+
     var body: some View {
         NavigationStack {
             Group {
@@ -20,6 +22,13 @@ struct SessionListView: View {
                 }
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingNewSession = true
@@ -59,36 +68,74 @@ struct SessionListView: View {
     }
     
     private func sessionRow(_ session: Session) -> some View {
-        VStack(alignment: .leading) {
-            Text((session.sessionTitle))
+        VStack(alignment: .leading, spacing: 8) {
+            Text(session.sessionTitle)
                 .font(.title3)
                 .bold()
                 .monospaced()
-            HStack {
-                Text("Дата:")
-                Text(session.startTime, format: .dateTime)
-            }
-            .fontDesign(.monospaced)
-            .foregroundStyle(.secondary)
-            Text("Локация: \(session.location)")
-                .foregroundStyle(.secondary)
 
-            Text("Игра: \(session.gameType.rawValue)")
-                .foregroundStyle(.secondary)
+            if showSessionDetails {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .foregroundStyle(.secondary)
+                    Text(session.startTime, format: .dateTime)
+                        .fontDesign(.monospaced)
+                        .foregroundStyle(.secondary)
+                }
 
-            Text("Блайнды: \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
-                .fontDesign(.monospaced)
-                .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .foregroundStyle(.secondary)
+                    Text("\(session.location)")
+                        .foregroundStyle(.secondary)
+                }
 
-            if session.status == .active {
-                Text(session.status.rawValue)
-                    .foregroundStyle(.green)
+                HStack(spacing: 8) {
+                    Image(systemName: "suit.club.fill")
+                        .foregroundStyle(.secondary)
+                    Text("\(session.gameType.rawValue)")
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 8) {
+                    Image(systemName: "dollarsign.arrow.circlepath")
+                        .foregroundStyle(.secondary)
+                    Text("\(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
+                        .fontDesign(.monospaced)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 8) {
+                    Image(systemName: statusIcon(for: session.status))
+                        .foregroundStyle(statusColor(for: session.status))
+                    Text(session.status.rawValue)
+                        .foregroundStyle(statusColor(for: session.status))
+                }
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .foregroundStyle(.secondary)
+                    Text(session.startTime, format: .dateTime)
+                        .fontDesign(.monospaced)
+                        .foregroundStyle(.secondary)
+                }
             }
-            
-            if session.status == .finished {
-                Text(session.status.rawValue)
-                    .foregroundStyle(.blue)
-            }
+        }
+    }
+
+    private func statusIcon(for status: SessionStatus) -> String {
+        switch status {
+        case .active: return "bolt.fill"
+        case .awaitingForSettlements: return "hourglass"
+        case .finished: return "checkmark.seal.fill"
+        }
+    }
+
+    private func statusColor(for status: SessionStatus) -> Color {
+        switch status {
+        case .active: return .green
+        case .awaitingForSettlements: return .orange
+        case .finished: return .blue
         }
     }
 }

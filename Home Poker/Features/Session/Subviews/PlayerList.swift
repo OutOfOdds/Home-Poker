@@ -22,7 +22,7 @@ struct PlayerList: View {
                 Section {
                     ForEach(activePlayers, id: \.id) { player in
                         NavigationLink {
-                            PlayerTransactionsView(player: player)
+                            PlayerTransactionsView(player: player, session: session)
                         } label: {
                             PlayerRow(player: player, session: session)
                         }
@@ -53,7 +53,7 @@ struct PlayerList: View {
                 Section {
                     ForEach(finishedPlayers, id: \.id) { player in
                         NavigationLink {
-                            PlayerTransactionsView(player: player)
+                            PlayerTransactionsView(player: player, session: session)
                         } label: {
                             PlayerRow(player: player, session: session)
                         }

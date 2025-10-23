@@ -4,11 +4,13 @@ import SwiftData
 struct SessionBankView: View {
     @Bindable var session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
+    @State private var settlementVM: SettlementViewModel = SettlementViewModel()
+    
     
     @State private var showingDepositSheet = false
     @State private var showingWithdrawalSheet = false
     @State private var showSettlementSheet = false
-    @State private var settlementVM: SettlementViewModel = SettlementViewModel()
+    
     
     private var sortedPlayers: [Player] {
         session.players.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }

@@ -57,6 +57,10 @@ final class SessionDetailViewModel {
     func removePlayer(_ player: Player, from session: Session) {
         service.removePlayer(player, from: session)
     }
+
+    func removeTransaction(_ transaction: PlayerTransaction, from session: Session) {
+        service.removeTransaction(transaction, from: session)
+    }
     
     // MARK: - Расходы
 

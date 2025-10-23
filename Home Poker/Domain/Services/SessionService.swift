@@ -8,7 +8,8 @@ protocol SessionServiceProtocol {
     func cashOut(player: Player, amount: Int, in session: Session) throws
     func rebuyPlayer(_ player: Player, amount: Int, in session: Session) throws
     func removePlayer(_ player: Player, from session: Session)
-    
+    func removeTransaction(_ transaction: PlayerTransaction, from session: Session)
+
     // Управление банком
     @discardableResult
     func ensureBank(for session: Session) -> SessionBank
@@ -32,7 +33,6 @@ protocol SessionServiceProtocol {
 }
 
 struct SessionService: SessionServiceProtocol {
-    
     // MARK: - Игрок
 
     // Создаёт нового игрока, фиксирует первичный buy-in и добавляет его в сессию.
@@ -91,6 +91,21 @@ struct SessionService: SessionServiceProtocol {
     func removePlayer(_ player: Player, from session: Session) {
         session.players.removeAll { $0.id == player.id }
         player.modelContext?.delete(player)
+        refreshBankExpectation(for: session)
+    }
+
+    // Удаляет транзакцию игрока и обновляет состояние сессии.
+    func removeTransaction(_ transaction: PlayerTransaction, from session: Session) {
+        if let player = transaction.player {
+            player.transactions.removeAll { $0.id == transaction.id }
+            if transaction.type == .cashOut && !player.inGame {
+                let hasCashOut = player.transactions.contains { $0.type == .cashOut }
+                if !hasCashOut {
+                    player.inGame = true
+                }
+            }
+        }
+        transaction.modelContext?.delete(transaction)
         refreshBankExpectation(for: session)
     }
     
