@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct SessionInfoSectionView: View {
     @Bindable var session: Session
@@ -6,32 +7,56 @@ struct SessionInfoSectionView: View {
     
     @State private var editedLocation = ""
     @State private var showingLocationAlert = false
+
+
+    @State private var editedSessionTitle = ""
+    @State private var showingTitleAlert = false
+
     
     var body: some View {
         Section {
-            // Начало
             HStack {
-                Text("Начало:")
+                Text("Сессия:")
                     .foregroundColor(.secondary)
+                    .italic()
                 Spacer()
-                DatePicker("", selection: $session.startTime, displayedComponents: [.date, .hourAndMinute])
-                    .labelsHidden()
+                Text(session.sessionTitle.isEmpty ? "Нажмите для редактирования" : session.sessionTitle)
+                    .onTapGesture {
+                        editedSessionTitle = session.sessionTitle
+                        showingTitleAlert = true
+                    }
+                    .font(.headline)
+
             }
             // Место
             HStack {
                 Text("Место:")
+                    .italic()
+                    .foregroundColor(.secondary)
                 Spacer()
                 Text(session.location.isEmpty ? "Нажмите для редактирования" : session.location)
                     .onTapGesture {
                         editedLocation = session.location
                         showingLocationAlert = true
                     }
+                    .font(.headline)
+
             }
-            .foregroundColor(.secondary)
+
+            // Начало
+            HStack {
+                Text("Начало:")
+                    .foregroundColor(.secondary)
+                    .italic()
+                Spacer()
+                DatePicker("", selection: $session.startTime, displayedComponents: [.date, .hourAndMinute])
+                    .labelsHidden()
+            }
             // Игра
             HStack {
                 Text("Игра:")
                     .foregroundColor(.secondary)
+                    .italic()
                 Spacer()
                 Picker("", selection: $session.gameType) {
                     ForEach([GameType.NLHoldem, GameType.PLO4], id: \.self) { gameType in
@@ -44,9 +69,9 @@ struct SessionInfoSectionView: View {
             HStack {
                 Text("Блайнды:")
                     .foregroundColor(.secondary)
+                    .italic()
                 Spacer()
                 Text(blindsDisplayText)
-                    .foregroundColor(.secondary)
                     .fontDesign(.monospaced)
                     .onTapGesture { showingBlindsSheet = true }
             }
@@ -57,6 +82,13 @@ struct SessionInfoSectionView: View {
             Button("Отмена", role: .cancel) { }
         } message: {
             Text("Введите новое место проведения")
+        }
+        .alert("Изменить название", isPresented: $showingTitleAlert) {
+            TextField("Название", text: $editedSessionTitle)
+            Button("Сохранить") { session.sessionTitle = editedSessionTitle }
+            Button("Отмена", role: .cancel) { }
+        } message: {
+            Text("Введите новое название для сессии")
         }
     }
     
@@ -71,3 +103,17 @@ struct SessionInfoSectionView: View {
         return base
     }
 }
+
+#Preview {
+    let session = PreviewData.activeSession()
+
+    NavigationStack {
+        List {
+            SessionInfoSectionView(session: session, showingBlindsSheet: .constant(false))
+        }
+        .navigationTitle("Превью статистики банка")
+    }
+    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankEntry.self], inMemory: true)
+    .environment(SessionDetailViewModel())
+}
+

@@ -21,7 +21,7 @@ enum PreviewData {
         session.ante = 0
 
         // Активные игроки
-        let activePlayer1 = createPlayer(name: "Дмитрий", inGame: true, buyIn: 2000, addOns: [500])
+        let activePlayer1 = createPlayer(name: "Дмитрий", inGame: true, buyIn: 2222222000, addOns: [500])
         let activePlayer2 = createPlayer(name: "Александр", inGame: true, buyIn: 3000)
         let activePlayer3 = createPlayer(name: "Максим", inGame: true, buyIn: 1500, addOns: [1000, 500])
 

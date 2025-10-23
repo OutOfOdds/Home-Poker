@@ -8,6 +8,30 @@ struct BankStatsSectionView: View {
         Section {
             VStack(alignment: .leading) {
                 
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Игроки:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text("активные / всего")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Text("\(session.activePlayers.count)/\(session.players.count)")
+                        .font(.title3).fontWeight(.semibold)
+                        .foregroundStyle(.brown)
+                        .fontDesign(.monospaced)
+                }
+                
+                Line()
+                    .stroke(style: .init(dash: [5]))
+                    .foregroundStyle(.secondary.opacity(0.5))
+                    .frame(height: 1)
+
+                
                 HStack {
                     Text("Общий закуп:")
                         .font(.subheadline)
@@ -16,7 +40,7 @@ struct BankStatsSectionView: View {
                     Spacer()
                     
                     Text(session.totalBuyIns.asCurrency())
-                        .font(.title2).fontWeight(.semibold)
+                        .font(.title3).fontWeight(.semibold)
                         .foregroundStyle(.green)
                         .fontDesign(.monospaced)
                 }
@@ -34,7 +58,7 @@ struct BankStatsSectionView: View {
                     Spacer()
                     
                     Text(session.bankInGame.asCurrency())
-                        .font(.title2).fontWeight(.semibold)
+                        .font(.title3).fontWeight(.semibold)
                         .foregroundColor(.blue)
                         .fontDesign(.monospaced)
                 }
@@ -52,7 +76,7 @@ struct BankStatsSectionView: View {
                     Spacer()
                     
                     Text(session.bankWithdrawn.asCurrency())
-                        .font(.title2).fontWeight(.semibold)
+                        .font(.title3).fontWeight(.semibold)
                         .foregroundColor(.orange)
                         .fontDesign(.monospaced)
                 }
