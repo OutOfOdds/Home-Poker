@@ -7,7 +7,7 @@ struct SessionListView: View {
     @Query private var sessions: [Session]
     @State private var showingNewSession = false
     @AppStorage("sessionListShowDetails") private var showSessionDetails = true
-
+    
     var body: some View {
         NavigationStack {
             Group {
@@ -33,7 +33,10 @@ struct SessionListView: View {
                     Button {
                         showingNewSession = true
                     } label: {
-                        Image(systemName: "plus")
+                        HStack {
+                            Text("Новая")
+                            Image(systemName: "plus")
+                        }
                     }
                 }
             }
@@ -42,6 +45,7 @@ struct SessionListView: View {
             }
             .navigationTitle("Сессии")
         }
+
     }
     
     private var sessionList: some View {
@@ -72,43 +76,33 @@ struct SessionListView: View {
             Text(session.sessionTitle)
                 .font(.title3)
                 .bold()
-                .monospaced()
-
             if showSessionDetails {
                 HStack(spacing: 8) {
                     Image(systemName: "calendar")
                         .foregroundStyle(.secondary)
                     Text(session.startTime, format: .dateTime)
-                        .fontDesign(.monospaced)
                         .foregroundStyle(.secondary)
                 }
-
+                
                 HStack(spacing: 8) {
                     Image(systemName: "mappin.and.ellipse")
                         .foregroundStyle(.secondary)
                     Text("\(session.location)")
                         .foregroundStyle(.secondary)
                 }
-
+                
                 HStack(spacing: 8) {
                     Image(systemName: "suit.club.fill")
                         .foregroundStyle(.secondary)
-                    Text("\(session.gameType.rawValue)")
+                    Text("\(session.gameType.rawValue) • \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
                         .foregroundStyle(.secondary)
                 }
-
+                
                 HStack(spacing: 8) {
-                    Image(systemName: "dollarsign.arrow.circlepath")
-                        .foregroundStyle(.secondary)
-                    Text("\(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
-                        .fontDesign(.monospaced)
-                        .foregroundStyle(.secondary)
-                }
-
-                HStack(spacing: 8) {
-                    Image(systemName: statusIcon(for: session.status))
-                        .foregroundStyle(statusColor(for: session.status))
                     Text(session.status.rawValue)
+                        .font(.footnote.weight(.semibold))
+                        .padding(5)
+                        .background(statusColor(for: session.status).opacity(0.15), in: Capsule())
                         .foregroundStyle(statusColor(for: session.status))
                 }
             } else {
@@ -116,13 +110,12 @@ struct SessionListView: View {
                     Image(systemName: "calendar")
                         .foregroundStyle(.secondary)
                     Text(session.startTime, format: .dateTime)
-                        .fontDesign(.monospaced)
                         .foregroundStyle(.secondary)
                 }
             }
         }
     }
-
+    
     private func statusIcon(for status: SessionStatus) -> String {
         switch status {
         case .active: return "bolt.fill"
@@ -130,7 +123,7 @@ struct SessionListView: View {
         case .finished: return "checkmark.seal.fill"
         }
     }
-
+    
     private func statusColor(for status: SessionStatus) -> Color {
         switch status {
         case .active: return .green

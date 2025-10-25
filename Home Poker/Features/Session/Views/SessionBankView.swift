@@ -55,7 +55,7 @@ struct SessionBankView: View {
                     showingDepositSheet = true
                 } label: {
                     Image(systemName: "arrow.down.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(isBankClosed ? .green.opacity(0.5) :.green)
                 }
                 .disabled(isBankClosed || sortedPlayers.isEmpty)
                 
@@ -63,7 +63,7 @@ struct SessionBankView: View {
                     showingWithdrawalSheet = true
                 } label: {
                     Image(systemName: "arrow.up.circle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(isBankClosed ? .orange.opacity(0.5) :.orange)
                 }
                 .disabled(isBankClosed || sortedPlayers.isEmpty)
                 
@@ -75,21 +75,16 @@ struct SessionBankView: View {
                 }
                 .disabled(!canCalculateSettlement)
                 
-                if isBankClosed {
-                    Button {
+                Button {
+                    if isBankClosed {
                         viewModel.reopenBank(for: session)
-                    } label: {
-                        Image(systemName: "lock.open.fill")
+                    } else {
+                        viewModel.closeBank(for: session)
                     }
-                } else {
-                    Button {
-                        if !viewModel.closeBank(for: session) {
-                            // Ошибка покажется через alert viewModel
-                        }
-                    }
-                    label: {
-                        Image(systemName: "lock.fill")
-                    }
+                } label: {
+                    Image(systemName: isBankClosed ? "lock.fill" : "lock.open.fill")
+                        .symbolRenderingMode(.hierarchical)
+                        .contentTransition(.symbolEffect(.replace))
                 }
             }
         }
@@ -129,6 +124,16 @@ struct SessionBankView: View {
     
     private func summarySection(bank: SessionBank) -> some View {
         Section("Итоги") {
+            if bank.isClosed {
+                HStack {
+                    Text("Банк закрыт")
+                    Image(systemName: "lock.fill")
+                    Spacer()
+                    if let closedAt = bank.closedAt {
+                        Text(closedAt, style: .date)
+                    }
+                }
+            }
             summaryRow(title: "Ожидается", value: formatCurrency(bank.expectedTotal))
             summaryRow(title: "Получено", value: formatCurrency(bank.totalDeposited), color: .green)
             summaryRow(title: "Выдано", value: formatCurrency(bank.totalWithdrawn), color: .orange)
@@ -137,17 +142,7 @@ struct SessionBankView: View {
                 value: formatCurrency(bank.remainingToCollect),
                 color: bank.remainingToCollect == 0 ? .secondary : .red
             )
-            if bank.isClosed {
-                HStack {
-                    Label("Банк закрыт", systemImage: "lock.fill")
-                    Spacer()
-                    if let closedAt = bank.closedAt {
-                        Text(closedAt, style: .date)
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
+       
         }
     }
     
@@ -173,22 +168,20 @@ struct SessionBankView: View {
     
     private func managerSection(bank: SessionBank) -> some View {
         Section("Ответственный") {
-            Menu {
-                Button("Не назначен") {
-                    viewModel.setBankManager(nil, for: session)
-                }
-                Divider()
-                ForEach(sortedPlayers, id: \.id) { player in
-                    Button(player.name) {
+            Picker("Игрок", selection: Binding(
+                get: { bank.manager?.id },
+                set: { newManagerId in
+                    if let newManagerId {
+                        let player = sortedPlayers.first { $0.id == newManagerId }
                         viewModel.setBankManager(player, for: session)
+                    } else {
+                        viewModel.setBankManager(nil, for: session)
                     }
                 }
-            } label: {
-                HStack {
-                    Text("Игрок")
-                    Spacer()
-                    Text(bank.manager?.name ?? "Не назначен")
-                        .foregroundStyle(.secondary)
+            )) {
+                Text("Не назначен").tag(nil as UUID?)
+                ForEach(sortedPlayers, id: \.id) { player in
+                    Text(player.name).tag(player.id as UUID?)
                 }
             }
         }

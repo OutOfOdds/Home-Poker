@@ -14,8 +14,7 @@ struct MainView: View {
                 SessionListView()
             }
             Tab("Таймер", systemImage: "timer") {
-                Text("В разработке 🚧")
-                    .monospaced()
+                TimerView()
             }
         }
     }

@@ -54,5 +54,5 @@ enum GameType: String, Codable {
 enum SessionStatus: String, Codable {
     case active = "Активная"
     case awaitingForSettlements = "Ожидание расчетов"
-    case finished = "Завершена"
+    case finished = "Завершенная"
 }

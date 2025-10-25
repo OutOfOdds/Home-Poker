@@ -134,7 +134,7 @@ final class SessionDetailViewModel {
     }
     
     /// Пытается закрыть сессионный банк. Alert покажется автоматически при ошибке.
-    func closeBank(for session: Session) -> Bool {
+    func closeBank(for session: Session) {
         performServiceCall {
             try service.closeBank(for: session)
         }
@@ -164,6 +164,7 @@ final class SessionDetailViewModel {
         return isValid
     }
 
+    @discardableResult
     private func performServiceCall(_ action: () throws -> Void) -> Bool {
         do {
             try action()
