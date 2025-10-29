@@ -6,7 +6,7 @@ final class SessionBank {
     @Attribute(.unique) var id: UUID = UUID()
     @Relationship(inverse: \Session.bank) var session: Session
     @Relationship var manager: Player?
-    @Relationship(deleteRule: .cascade) var entries: [SessionBankTransaction] = []
+    @Relationship(deleteRule: .cascade) var transactions: [SessionBankTransaction] = []
     var createdAt: Date
     var isClosed: Bool
     var closedAt: Date?
@@ -41,7 +41,7 @@ extension SessionBank {
     /// Вычисляет общие суммы пополнений и выдач за один проход по всем записям.
     /// - Returns: Кортеж с суммой пополнений и суммой выдач.
     private func calculateTotals() -> (deposited: Int, withdrawn: Int) {
-        entries.reduce((deposited: 0, withdrawn: 0)) { result, entry in
+        transactions.reduce((deposited: 0, withdrawn: 0)) { result, entry in
             switch entry.type {
             case .deposit:
                 return (result.deposited + entry.amount, result.withdrawn)
@@ -60,7 +60,7 @@ extension SessionBank {
     }
 
     func contributions(for player: Player) -> (deposited: Int, withdrawn: Int) {
-        entries
+        transactions
             .filter { $0.player?.id == player.id }
             .reduce((deposited: 0, withdrawn: 0)) { result, entry in
                 switch entry.type {
@@ -72,16 +72,64 @@ extension SessionBank {
             }
     }
 
-    func outstandingAmount(for player: Player) -> Int {
+    /// Вычисляет сумму, которую игрок должен банку.
+    /// Возвращает положительное значение только для проигравших игроков, которые ещё не внесли полную сумму.
+    func amountOwedToBank(for player: Player) -> Int {
         guard !player.inGame else { return 0 }
-        let expected = max(player.buyIn - player.cashOut, 0)
-        let (deposited, _) = contributions(for: player)
-        return max(expected - deposited, 0)
+
+        // Если банк что-то должен игроку, то игрок ничего не должен банку
+        let bankOwes = amountOwedByBank(for: player)
+        if bankOwes > 0 { return 0 }
+
+        let profit = player.cashOut - player.buyIn
+        let profitInCash = profit * session.chipsToCashRatio
+        let (deposited, withdrawn) = contributions(for: player)
+        let netContribution = deposited - withdrawn
+
+        // Игрок должен = abs(убыток в деньгах) - уже внесённое
+        // Если игрок проиграл 50₽ и внёс 30₽ → должен 20₽
+        // Если игрок проиграл 50₽ и внёс 100₽ → должен 0₽ (переплата учтена в amountOwedByBank)
+        let playerOwes = -profitInCash - netContribution
+        return max(playerOwes, 0)
     }
 
-    var debtors: [Player] {
+    /// Игроки, которые должны банку
+    var playersOwingBank: [Player] {
         session.players
-            .filter { outstandingAmount(for: $0) > 0 }
+            .filter { amountOwedToBank(for: $0) > 0 }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
+
+    /// Общая сумма, которую банк должен всем игрокам (выигравшие + переплатившие)
+    var totalOwedByBank: Int {
+        session.players.reduce(0) { $0 + amountOwedByBank(for: $1) }
+    }
+
+    /// Вычисляет сумму, которую банк должен игроку.
+    /// Включает выигрыш игрока (profit > 0) И переплаты (deposited > expected debt).
+    func amountOwedByBank(for player: Player) -> Int {
+        guard !player.inGame else { return 0 }
+
+        let profit = player.cashOut - player.buyIn  // Может быть положительным или отрицательным
+        let profitInCash = profit * session.chipsToCashRatio
+        let (deposited, withdrawn) = contributions(for: player)
+        let netContribution = deposited - withdrawn
+
+        // Банк должен = профит в деньгах + внесённое игроком - выданное
+        // Если игрок выиграл 100₽ и ничего не внёс → банк должен 100₽
+        // Если игрок выиграл 100₽ и внёс 5₽ → банк должен 105₽ (выигрыш + депозит)
+        // Если игрок проиграл 50₽ но внёс 100₽ → банк должен 50₽ (переплата)
+        // Если игрок проиграл 50₽ и внёс 30₽ → банк должен 0₽ (ещё не расплатился)
+        let bankOwes = profitInCash + netContribution
+        return max(bankOwes, 0)
+    }
+
+    /// Список игроков, кому банк должен деньги (выигравшие + переплатившие)
+    var playersOwedByBank: [Player] {
+        session.players
+            .filter { amountOwedByBank(for: $0) > 0 }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+
 }

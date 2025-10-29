@@ -204,7 +204,7 @@ graph TB
   - `SessionBankView` - управление банком
   - `ExpenseDetails` - детали расходов
 - **Subviews**:
-  - `SessionInfoSection`, `BankStatsSection`, `PlayerList`, `PlayerRow`, `PlayerTransactionsView`
+  - `SessionInfoSection`, `ChipsStatsSection`, `PlayerList`, `PlayerRow`, `PlayerTransactionsView`
 - **Sheets**:
   - `NewSessionSheet`, `AddPlayerSheet`, `AddExpenseSheet`, `BlindsEditorSheet`
   - `PlayerCashOutSheet`, `RebuyPlayerSheet`, `PlayerAddOnSheet`

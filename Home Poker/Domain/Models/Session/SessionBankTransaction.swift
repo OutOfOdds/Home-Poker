@@ -8,8 +8,10 @@ final class SessionBankTransaction {
     var amount: Int
     var type: SessionBankTransactionType
     var note: String
-    @Relationship(deleteRule: .nullify) var player: Player?
-    @Relationship(inverse: \SessionBank.entries) var bank: SessionBank
+
+
+    @Relationship(inverse: \Player.sessionBankTransactions) var player: Player?
+    @Relationship(inverse: \SessionBank.transactions) var bank: SessionBank
     
     init(
         amount: Int,

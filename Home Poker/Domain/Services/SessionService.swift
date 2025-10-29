@@ -14,13 +14,7 @@ protocol SessionServiceProtocol {
     @discardableResult
     func ensureBank(for session: Session) -> SessionBank
     func setBankManager(_ player: Player?, for session: Session)
-    func recordBankTransaction(
-        for session: Session,
-        player: Player,
-        amount: Int,
-        note: String?,
-        type: SessionBankTransactionType
-    ) throws
+    func recordBankTransaction(for session: Session, player: Player, amount: Int, note: String?, type: SessionBankTransactionType) throws
     func closeBank(for session: Session) throws
     func reopenBank(for session: Session)
     
@@ -86,8 +80,8 @@ struct SessionService: SessionServiceProtocol {
     // Удаляет игрока из сессии вместе со всеми связанными транзакциями.
     /// SwiftData автоматически:
     /// - Удаляет все PlayerTransaction (deleteRule: .cascade)
+    /// - Удаляет все SessionBankTransaction (deleteRule: .cascade)
     /// - Обнуляет Expense.payer (deleteRule: .nullify)
-    /// - Обнуляет SessionBankTransactions.player (deleteRule: .nullify)
     func removePlayer(_ player: Player, from session: Session) {
         session.players.removeAll { $0.id == player.id }
         player.modelContext?.delete(player)
@@ -98,11 +92,9 @@ struct SessionService: SessionServiceProtocol {
     func removeTransaction(_ transaction: PlayerTransaction, from session: Session) {
         if let player = transaction.player {
             player.transactions.removeAll { $0.id == transaction.id }
-            if transaction.type == .cashOut && !player.inGame {
+            if transaction.type == .cashOut {
                 let hasCashOut = player.transactions.contains { $0.type == .cashOut }
-                if !hasCashOut {
-                    player.inGame = true
-                }
+                player.inGame = !hasCashOut
             }
         }
         transaction.modelContext?.delete(transaction)
@@ -153,7 +145,7 @@ struct SessionService: SessionServiceProtocol {
             bank: bank,
             note: trimmedNote(note)
         )
-        bank.entries.append(entry)
+        bank.transactions.append(entry)
     }
     
     // Помечает наличный банк закрытым, если все расчёты завершены.
@@ -228,7 +220,9 @@ struct SessionService: SessionServiceProtocol {
         session.players
             .filter { !$0.inGame }
             .reduce(0) { partial, player in
-                partial + max(player.buyIn - player.cashOut, 0)
+                let chipBalance = max(player.buyIn - player.cashOut, 0)
+                let cashBalance = chipBalance * session.chipsToCashRatio
+                return partial + cashBalance    
             }
     }
 }

@@ -94,6 +94,7 @@ struct SessionBankTransactionSheet: View {
             get: { selectedPlayerID },
             set: {
                 selectedPlayerID = $0
+                amountManuallyEdited = false // Сбрасываем флаг при смене игрока
                 updateSuggestedAmountIfNeeded(force: false)
             }
         )
@@ -111,8 +112,24 @@ struct SessionBankTransactionSheet: View {
                     
                     switch mode {
                     case .deposit:
-                        Text("Осталось внести: \(bank.outstandingAmount(for: player).asCurrency())")
-                            .foregroundStyle(.secondary)
+                        let bankOwes = bank.amountOwedByBank(for: player)
+                        let playerOwes = bank.amountOwedToBank(for: player)
+
+                        if bankOwes > 0 {
+                            if player.profit > 0 {
+                                Text("Игрок выиграл: \(bankOwes.asCurrency())")
+                                    .foregroundStyle(.green)
+                            } else {
+                                Text("Переплата: \(bankOwes.asCurrency())")
+                                    .foregroundStyle(.blue)
+                            }
+                        } else if playerOwes > 0 {
+                            Text("Осталось внести: \(playerOwes.asCurrency())")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Расчёты закрыты")
+                                .foregroundStyle(.secondary)
+                        }
                     case .withdrawal:
                         let available = max(deposited - withdrawn, 0)
                         Text("Доступно к выдаче: \(available.asCurrency())")
@@ -120,7 +137,6 @@ struct SessionBankTransactionSheet: View {
                     }
                     
                     Divider()
-                    Text("Всего ожидается: \(bank.expectedTotal.asCurrency())")
                     Text("Получено: \(bank.totalDeposited.asCurrency())")
                     Text("Осталось собрать: \(bank.remainingToCollect.asCurrency())")
                 }
@@ -128,7 +144,6 @@ struct SessionBankTransactionSheet: View {
                 .foregroundStyle(.secondary)
             } else if let bank {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Всего ожидается: \(bank.expectedTotal.asCurrency())")
                     Text("Получено: \(bank.totalDeposited.asCurrency())")
                     Text("Осталось собрать: \(bank.remainingToCollect.asCurrency())")
                 }
@@ -140,10 +155,13 @@ struct SessionBankTransactionSheet: View {
     
     private func updateSuggestedAmountIfNeeded(force: Bool) {
         guard mode == .deposit, let bank, let player = selectedPlayer else { return }
-        let outstanding = bank.outstandingAmount(for: player)
-        if force || (!amountManuallyEdited && amount == nil) {
+        let playerOwes = bank.amountOwedToBank(for: player)
+        // Обновляем сумму если:
+        // - force = true (при первом открытии)
+        // - пользователь не редактировал сумму вручную после смены игрока
+        if force || !amountManuallyEdited {
             isUpdatingAmount = true
-            amount = outstanding > 0 ? outstanding : nil
+            amount = playerOwes > 0 ? playerOwes : nil
             DispatchQueue.main.async {
                 self.isUpdatingAmount = false
             }

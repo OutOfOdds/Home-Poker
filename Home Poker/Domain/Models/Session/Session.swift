@@ -8,6 +8,7 @@ final class Session {
     var sessionTitle: String
     var location: String
     var gameType: GameType
+    var chipsToCashRatio: Int = 1
     var status: SessionStatus
     var smallBlind: Int = 0
     var bigBlind: Int = 0
@@ -26,17 +27,17 @@ final class Session {
         self.sessionTitle = sessionTitle
     }
     
-    // Сумма всех закупов
+    // Сумма всех фишек в игре
     var totalChips: Int {
         players.reduce(0) { $0 + $1.buyIn }
     }
     
-    /// Деньги в игре: закуп - суммарная сумма вывода всех неактивных игроков (cashOut)
+    /// Фишки в игре: закуп - суммарная сумма вывода всех неактивных игроков (cashOut)
     var chipsInGame: Int {
         totalChips - chipsWithdrawn
     }
     
-    /// Сумма выведенных средств (по-прежнему, если надо для "Выведено")
+    /// Сумма выведенных фишек (по-прежнему, если надо для "Выведено")
     var chipsWithdrawn: Int {
         players.filter { !$0.inGame }.reduce(0) { $0 + $1.cashOut }
     }

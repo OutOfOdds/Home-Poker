@@ -11,6 +11,9 @@ final class Player {
     @Relationship(deleteRule: .cascade)
     var transactions: [PlayerTransaction] = []
 
+    @Relationship(deleteRule: .cascade)
+    var sessionBankTransactions: [SessionBankTransaction] = []
+
     var getsRakeback: Bool = false
     var rakeback: Int = 0
 
@@ -57,4 +60,9 @@ final class Player {
 
     /// Прибыль с учётом рейкбека.
     var profitAfterRakeback: Int { profit - rakeback }
+
+    /// Начальный buy-in игрока (первая транзакция типа .buyIn).
+    var initialBuyIn: Int {
+        transactions.first(where: { $0.type == .buyIn })?.amount ?? 0
+    }
 }

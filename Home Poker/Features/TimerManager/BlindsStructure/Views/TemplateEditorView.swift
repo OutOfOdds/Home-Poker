@@ -1,17 +1,12 @@
 import SwiftUI
 
 struct TemplateEditorView: View {
-    @State private var template: TournamentTemplate
+    @State var template: TournamentTemplate
     @State private var validationWarnings: [ValidationWarning] = []
     @State private var sheetMode: LevelFormSheet.Mode?
 
-    let onSave: (TournamentTemplate) -> Void
+    @Environment(TemplateViewModel.self) private var templateViewModel
     @Environment(\.dismiss) private var dismiss
-
-    init(template: TournamentTemplate, onSave: @escaping (TournamentTemplate) -> Void) {
-        self._template = State(initialValue: template)
-        self.onSave = onSave
-    }
 
     var body: some View {
         Form {
@@ -37,6 +32,13 @@ struct TemplateEditorView: View {
 
             // Levels list
             Section("Структура блайндов") {
+                Button {
+                    sheetMode = .add
+                } label: {
+                    Label("Добавить уровень", systemImage: "plus.circle.fill")
+                }
+            }
+            Section {
                 ForEach(Array(template.levels.enumerated()), id: \.element.id) { index, level in
                     Button {
                         sheetMode = .edit(index: index)
@@ -57,13 +59,10 @@ struct TemplateEditorView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    .foregroundColor(.primary)
                 }
 
-                Button {
-                    sheetMode = .add
-                } label: {
-                    Label("Добавить уровень", systemImage: "plus.circle.fill")
-                }
+            
             }
 
             // Default settings
@@ -72,32 +71,26 @@ struct TemplateEditorView: View {
                     Text("Игроков")
                     Spacer()
                     TextField("", value: $template.defaultPlayers, format: .number)
+                        .frame(width: 100)
                         .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 80)
+                        .textFieldStyle(.roundedBorder)
                 }
 
                 HStack {
                     Text("Стартовый стек")
                     Spacer()
                     TextField("", value: $template.defaultStartingStack, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(.roundedBorder)
                 }
             }
         }
         .navigationTitle("Редактор шаблона")
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Отмена") {
-                    dismiss()
-                }
-            }
-
             ToolbarItem(placement: .confirmationAction) {
                 Button("Сохранить") {
-                    onSave(template)
+                    templateViewModel.saveAsNewTemplate(template)
                     dismiss()
                 }
                 .disabled(!isEditValid)
@@ -110,9 +103,15 @@ struct TemplateEditorView: View {
                 onSave: { level in
                     switch mode {
                     case .add:
-                        addLevel(level)
+                        template.levels.append(level)
+                        for i in template.levels.indices {
+                            template.levels[i].index = i + 1
+                        }
+                        validationWarnings = BlindValidation.validateStructure(levels: template.levels)
                     case .edit(let index):
-                        updateLevel(at: index, with: level)
+                        guard template.levels.indices.contains(index) else { return }
+                        template.levels[index] = level
+                        validationWarnings = BlindValidation.validateStructure(levels: template.levels)
                     }
                 }
             )
@@ -135,24 +134,6 @@ struct TemplateEditorView: View {
 
     // MARK: - Helpers
 
-    private func addLevel(_ level: BlindLevel) {
-        template.levels.append(level)
-        reindexLevels()
-        validateStructure()
-    }
-
-    private func updateLevel(at index: Int, with level: BlindLevel) {
-        guard template.levels.indices.contains(index) else { return }
-        template.levels[index] = level
-        validateStructure()
-    }
-
-    private func reindexLevels() {
-        for index in template.levels.indices {
-            template.levels[index].index = index + 1
-        }
-    }
-
     private func validateStructure() {
         validationWarnings = BlindValidation.validateStructure(levels: template.levels)
     }
@@ -162,13 +143,10 @@ struct TemplateEditorView: View {
 
 #Preview {
     @Previewable @State var template = BuiltInTemplates.standardMedium
+    @Previewable @State var templateViewModel = TemplateViewModel()
 
-    return NavigationStack {
-        TemplateEditorView(
-            template: template,
-            onSave: { edited in
-                print("Saved: \(edited.name)")
-            }
-        )
+    NavigationStack {
+        TemplateEditorView(template: template)
+            .environment(templateViewModel)
     }
 }

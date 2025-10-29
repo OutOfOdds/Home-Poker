@@ -9,11 +9,14 @@ struct NewSessionSheet: View {
     @State private var sessionTitle: String = ""
     @State private var location: String = ""
     @State private var gameType: GameType = .NLHoldem
+    @State private var cashToChipsRatio: Int? = nil
     
     @State private var smallBlind: Int? = nil
     @State private var bigBlind: Int? = nil
     @State private var ante: Int? = nil
     @State private var bigManuallyEdited = false
+    
+    
     @FocusState private var focusedField: Field?
     
     private enum Field { case small, big }
@@ -25,7 +28,6 @@ struct NewSessionSheet: View {
                 blindSection
             }
             .navigationTitle("Новая сессия")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 toolBar
             }
@@ -42,6 +44,18 @@ struct NewSessionSheet: View {
                 Text(GameType.NLHoldem.rawValue).tag(GameType.NLHoldem)
                 Text(GameType.PLO4.rawValue).tag(GameType.PLO4)
             }
+            
+            HStack {
+                Text("1 фишка равна:")
+                Spacer()
+                TextField("Наличные", value: $cashToChipsRatio, format: .number)
+                    .multilineTextAlignment(.trailing)
+                    .focused($focusedField, equals: .big)
+                    .frame(maxWidth: 120)
+                    .keyboardType(.numberPad)
+            }
+        } footer: {
+            Text("прим. 1 фишка = 10 у.e.")
         }
     }
     
@@ -86,7 +100,6 @@ struct NewSessionSheet: View {
         }
         header: {
             Text("Блайнды")
-                .font(.caption)
         }
         footer: {
             if let sb = smallBlind, let bb = bigBlind {
@@ -120,7 +133,7 @@ struct NewSessionSheet: View {
     }
     
     private var canSave: Bool {
-        location.nonEmptyTrimmed != nil
+        location.nonEmptyTrimmed != nil && cashToChipsRatio != nil
     }
     
     private func createNewSession() {
@@ -129,9 +142,10 @@ struct NewSessionSheet: View {
             title: sessionTitle,
             location: location,
             gameType: gameType,
+            cashToChipsRatio: cashToChipsRatio,
             smallBlind: smallBlind,
             bigBlind: bigBlind,
-            ante: ante
+            ante: ante,
         )
         let repository = SwiftDataSessionsRepository(context: context)
         do {

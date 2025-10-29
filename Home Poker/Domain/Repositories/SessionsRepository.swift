@@ -32,6 +32,10 @@ final class SwiftDataSessionsRepository: SessionsRepository {
             sessionTitle: input.title.trimmed
         )
 
+        if let ratio = input.cashToChipsRatio, ratio > 0 {
+            session.chipsToCashRatio = ratio
+        }
+
         if let sb = input.smallBlind, sb > 0 {
             session.smallBlind = sb
         }
@@ -58,6 +62,7 @@ struct NewSessionInput {
     var title: String
     var location: String
     var gameType: GameType
+    var cashToChipsRatio: Int?
     var smallBlind: Int?
     var bigBlind: Int?
     var ante: Int?

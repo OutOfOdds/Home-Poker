@@ -9,15 +9,8 @@ struct TemplatePickerView: View {
 
     var body: some View {
         content
-            .sheet(item: $templateToEdit) { template in
-                NavigationStack {
-                    TemplateEditorView(
-                        template: template,
-                        onSave: { editedTemplate in
-                            templateViewModel.saveAsNewTemplate(editedTemplate)
-                        }
-                    )
-                }
+            .navigationDestination(item: $templateToEdit) { template in
+                TemplateEditorView(template: template)
             }
     }
 
@@ -137,6 +130,7 @@ struct TemplateGroupView: View {
     let icon: String
     let subtitle: String
     let templates: [TournamentTemplate]
+    
     @Binding var templateToEdit: TournamentTemplate?
 
     var body: some View {
@@ -172,7 +166,7 @@ struct TemplateGroupView: View {
     }
 }
 
-// MARK: - Unified Template Row
+// MARK: - Общая ячейка шаблона
 
 struct TemplateRow: View {
     let template: TournamentTemplate
@@ -247,34 +241,20 @@ struct TemplateRow: View {
             HStack(spacing: 8) {
                 Button(action: onStart) {
                     Image(systemName: "play.fill")
-                        .font(.caption)
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Color.accentColor)
-                        .clipShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
 
                 Button(action: onEdit) {
                     Image(systemName: "pencil")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.gray.opacity(0.15))
-                        .clipShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
 
                 if let onDelete = onDelete {
                     Button(action: { showDeleteAlert = true }) {
                         Image(systemName: "trash")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .frame(width: 32, height: 32)
-                            .background(Color.red.opacity(0.1))
-                            .clipShape(Circle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .tint(.red)
                     .alert("Удалить шаблон?", isPresented: $showDeleteAlert) {
                         Button("Отмена", role: .cancel) {}
                         Button("Удалить", role: .destructive) {

@@ -18,7 +18,7 @@ struct SessionDetailView: View {
                 showingBlindsSheet: $showingBlindsSheet
             )
             
-            BankStatsSection(session: session)
+            ChipsStatsSection(session: session)
             
             if !session.players.isEmpty {
                 PlayerList(session: session)

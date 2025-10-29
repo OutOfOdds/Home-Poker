@@ -17,7 +17,7 @@ struct SessionBankView: View {
     }
     
     private var sortedEntries: [SessionBankTransaction] {
-        session.bank?.entries.sorted { $0.createdAt > $1.createdAt } ?? []
+        session.bank?.transactions.sorted { $0.createdAt > $1.createdAt } ?? []
     }
     
     private var isBankClosed: Bool {
@@ -39,6 +39,9 @@ struct SessionBankView: View {
                 managerSection(bank: bank)
                 summarySection(bank: bank)
                 debtorsSection(bank: bank)
+                if !bank.playersOwedByBank.isEmpty {
+                    owedByBankSection(bank: bank)
+                }
                 entriesSection(entries: sortedEntries)
             } else {
                 ContentUnavailableView("Банк не создан", systemImage: "banknote")
@@ -134,31 +137,79 @@ struct SessionBankView: View {
                     }
                 }
             }
-            summaryRow(title: "Ожидается", value: formatCurrency(bank.expectedTotal))
-            summaryRow(title: "Получено", value: formatCurrency(bank.totalDeposited), color: .green)
-            summaryRow(title: "Выдано", value: formatCurrency(bank.totalWithdrawn), color: .orange)
+            summaryRow(title: "Получено от игроков", value: formatCurrency(bank.totalDeposited), color: .green)
+            summaryRow(title: "Выдано игрокам", value: formatCurrency(bank.totalWithdrawn), color: .orange)
             summaryRow(
-                title: "Осталось собрать",
-                value: formatCurrency(bank.remainingToCollect),
-                color: bank.remainingToCollect == 0 ? .secondary : .red
+                title: "Баланс банка",
+                value: formatCurrency(bank.netBalance),
+                color: bank.netBalance > 0 ? .green : (bank.netBalance < 0 ? .red : .secondary)
             )
-       
+            
+            
+            
+            let totalDebt = bank.playersOwingBank.reduce(0) { $0 + bank.amountOwedToBank(for: $1) }
+            if totalDebt > 0 {
+                summaryRow(
+                    title: "Должны банку",
+                    value: formatCurrency(totalDebt),
+                    color: .red
+                )
+            }
+
+            if bank.totalOwedByBank > 0 {
+                summaryRow(
+                    title: "Банк должен",
+                    value: formatCurrency(bank.totalOwedByBank),
+                    color: .blue
+                )
+            }
         }
     }
     
     private func debtorsSection(bank: SessionBank) -> some View {
-        let debtors = bank.debtors
-        return Section("Должники") {
+        let debtors = bank.playersOwingBank
+        return Section("Должны банку") {
             if debtors.isEmpty {
-                Text("Все расчёты закрыты")
+                Text("Нет должников")
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(debtors, id: \.id) { player in
                     HStack {
                         Text(player.name)
                         Spacer()
-                        Text(formatCurrency(bank.outstandingAmount(for: player)))
+                        Text(formatCurrency(bank.amountOwedToBank(for: player)))
                             .foregroundStyle(.red)
+                            .fontWeight(.semibold)
+                    }
+                }
+            }
+        }
+    }
+
+    private func owedByBankSection(bank: SessionBank) -> some View {
+        let creditors = bank.playersOwedByBank
+        return Section("Банк должен игрокам") {
+            if creditors.isEmpty {
+                Text("Банк никому не должен")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(creditors, id: \.id) { player in
+                    HStack {
+                        // Иконка для различия выигравших от переплативших
+                        if player.profit > 0 {
+                            Image(systemName: "trophy.fill")
+                                .foregroundStyle(.yellow)
+                                .font(.caption)
+                        } else {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.caption)
+                        }
+
+                        Text(player.name)
+                        Spacer()
+                        Text(formatCurrency(bank.amountOwedByBank(for: player)))
+                            .foregroundStyle(.blue)
                             .fontWeight(.semibold)
                     }
                 }

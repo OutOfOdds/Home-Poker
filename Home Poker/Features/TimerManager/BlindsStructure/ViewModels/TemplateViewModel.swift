@@ -7,7 +7,7 @@ final class TemplateViewModel {
 
     // MARK: - Services
 
-    private let templateService: TemplateServiceProtocol
+    private let templateService = TemplateService()
 
     // MARK: - State (список шаблонов)
 
@@ -16,8 +16,7 @@ final class TemplateViewModel {
 
     // MARK: - Initialization
 
-    init(templateService: TemplateServiceProtocol = TemplateService()) {
-        self.templateService = templateService
+    init() {
         loadTemplates()
     }
 

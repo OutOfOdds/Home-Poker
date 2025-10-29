@@ -137,7 +137,7 @@ enum PreviewData {
             createdAt: Date().addingTimeInterval(-30 * 60)
         )
 
-        bank.entries = [entry1, entry2, entry3]
+        bank.transactions = [entry1, entry2, entry3]
         session.bank = bank
 
         return session
@@ -221,7 +221,7 @@ enum PreviewData {
                 note: "Внесение в банк",
                 createdAt: Date().addingTimeInterval(-1 * 60 * 60)
             )
-            bank.entries = [entry1, entry2]
+            bank.transactions = [entry1, entry2]
         }
 
         return bank

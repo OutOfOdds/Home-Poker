@@ -22,34 +22,37 @@ struct SettlementService: SettlementProtocol {
         for player in session.players {
             let buyIn = player.buyIn
             let cashOut = player.cashOut
-            let net = cashOut - buyIn
+            let netChips = cashOut - buyIn
+            let netCash = netChips * session.chipsToCashRatio
             balances.append(
                 PlayerBalance(
                     player: player,
                     buyIn: buyIn,
                     cashOut: cashOut,
-                    net: net
+                    netChips: netChips,
+                    netCash: netCash
                 )
             )
         }
-        
-        let transfers = greedyTransfers(from: balances)
-        
+
+        let transfers = greedyTransfers(from: balances, chipToCashRatio: session.chipsToCashRatio)
+
         return SettlementResult(balances: balances, transfers: transfers)
     }
     
     /// Жадный алгоритм, сопоставляющий игроков с положительным и отрицательным результатом.
     /// Переводы формируются так, чтобы максимально быстро обнулить долги,
     /// при этом каждый перевод идёт от текущего должника к текущему кредитору.
-    private func greedyTransfers(from balances: [PlayerBalance]) -> [TransferProposal] {
+    /// Все переводы в РУБЛЯХ.
+    private func greedyTransfers(from balances: [PlayerBalance], chipToCashRatio: Int) -> [TransferProposal] {
         var creditors = balances
-            .filter { $0.net > 0 }
-            .map { ($0.player, $0.net) }
+            .filter { $0.netCash > 0 }
+            .map { ($0.player, $0.netCash) }
             .sorted { $0.1 > $1.1 } // по убыванию
-        
+
         var debtors = balances
-            .filter { $0.net < 0 }
-            .map { ($0.player, -$0.net) } // величина долга как положительная
+            .filter { $0.netCash < 0 }
+            .map { ($0.player, -$0.netCash) } // величина долга как положительная
             .sorted { $0.1 > $1.1 } // по убыванию
         
         var transfers: [TransferProposal] = []
@@ -81,19 +84,22 @@ struct SettlementService: SettlementProtocol {
 struct PlayerBalance {
     /// Игрок, чьи результаты агрегированы.
     let player: Player
-    /// Совокупный buy-in (закупка + докупки).
+    /// Совокупный buy-in (закупка + докупки) в фишках.
     let buyIn: Int
-    /// Совокупный cash-out.
+    /// Совокупный cash-out в фишках.
     let cashOut: Int
-    /// Итоговый результат игрока (положительный — выигрыш, отрицательный — проигрыш).
-    let net: Int
+    /// Итоговый результат игрока в фишках (положительный — выигрыш, отрицательный — проигрыш).
+    let netChips: Int
+    /// Итоговый результат игрока в рублях (netChips × chipToCashRatio).
+    let netCash: Int
 }
 
 /// Предложение перевода между двумя игроками, полученное после рассчёта.
+/// Сумма перевода указана в РУБЛЯХ (cash), а не в фишках.
 struct TransferProposal {
     let from: Player
     let to: Player
-    let amount: Int
+    let amount: Int  // В рублях (cash)
 }
 
 /// Совокупный результат работы калькулятора: балансы и список переводов.

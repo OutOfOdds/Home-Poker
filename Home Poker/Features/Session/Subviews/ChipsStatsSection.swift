@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct BankStatsSection: View {
+struct ChipsStatsSection: View {
     @Bindable var session: Session
     
     var body: some View {
@@ -36,10 +36,10 @@ struct BankStatsSection: View {
                     Text("Общий закуп:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    
+
                     Spacer()
-                    
-                    Text(session.totalChips.asCurrency())
+
+                    Text("\(session.totalChips)")
                         .font(.title3).fontWeight(.semibold)
                         .foregroundStyle(.green)
                         .fontDesign(.monospaced)
@@ -54,10 +54,10 @@ struct BankStatsSection: View {
                     Text("В игре:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    
+
                     Spacer()
-                    
-                    Text(session.chipsInGame.asCurrency())
+
+                    Text("\(session.chipsInGame)")
                         .font(.title3).fontWeight(.semibold)
                         .foregroundColor(.blue)
                         .fontDesign(.monospaced)
@@ -72,10 +72,10 @@ struct BankStatsSection: View {
                     Text("Выведено:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    
+
                     Spacer()
-                    
-                    Text(session.chipsWithdrawn.asCurrency())
+
+                    Text("\(session.chipsWithdrawn)")
                         .font(.title3).fontWeight(.semibold)
                         .foregroundColor(.orange)
                         .fontDesign(.monospaced)
@@ -108,9 +108,19 @@ struct BankStatsSection: View {
                     Text("Банк сессии")
                     Spacer()
                     if let bank = session.bank {
-                        Text("Долг банку: \(bank.remainingToCollect.asCurrency())")
-                            .fontDesign(.monospaced)
-                            .foregroundStyle(bank.remainingToCollect == 0 ? .secondary : Color.red)
+                        if bank.totalOwedByBank > 0 {
+                            Text("К выплате: \(bank.totalOwedByBank.asCurrency())")
+                                .fontDesign(.monospaced)
+                                .foregroundStyle(.blue)
+                        } else if bank.remainingToCollect > 0 {
+                            Text("Долг банку: \(bank.remainingToCollect.asCurrency())")
+                                .fontDesign(.monospaced)
+                                .foregroundStyle(.red)
+                        } else {
+                            Text("Расчёты закрыты")
+                                .fontDesign(.monospaced)
+                                .foregroundStyle(.secondary)
+                        }
                     } else {
                         Text("Создать")
                             .fontDesign(.monospaced)
@@ -139,7 +149,7 @@ struct Line:Shape{
 
     NavigationStack {
         List {
-            BankStatsSection(session: session)
+            ChipsStatsSection(session: session)
         }
         .navigationTitle("Превью статистики банка")
     }

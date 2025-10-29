@@ -1,13 +1,6 @@
 import Foundation
 
-protocol TemplateServiceProtocol {
-    func getBuiltInTemplates() -> [TournamentTemplate]
-    func loadUserTemplates() -> [TournamentTemplate]
-    func saveTemplate(_ template: TournamentTemplate) throws
-    func deleteTemplate(id: UUID) throws
-}
-
-struct TemplateService: TemplateServiceProtocol {
+struct TemplateService {
 
     // MARK: - Встроенные шаблоны
 

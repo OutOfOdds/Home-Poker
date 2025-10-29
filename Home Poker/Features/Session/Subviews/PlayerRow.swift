@@ -25,9 +25,9 @@ struct PlayerRow: View {
                         }
                     }
                     HStack {
-                        Text("Закуп: \(player.buyIn.asCurrency())")
+                        Text("Закуп: \(player.buyIn)")
                         if !player.inGame {
-                            Text("-> Вывод: \(player.cashOut.asCurrency())")
+                            Text("-> Вывод: \(player.cashOut)")
                         }
                     }
                     .foregroundStyle(.secondary)
@@ -36,12 +36,12 @@ struct PlayerRow: View {
                     
                     if !player.inGame {
                         HStack {
-                            Text(player.profit.asCurrency())
+                            Text("\(player.profit >= 0 ? "+" : "")\(player.profit)")
                                 .font(.title3)
                                 .bold()
                                 .foregroundColor(displayedProfitColor)
                                 .fontDesign(.monospaced)
-                            Image(systemName: "banknote")
+                            Image(systemName: "circle.fill")
                                 .font(.title3)
                                 .fontDesign(.monospaced)
                                 .foregroundColor(displayedProfitColor)

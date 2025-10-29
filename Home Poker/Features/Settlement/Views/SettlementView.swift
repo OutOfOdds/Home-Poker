@@ -23,11 +23,14 @@ struct SettlementView: View {
                                     Text("Закуп: \(balance.buyIn) • Вывод: \(balance.cashOut)")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
+                                    Text("\(balance.netChips >= 0 ? "+" : "")\(balance.netChips) фишек")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text("\(balance.net)")
+                                Text(balance.netCash.asCurrency())
                                     .font(.body.weight(.semibold))
-                                    .foregroundStyle(balance.net >= 0 ? .green : .red)
+                                    .foregroundStyle(balance.netCash >= 0 ? .green : .red)
                             }
                         }
                     }
@@ -45,7 +48,7 @@ struct SettlementView: View {
                                     .foregroundStyle(.secondary)
                                 Text(t.to.name)
                                 Spacer()
-                                Text("\(t.amount)")
+                                Text(t.amount.asCurrency())
                                     .fontWeight(.semibold)
                             }
                         }

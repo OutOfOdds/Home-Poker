@@ -7,7 +7,10 @@ struct LevelFormSheet: View {
     @Binding var template: TournamentTemplate
     let onSave: (BlindLevel) -> Void
 
-    @State private var formState = LevelFormState()
+    @State private var smallBlind: String = ""
+    @State private var bigBlind: String = ""
+    @State private var ante: String = ""
+    @State private var minutes: String = ""
 
     enum Mode: Identifiable {
         case add
@@ -36,13 +39,53 @@ struct LevelFormSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                LevelFormFields(formState: $formState)
-            }
-            .navigationTitle(mode.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
+        Form {
+                Section {
+                    HStack {
+                        Text("Small Blind")
+                        Spacer()
+                        TextField("SB", text: $smallBlind)
+                            .frame(width: 100)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    HStack {
+                        Text("Big Blind")
+                        Spacer()
+                        TextField("BB", text: $bigBlind)
+                            .frame(width: 100)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    HStack {
+                        Text("Ante")
+                        Spacer()
+                        TextField("Ante", text: $ante)
+                            .frame(width: 100)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    HStack {
+                        Text("Длительность (мин)")
+                        Spacer()
+                        TextField("Мин.", text: $minutes)
+                            .frame(width: 100)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                } footer: {
+                    if let message = validationMessage {
+                        Text(message)
+                            .foregroundStyle(.red)
+                    }
+                }
+        }
+        .navigationTitle(mode.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") {
                         dismiss()
@@ -53,35 +96,70 @@ struct LevelFormSheet: View {
                     Button(mode.buttonText) {
                         saveLevel()
                     }
-                    .disabled(!formState.isValid)
+                    .disabled(!isValid)
                 }
-            }
-            .onAppear {
-                loadInitialData()
+        }
+        .onAppear {
+            if case .edit(let index) = mode,
+               template.levels.indices.contains(index) {
+                let level = template.levels[index]
+                smallBlind = String(level.smallBlind)
+                bigBlind = String(level.bigBlind)
+                ante = String(level.ante)
+                minutes = String(level.minutes)
+            } else {
+                smallBlind = "100"
+                bigBlind = "200"
+                ante = "0"
+                minutes = "12"
             }
         }
     }
 
-    private func loadInitialData() {
-        switch mode {
-        case .add:
-            formState.setDefaults()
-        case .edit(let index):
-            if template.levels.indices.contains(index) {
-                formState.load(from: template.levels[index])
-            }
+    private var isValid: Bool {
+        guard let sb = Int(smallBlind), sb > 0,
+              let bb = Int(bigBlind), bb > 0,
+              Int(ante) != nil,
+              let min = Int(minutes), min > 0
+        else {
+            return false
         }
+        return BlindValidation.validateBlinds(sb: sb, bb: bb) == .valid
+    }
+
+    private var validationMessage: String? {
+        guard let sb = Int(smallBlind),
+              let bb = Int(bigBlind)
+        else {
+            return nil
+        }
+        let result = BlindValidation.validateBlinds(sb: sb, bb: bb)
+        return result.message
     }
 
     private func saveLevel() {
-        switch mode {
-        case .add:
-            guard let level = formState.createLevel(index: template.levels.count + 1) else { return }
-            onSave(level)
-        case .edit(let index):
-            guard let level = formState.createLevel(index: index + 1) else { return }
-            onSave(level)
+        guard let sb = Int(smallBlind),
+              let bb = Int(bigBlind),
+              let anteValue = Int(ante),
+              let min = Int(minutes)
+        else {
+            return
         }
+
+        let index = switch mode {
+        case .add: template.levels.count + 1
+        case .edit(let idx): idx + 1
+        }
+
+        let level = BlindLevel(
+            index: index,
+            smallBlind: sb,
+            bigBlind: bb,
+            ante: anteValue,
+            minutes: min
+        )
+
+        onSave(level)
         dismiss()
     }
 }
