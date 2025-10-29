@@ -1,16 +1,6 @@
 import Foundation
 import SwiftData
 
-struct NewSessionInput {
-    var startTime: Date
-    var title: String
-    var location: String
-    var gameType: GameType
-    var smallBlind: Int?
-    var bigBlind: Int?
-    var ante: Int?
-}
-
 protocol SessionsRepository {
     func fetchSessions() throws -> [Session]
     @discardableResult
@@ -61,4 +51,14 @@ final class SwiftDataSessionsRepository: SessionsRepository {
         sessions.forEach(context.delete)
         try context.save()
     }
+}
+
+struct NewSessionInput {
+    var startTime: Date
+    var title: String
+    var location: String
+    var gameType: GameType
+    var smallBlind: Int?
+    var bigBlind: Int?
+    var ante: Int?
 }

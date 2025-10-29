@@ -1,20 +1,18 @@
-//
-//  MainView.swift
-//  Home Poker
-//
-//  Created by Odds on 23.10.2025.
-//
-
 import SwiftUI
 
 struct MainView: View {
+    @State private var timerViewModel = TimerViewModel()
+    @State private var templateViewModel = TemplateViewModel()
+    
     var body: some View {
         TabView {
             Tab("Сессии", systemImage: "list.star") {
                 SessionListView()
             }
             Tab("Таймер", systemImage: "timer") {
-                TimerView()
+                TimerManagerView()
+                    .environment(timerViewModel)
+                    .environment(templateViewModel)
             }
         }
     }

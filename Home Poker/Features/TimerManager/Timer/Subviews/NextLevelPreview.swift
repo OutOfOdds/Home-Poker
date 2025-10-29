@@ -1,29 +1,16 @@
-//
-//  NextLevelPreview.swift
-//  Home Poker
-//
-//  Created by Odds on 24.10.2025.
-//
-
 import SwiftUI
 
 /// Превью следующего уровня с навигацией к полному списку
 /// - Если state == nil: показывает следующий уровень относительно первого (до запуска)
 /// - Если state != nil: показывает следующий уровень относительно текущего
 struct NextLevelPreview: View {
-    let state: TimerState?
-    let items: [LevelItem]
-    let viewModel: TimerViewModel
+    @Environment(TimerViewModel.self) private var viewModel
 
     var body: some View {
         // Показываем только если есть следующий уровень
         if shouldShow {
             NavigationLink {
-                LevelsListView(
-                    items: items,
-                    currentIndex: currentIndex,
-                    viewModel: viewModel
-                )
+                LevelsListView()
             } label: {
                 previewContent
             }
@@ -42,14 +29,14 @@ struct NextLevelPreview: View {
 
                 if let nextItem = nextLevelItem {
                     HStack(spacing: 8) {
-                        Text(viewModel.levelTitle(for: nextItem))
+                        Text(nextItem.title)
                             .font(.subheadline)
                             .fontWeight(.medium)
 
                         Text("•")
                             .foregroundStyle(.secondary)
 
-                        Text(viewModel.formatBlinds(for: nextItem))
+                        Text(nextItem.formattedBlinds)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -62,7 +49,7 @@ struct NextLevelPreview: View {
 
     /// Индекс текущего уровня
     private var currentIndex: Int {
-        state?.currentLevelIndex ?? 0
+        viewModel.currentState?.currentLevelIndex ?? 0
     }
 
     /// Индекс следующего уровня
@@ -72,18 +59,18 @@ struct NextLevelPreview: View {
 
     /// Следующий уровень (если есть)
     private var nextLevelItem: LevelItem? {
-        guard items.indices.contains(nextLevelIndex) else { return nil }
-        return items[nextLevelIndex]
+        guard viewModel.items.indices.contains(nextLevelIndex) else { return nil }
+        return viewModel.items[nextLevelIndex]
     }
 
     /// Показывать ли превью (есть ли следующий уровень)
     private var shouldShow: Bool {
-        if let state = state {
+        if let state = viewModel.currentState {
             // Если таймер запущен, показываем только если не последний уровень
-            return state.currentLevelIndex < items.count - 1
+            return state.currentLevelIndex < viewModel.items.count - 1
         } else {
             // Если таймер не запущен, показываем только если есть хотя бы 2 уровня
-            return items.count > 1
+            return viewModel.items.count > 1
         }
     }
 }
@@ -91,61 +78,38 @@ struct NextLevelPreview: View {
 // MARK: - Preview
 
 #Preview("До запуска таймера") {
+    let viewModel = PreviewData.timerViewModel(.notStarted)
+
     NavigationStack {
         Form {
             VStack {
-                NextLevelPreview(
-                    state: nil,
-                    items: TimerViewModel().items,
-                    viewModel: TimerViewModel()
-                )
+                NextLevelPreview()
             }
         }
     }
+    .environment(viewModel)
 }
 
 #Preview("Таймер запущен") {
-    let viewModel = TimerViewModel()
-    viewModel.startTimer()
+    let viewModel = PreviewData.timerViewModel(.running(level: 1))
 
     return NavigationStack {
         VStack {
             Spacer()
-
-            if let state = viewModel.currentState {
-                NextLevelPreview(
-                    state: state,
-                    items: viewModel.items,
-                    viewModel: viewModel
-                )
-            }
+            NextLevelPreview()
         }
     }
+    .environment(viewModel)
 }
 
 #Preview("Последний уровень (не показывается)") {
-    let viewModel = TimerViewModel()
-    viewModel.startTimer()
-
-    // Переключаемся на последний уровень
-    for _ in 0..<viewModel.items.count - 1 {
-        viewModel.skipToNext()
-    }
+    let viewModel = PreviewData.timerViewModel(.running(level: Int.max))
 
     return NavigationStack {
         VStack {
             Spacer()
-
-            if let state = viewModel.currentState {
-                NextLevelPreview(
-                    state: state,
-                    items: viewModel.items,
-                    viewModel: viewModel
-                )
-            } else {
-                Text("Превью не отображается (последний уровень)")
-                    .foregroundStyle(.secondary)
-            }
+            NextLevelPreview()
         }
     }
+    .environment(viewModel)
 }

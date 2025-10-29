@@ -299,6 +299,92 @@ enum PreviewData {
         ]
     }
 
+    // MARK: - Timer Previews
+
+    enum TimerPreviewScenario {
+        case notStarted
+        case running(level: Int = 0)
+        case paused(level: Int = 0)
+        case breakTime
+    }
+
+    static func timerViewModel(_ scenario: TimerPreviewScenario = .notStarted) -> TimerViewModel {
+        let viewModel = TimerViewModel()
+        let template = BuiltInTemplates.standardMedium
+        viewModel.startFromTemplate(template)
+
+        switch scenario {
+        case .notStarted:
+            viewModel.currentState = nil
+
+        case .running(let level):
+            viewModel.currentState = makeTimerState(
+                items: viewModel.items,
+                levelIndex: level,
+                elapsed: 4 * 60,
+                isPaused: false
+            )
+
+        case .paused(let level):
+            viewModel.currentState = makeTimerState(
+                items: viewModel.items,
+                levelIndex: level,
+                elapsed: 6 * 60,
+                isPaused: true
+            )
+
+        case .breakTime:
+            var items = viewModel.items
+            let breakIndex = min(3, items.count)
+            items.insert(.break(BreakInfo(title: "Перерыв", minutes: 10)), at: breakIndex)
+            viewModel.items = items
+            viewModel.currentState = makeTimerState(
+                items: items,
+                levelIndex: breakIndex,
+                elapsed: 2 * 60,
+                isPaused: false
+            )
+        }
+
+        return viewModel
+    }
+
+    private static func makeTimerState(
+        items: [LevelItem],
+        levelIndex: Int,
+        elapsed: TimeInterval,
+        isPaused: Bool
+    ) -> TimerState {
+        guard !items.isEmpty else {
+            return TimerState(
+                currentLevelIndex: 0,
+                currentItem: .blinds(BlindLevel(index: 1, smallBlind: 25, bigBlind: 50, ante: 0, minutes: 12)),
+                elapsedTimeInLevel: 0,
+                remainingTimeInLevel: 0,
+                totalElapsedTime: 0,
+                isRunning: false,
+                isPaused: isPaused
+            )
+        }
+
+        let service = SessionTimerService()
+        let clampedIndex = max(0, min(levelIndex, items.count - 1))
+        let currentItem = items[clampedIndex]
+        let duration = service.durationInSeconds(for: currentItem)
+        let clampedElapsed = min(max(0, elapsed), duration)
+        let totalElapsed = service.calculateLevelStartTime(for: clampedIndex, items: items) + clampedElapsed
+
+        return TimerState(
+            currentLevelIndex: clampedIndex,
+            currentItem: currentItem,
+            elapsedTimeInLevel: clampedElapsed,
+            remainingTimeInLevel: max(0, duration - clampedElapsed),
+            totalElapsedTime: totalElapsed,
+            isRunning: true,
+            isPaused: isPaused
+        )
+    }
+
     // MARK: - ModelContainer для превью
 
     /// Стандартный ModelContainer для превью

@@ -1,24 +1,20 @@
-//
-//  TimerControlsPanel.swift
-//  Home Poker
-//
-//  Created by Odds on 24.10.2025.
-//
-
 import SwiftUI
 
 /// Панель управления таймером
 struct TimerControlsPanel: View {
-    let viewModel: TimerViewModel
-    @Binding var showResetAlert: Bool
+    @Environment(TimerViewModel.self) private var viewModel
+
     @Namespace private var namespace
-    
+    @State private var showRestartLevelAlert = false
+
     var body: some View {
         HStack(spacing: 20) {
             Spacer()
             // Кнопка "Назад"
             Button {
-                viewModel.skipToPrevious()
+                withAnimation {
+                    viewModel.skipToPrevious()
+                }
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.title)
@@ -38,7 +34,9 @@ struct TimerControlsPanel: View {
             
             // Кнопка "Вперёд"
             Button {
-                viewModel.skipToNext()
+                withAnimation {
+                    viewModel.skipToNext()
+                }
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.title)
@@ -49,8 +47,18 @@ struct TimerControlsPanel: View {
             
             Spacer()
         }
+        .alert("Сбросить текущий уровень?", isPresented: $showRestartLevelAlert) {
+            Button("Отмена", role: .cancel) { }
+            Button("Сбросить", role: .destructive) {
+                withAnimation {
+                    viewModel.restartCurrentLevel()
+                }
+            }
+        } message: {
+            Text("Таймер текущего уровня будет сброшен на начало.")
+        }
     }
-    
+
     // MARK: - Subviews
     
     @ViewBuilder
@@ -58,7 +66,9 @@ struct TimerControlsPanel: View {
         if viewModel.canStart {
             // Кнопка "Старт"
             Button {
-                viewModel.startTimer()
+                withAnimation {
+                    viewModel.startTimer()
+                }
             } label: {
                 Image(systemName: "play.fill")
                     .font(.title)
@@ -69,7 +79,9 @@ struct TimerControlsPanel: View {
         } else if viewModel.isPaused {
             // Кнопка "Возобновить"
             Button {
-                viewModel.togglePause()
+                withAnimation {
+                    viewModel.togglePause()
+                }
             } label: {
                 Image(systemName: "play.fill")
                     .font(.title)
@@ -80,7 +92,9 @@ struct TimerControlsPanel: View {
         } else if viewModel.isRunning {
             // Кнопка "Пауза"
             Button {
-                viewModel.togglePause()
+                withAnimation {
+                    viewModel.togglePause()
+                }
             } label: {
                 Image(systemName: "pause.fill")
                     .font(.title)
@@ -93,9 +107,9 @@ struct TimerControlsPanel: View {
     
     private var resetButton: some View {
         Button {
-            showResetAlert = true
+            showRestartLevelAlert = true
         } label: {
-            Image(systemName: "xmark")
+            Image(systemName: "arrow.counterclockwise")
                 .font(.title)
         }
         .buttonStyle(.bordered)
@@ -107,10 +121,28 @@ struct TimerControlsPanel: View {
 // MARK: - Preview
 
 #Preview("Начальное состояние (canStart)") {
-    @Previewable @State var showAlert = false
-    let viewModel = TimerViewModel()
+    let viewModel = PreviewData.timerViewModel(.notStarted)
 
-    return VStack {
-        TimerControlsPanel(viewModel: viewModel, showResetAlert: $showAlert)
+    VStack {
+        TimerControlsPanel()
     }
+    .environment(viewModel)
+}
+
+#Preview("Идёт уровень") {
+    let viewModel = PreviewData.timerViewModel(.running(level: 1))
+
+    VStack {
+        TimerControlsPanel()
+    }
+    .environment(viewModel)
+}
+
+#Preview("На паузе") {
+    let viewModel = PreviewData.timerViewModel(.paused(level: 1))
+
+    VStack {
+        TimerControlsPanel()
+    }
+    .environment(viewModel)
 }

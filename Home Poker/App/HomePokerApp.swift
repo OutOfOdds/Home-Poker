@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 
-
 @main
 struct Home_PokerApp: App {
     @State var sessionDetailVM = SessionDetailViewModel()

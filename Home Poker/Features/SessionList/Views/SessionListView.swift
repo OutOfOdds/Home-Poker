@@ -34,8 +34,8 @@ struct SessionListView: View {
                         showingNewSession = true
                     } label: {
                         HStack {
-                            Text("Новая")
                             Image(systemName: "plus")
+                            Text("Новая")
                         }
                     }
                 }
