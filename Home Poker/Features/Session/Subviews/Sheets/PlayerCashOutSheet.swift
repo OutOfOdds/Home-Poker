@@ -10,11 +10,30 @@ struct PlayerCashOutSheet: View {
     @State private var chipsCashoutAmount: Int? = nil
     @State private var moneyToSessionBank: Int? = nil
     @State private var instantSettlement: Bool = false
+    
+    private var bank: SessionBank? {
+        session.bank
+    }
+    
+    private var cashRatio: Int {
+        max(session.chipsToCashRatio, 1)
+    }
+    
+    private func cashAmount(for chips: Int) -> Int {
+        chips * cashRatio
+    }
 
     /// Сколько игрок должен внести в банк после учёта введённого cash-out.
     private var projectedDebt: Int {
-        let totalCashedOut = player.cashOut + max(chipsCashoutAmount ?? 0, 0)
-        return max(player.buyIn - totalCashedOut, 0)
+        let additionalCashOut = max(chipsCashoutAmount ?? 0, 0)
+        let projectedTotalCashOut = player.cashOut + additionalCashOut
+        let expectedDebtChips = max(player.buyIn - projectedTotalCashOut, 0)
+        let expectedDebtCash = cashAmount(for: expectedDebtChips)
+        guard let bank else { return expectedDebtCash }
+        
+        let contributions = bank.contributions(for: player)
+        let netCashPaid = max(contributions.deposited - contributions.withdrawn, 0)
+        return max(expectedDebtCash - netCashPaid, 0)
     }
     
     var body: some View {
@@ -46,7 +65,10 @@ struct PlayerCashOutSheet: View {
                             instantSettlement = false
                         }
                     }
-                
+                    .onAppear {
+                        viewModel.ensureBank(for: session)
+                    }
+
                 if instantSettlement {
                     Section {
                         TextField("Сумма для банка", value: $moneyToSessionBank, format: .number)
@@ -64,6 +86,7 @@ struct PlayerCashOutSheet: View {
                     }
                 }
             }
+
             .onChange(of: chipsCashoutAmount) { _, _ in
                 guard instantSettlement else { return }
                 let debt = projectedDebt

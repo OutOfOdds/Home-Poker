@@ -10,6 +10,8 @@ struct SessionBankView: View {
     @State private var showingDepositSheet = false
     @State private var showingWithdrawalSheet = false
     @State private var showSettlementSheet = false
+    @State private var transactionToDelete: SessionBankTransaction?
+    @State private var showingDeleteConfirmation = false
     
     
     private var sortedPlayers: [Player] {
@@ -110,6 +112,21 @@ struct SessionBankView: View {
             viewModel.ensureBank(for: session)
         }
         .alert(
+            "Удалить транзакцию?",
+            isPresented: $showingDeleteConfirmation,
+            presenting: transactionToDelete
+        ) { transaction in
+            Button("Отмена", role: .cancel) {
+                transactionToDelete = nil
+            }
+            Button("Удалить", role: .destructive) {
+                _ = viewModel.deleteBankTransaction(transaction, from: session)
+                transactionToDelete = nil
+            }
+        } message: { transaction in
+            Text("Эта операция не может быть отменена.")
+        }
+        .alert(
             "Ошибка",
             isPresented: Binding(
                 get: { viewModel.alertMessage != nil },
@@ -155,7 +172,7 @@ struct SessionBankView: View {
                     color: .red
                 )
             }
-
+            
             if bank.totalOwedByBank > 0 {
                 summaryRow(
                     title: "Банк должен",
@@ -185,7 +202,7 @@ struct SessionBankView: View {
             }
         }
     }
-
+    
     private func owedByBankSection(bank: SessionBank) -> some View {
         let creditors = bank.playersOwedByBank
         return Section("Банк должен игрокам") {
@@ -195,18 +212,17 @@ struct SessionBankView: View {
             } else {
                 ForEach(creditors, id: \.id) { player in
                     HStack {
-                        // Иконка для различия выигравших от переплативших
+                    VStack(alignment: .leading) {
+                            Text(player.name)
                         if player.profit > 0 {
-                            Image(systemName: "trophy.fill")
-                                .foregroundStyle(.yellow)
-                                .font(.caption)
+                            Text("Выплата выигрыша")
+                                .font(.caption2)
                         } else {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
-                                .font(.caption)
+                            Text("Возврат переплаты")
+                                .font(.caption2)
                         }
 
-                        Text(player.name)
+                        }
                         Spacer()
                         Text(formatCurrency(bank.amountOwedByBank(for: player)))
                             .foregroundStyle(.blue)
@@ -246,6 +262,15 @@ struct SessionBankView: View {
             } else {
                 ForEach(entries, id: \.id) { entry in
                     entryRow(entry)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                transactionToDelete = entry
+                                showingDeleteConfirmation = true
+                            } label: {
+                                Label("Удалить", systemImage: "trash")
+                            }
+                            .disabled(isBankClosed)
+                        }
                 }
             }
         }
@@ -261,7 +286,7 @@ struct SessionBankView: View {
                     .fontWeight(.semibold)
             }
             .foregroundColor(entry.type == .deposit ? .green : .orange)
-
+            
             HStack {
                 Text(entry.player?.name ?? "Удалённый игрок")
                 Spacer()
@@ -312,7 +337,7 @@ private extension SessionBankTransactionType {
 
 #Preview {
     let session = PreviewData.sessionWithBank()
-
+    
     return NavigationStack {
         SessionBankView(session: session)
             .environment(SessionDetailViewModel())

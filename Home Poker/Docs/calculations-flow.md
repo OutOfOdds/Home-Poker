@@ -884,7 +884,7 @@ graph LR
 ### ChipsStatsSection (Статистика фишек сессии)
 - **totalChips**: показывать в фишках, БЕЗ `.asCurrency()`
 - **chipsInGame**: показывать в фишках, БЕЗ `.asCurrency()`
-- **chipsWithdrawn**: показывать в фишках, БЕЗ `.asCurrency()`
+- **totalCashOut**: показывать в фишках, БЕЗ `.asCurrency()`
 - Формат: `150 фишек` или просто `150`
 
 ### SessionBankView (Экран банка)

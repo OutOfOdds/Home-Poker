@@ -10,6 +10,14 @@ struct AddPlayerSheet: View {
     @State private var settleWithBank = false
     @State private var bankContributionAmount: Int? = nil
     
+    private var cashRatio: Int {
+        max(session.chipsToCashRatio, 1)
+    }
+    
+    private func cashAmount(for chips: Int) -> Int {
+        chips * cashRatio
+    }
+    
     var body: some View {
         FormSheetView(
             title: "Добавить игрока",
@@ -38,7 +46,7 @@ struct AddPlayerSheet: View {
                                 settleWithBank = false
                                 return
                             }
-                            bankContributionAmount = amount
+                            bankContributionAmount = cashAmount(for: amount)
                         }
 
                     if settleWithBank {
@@ -59,7 +67,7 @@ struct AddPlayerSheet: View {
                 bankContributionAmount = nil
                 return
             }
-            bankContributionAmount = amount
+            bankContributionAmount = cashAmount(for: amount)
         }
     }
     

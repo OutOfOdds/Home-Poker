@@ -49,7 +49,7 @@ final class SessionDetailViewModel {
     func rebuyPlayer(_ player: Player, amount: Int?, in session: Session) -> Bool {
         guard validateAmount(amount) else { return false }
         return performServiceCall {
-            try service.rebuyPlayer(player, amount: amount!, in: session)
+            try service.returnPlayerWithRebuy(player, amount: amount!, in: session)
         }
     }
     
@@ -132,7 +132,14 @@ final class SessionDetailViewModel {
             try service.recordBankTransaction(for: session, player: player, amount: amount!, note: trimmedNote, type: type)
         }
     }
-    
+
+    /// Удаляет транзакцию из банка. Возвращает `false` при ошибке (например, банк закрыт).
+    func deleteBankTransaction(_ transaction: SessionBankTransaction, from session: Session) -> Bool {
+        performServiceCall {
+            try service.removeBankTransaction(transaction, from: session)
+        }
+    }
+
     /// Пытается закрыть сессионный банк. Alert покажется автоматически при ошибке.
     func closeBank(for session: Session) {
         performServiceCall {

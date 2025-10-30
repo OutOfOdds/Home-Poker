@@ -75,7 +75,7 @@ struct ChipsStatsSection: View {
 
                     Spacer()
 
-                    Text("\(session.chipsWithdrawn)")
+                    Text("\(session.totalCashOut)")
                         .font(.title3).fontWeight(.semibold)
                         .foregroundColor(.orange)
                         .fontDesign(.monospaced)

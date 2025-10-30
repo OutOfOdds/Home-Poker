@@ -6,7 +6,7 @@ protocol SessionServiceProtocol {
     func addPlayer(name: String, buyIn: Int, to session: Session) throws
     func addOn(player: Player, amount: Int, in session: Session) throws
     func cashOut(player: Player, amount: Int, in session: Session) throws
-    func rebuyPlayer(_ player: Player, amount: Int, in session: Session) throws
+    func returnPlayerWithRebuy(_ player: Player, amount: Int, in session: Session) throws
     func removePlayer(_ player: Player, from session: Session)
     func removeTransaction(_ transaction: PlayerTransaction, from session: Session)
 
@@ -15,6 +15,7 @@ protocol SessionServiceProtocol {
     func ensureBank(for session: Session) -> SessionBank
     func setBankManager(_ player: Player?, for session: Session)
     func recordBankTransaction(for session: Session, player: Player, amount: Int, note: String?, type: SessionBankTransactionType) throws
+    func removeBankTransaction(_ transaction: SessionBankTransaction, from session: Session) throws
     func closeBank(for session: Session) throws
     func reopenBank(for session: Session)
     
@@ -64,7 +65,7 @@ struct SessionService: SessionServiceProtocol {
 
     // Возвращает игрока в игру с новой закупкой.
     // В реальной покерной игре возврат игрока всегда означает новую закупку фишек.
-    func rebuyPlayer(_ player: Player, amount: Int, in session: Session) throws {
+    func returnPlayerWithRebuy(_ player: Player, amount: Int, in session: Session) throws {
         guard !player.inGame else {
             throw SessionServiceError.playerAlreadyInGame
         }
@@ -147,7 +148,19 @@ struct SessionService: SessionServiceProtocol {
         )
         bank.transactions.append(entry)
     }
-    
+
+    // Удаляет транзакцию банка и обновляет состояние сессии.
+    func removeBankTransaction(_ transaction: SessionBankTransaction, from session: Session) throws {
+        guard let bank = session.bank else {
+            throw SessionServiceError.bankUnavailable
+        }
+        guard !bank.isClosed else {
+            throw SessionServiceError.bankClosed
+        }
+        bank.transactions.removeAll { $0.id == transaction.id }
+        transaction.modelContext?.delete(transaction)
+    }
+
     // Помечает наличный банк закрытым, если все расчёты завершены.
     func closeBank(for session: Session) throws {
         let bank = ensureBank(for: session)
