@@ -38,8 +38,8 @@ struct PlayerList: View {
                     }
                 } header: {
                     HStack {
-                        Text("В игре (\(activePlayers.count))")
-                            .foregroundStyle(.green)
+                        Text("Активные игроки (\(activePlayers.count))")
+                            .foregroundStyle(.primary)
                             .animation(nil, value: activePlayers.count)
                         Spacer()
                     }
@@ -69,7 +69,7 @@ struct PlayerList: View {
                     }
                 } header: {
                     HStack {
-                        Text("Завершившие (\(finishedPlayers.count))")
+                        Text("Завершившие игроки (\(finishedPlayers.count))")
                             .foregroundStyle(.secondary)
                             .animation(nil, value: finishedPlayers.count)
                         Spacer()

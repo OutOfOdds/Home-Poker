@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import TipKit
 
 @main
 struct Home_PokerApp: App {
@@ -8,6 +9,9 @@ struct Home_PokerApp: App {
         WindowGroup {
             MainView()
                 .environment(sessionDetailVM)
+                .task {
+                    try? Tips.configure()
+                }
                 .onAppear {
                     print(
     FileManager.default.urls(

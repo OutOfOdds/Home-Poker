@@ -5,9 +5,10 @@ import SwiftData
 @Observable
 final class SessionDetailViewModel {
     private let service: SessionServiceProtocol
-    
+
     var alertMessage: String?
-    
+    var showAlert = false
+
     init(service: SessionServiceProtocol = SessionService()) {
         self.service = service
     }
@@ -89,10 +90,11 @@ final class SessionDetailViewModel {
     }
     
     // MARK: - Алерт
-    
+
     // Сбрасывает текущее сообщение об ошибке.
     func clearAlert() {
         alertMessage = nil
+        showAlert = false
     }
 
     // MARK: - Session Bank
@@ -203,9 +205,11 @@ final class SessionDetailViewModel {
 
     private func setInvalidAmountError() {
         alertMessage = SessionServiceError.invalidAmount.errorDescription
+        showAlert = true
     }
 
     private func setError(_ error: Error) {
         alertMessage = (error as? LocalizedError)?.errorDescription ?? "Произошла ошибка. Попробуйте ещё раз."
+        showAlert = true
     }
 }

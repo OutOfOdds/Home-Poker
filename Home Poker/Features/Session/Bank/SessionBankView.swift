@@ -5,15 +5,12 @@ struct SessionBankView: View {
     @Bindable var session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
     @State private var settlementVM: SettlementViewModel = SettlementViewModel()
-    
-    
     @State private var showingDepositSheet = false
     @State private var showingWithdrawalSheet = false
     @State private var showSettlementSheet = false
     @State private var transactionToDelete: SessionBankTransaction?
     @State private var showingDeleteConfirmation = false
-    
-    
+
     private var sortedPlayers: [Player] {
         session.players.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
@@ -34,7 +31,9 @@ struct SessionBankView: View {
         guard let bank = session.bank else { return false }
         return bank.isClosed && bank.remainingToCollect == 0 && allPlayersFinished
     }
-    
+
+    // MARK: - Body
+
     var body: some View {
         List {
             if let bank = session.bank {
@@ -56,41 +55,10 @@ struct SessionBankView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button {
-                    showingDepositSheet = true
-                } label: {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .foregroundStyle(isBankClosed ? .green.opacity(0.5) :.green)
-                }
-                .disabled(isBankClosed || sortedPlayers.isEmpty)
-                
-                Button {
-                    showingWithdrawalSheet = true
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .foregroundStyle(isBankClosed ? .orange.opacity(0.5) :.orange)
-                }
-                .disabled(isBankClosed || sortedPlayers.isEmpty)
-                
-                Button {
-                    settlementVM.calculate(for: session)
-                    showSettlementSheet = true
-                } label: {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                }
-                .disabled(!canCalculateSettlement)
-                
-                Button {
-                    if isBankClosed {
-                        viewModel.reopenBank(for: session)
-                    } else {
-                        viewModel.closeBank(for: session)
-                    }
-                } label: {
-                    Image(systemName: isBankClosed ? "lock.fill" : "lock.open.fill")
-                        .symbolRenderingMode(.hierarchical)
-                        .contentTransition(.symbolEffect(.replace))
-                }
+                depositButton
+                withdrawalButton
+                settlementButton
+                lockButton
             }
         }
         .sheet(isPresented: $showingDepositSheet) {
@@ -159,106 +127,117 @@ struct SessionBankView: View {
             summaryRow(
                 title: "Баланс банка",
                 value: formatCurrency(bank.netBalance),
-                color: bank.netBalance > 0 ? .green : (bank.netBalance < 0 ? .red : .secondary)
-            )
-
+                color: .primary)
+            
             // Показываем резервы если есть рейк или чаевые
             if bank.totalReserved > 0 {
-                Text("Зарезервировано всего \(formatCurrency(bank.totalReserved)):")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if bank.reservedForRake > 0 {
-                    HStack {
-                        Text("• Рейк")
-                            .font(.caption2)
-                        Spacer()
-                        Text(formatCurrency(bank.reservedForRake))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.leading, 12)
-                }
-
-                if bank.reservedForTips > 0 {
-                    HStack {
-                        Text("• Чаевые")
-                            .font(.caption2)
-                        Spacer()
-                        Text(formatCurrency(bank.reservedForTips))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.leading, 12)
-                }
-            }
-
-            let totalDebt = bank.playersOwingBank.reduce(0) { $0 + bank.amountOwedToBank(for: $1) }
-            if totalDebt > 0 {
-                summaryRow(
-                    title: "Должны банку",
-                    value: formatCurrency(totalDebt),
-                    color: .red
-                )
-            }
-            
-            if bank.totalOwedByBank > 0 {
-                summaryRow(
-                    title: "Банк должен",
-                    value: formatCurrency(bank.totalOwedByBank),
-                    color: .blue
-                )
+                reservesView(bank: bank)
             }
         }
     }
     
+    private func reservesView(bank: SessionBank) -> some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Зарезервировано всего:")
+                Spacer()
+                Text(formatCurrency(bank.totalReserved))
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.bottom, 4)
+
+            if bank.reservedForRake > 0 {
+                reserveItemRow(title: "Рейк", amount: bank.reservedForRake)
+            }
+
+            if bank.reservedForTips > 0 {
+                reserveItemRow(title: "Чаевые", amount: bank.reservedForTips)
+            }
+        }
+    }
+
+    private func reserveItemRow(title: String, amount: Int) -> some View {
+        HStack {
+            Text("• \(title)")
+                .font(.caption2)
+            Spacer()
+            Text(formatCurrency(amount))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private func debtorsSection(bank: SessionBank) -> some View {
         let debtors = bank.playersOwingBank
-        return Section("Должны банку") {
-            if debtors.isEmpty {
-                Text("Нет должников")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(debtors, id: \.id) { player in
-                    HStack {
-                        Text(player.name)
-                        Spacer()
-                        Text(formatCurrency(bank.amountOwedToBank(for: player)))
-                            .foregroundStyle(.red)
-                            .fontWeight(.semibold)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func owedByBankSection(bank: SessionBank) -> some View {
-        let creditors = bank.playersOwedByBank
-        return Section("Банк должен игрокам") {
-            if creditors.isEmpty {
-                Text("Банк никому не должен")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(creditors, id: \.id) { player in
-                    HStack {
-                    VStack(alignment: .leading) {
-                            Text(player.name)
-                        if player.profit > 0 {
-                            Text("Выплата выигрыша")
-                                .font(.caption2)
-                        } else {
-                            Text("Возврат переплаты")
-                                .font(.caption2)
-                        }
+        let totalDebt = debtors.reduce(0) { $0 + bank.amountOwedToBank(for: $1) }
 
+        return playerDebtSection(
+            title: "Игроки должны банку:",
+            players: debtors,
+            totalAmount: totalDebt,
+            emptyMessage: "Нет должников",
+            amountColor: .red,
+            amountProvider: { bank.amountOwedToBank(for: $0) }
+        )
+    }
+
+    private func owedByBankSection(bank: SessionBank) -> some View {
+        playerDebtSection(
+            title: "Банк должен игрокам:",
+            players: bank.playersOwedByBank,
+            totalAmount: bank.totalOwedByBank,
+            emptyMessage: "Банк никому не должен",
+            amountColor: .blue,
+            amountProvider: { bank.amountOwedByBank(for: $0) },
+            showPlayerDetails: true
+        )
+    }
+
+    private func playerDebtSection(
+        title: String,
+        players: [Player],
+        totalAmount: Int,
+        emptyMessage: String,
+        amountColor: Color,
+        amountProvider: @escaping (Player) -> Int,
+        showPlayerDetails: Bool = false
+    ) -> some View {
+        Section {
+            if players.isEmpty {
+                Text(emptyMessage)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(players, id: \.id) { player in
+                    HStack {
+                        if showPlayerDetails {
+                            VStack(alignment: .leading) {
+                                Text(player.name)
+                                if player.profit > 0 {
+                                    Text("Выплата выигрыша")
+                                        .font(.caption2)
+                                } else {
+                                    Text("Возврат переплаты")
+                                        .font(.caption2)
+                                }
+                            }
+                        } else {
+                            Text(player.name)
                         }
                         Spacer()
-                        Text(formatCurrency(bank.amountOwedByBank(for: player)))
-                            .foregroundStyle(.blue)
+                        Text(formatCurrency(amountProvider(player)))
+                            .foregroundStyle(amountColor)
                             .fontWeight(.semibold)
                     }
                 }
             }
+        } header: {
+            HStack {
+                Text(title)
+                Text(formatCurrency(totalAmount))
+                    .foregroundStyle(amountColor)
+            }
+            .font(.caption)
         }
     }
     
@@ -342,6 +321,53 @@ struct SessionBankView: View {
     }
     
     private func formatCurrency(_ value: Int) -> String { value.asCurrency() }
+    
+    // MARK: - Toolbar Buttons
+    
+    private var depositButton: some View {
+        Button {
+            showingDepositSheet = true
+        } label: {
+            Image(systemName: "arrow.down.circle.fill")
+                .foregroundStyle(isBankClosed ? .green.opacity(0.5) : .green)
+        }
+        .disabled(isBankClosed || sortedPlayers.isEmpty)
+    }
+    
+    private var withdrawalButton: some View {
+        Button {
+            showingWithdrawalSheet = true
+        } label: {
+            Image(systemName: "arrow.up.circle.fill")
+                .foregroundStyle(isBankClosed ? .orange.opacity(0.5) : .orange)
+        }
+        .disabled(isBankClosed || sortedPlayers.isEmpty)
+    }
+    
+    private var settlementButton: some View {
+        Button {
+            settlementVM.calculate(for: session)
+            showSettlementSheet = true
+        } label: {
+            Image(systemName: "arrow.triangle.2.circlepath")
+        }
+        .disabled(!canCalculateSettlement)
+    }
+    
+    private var lockButton: some View {
+        Button {
+            if isBankClosed {
+                viewModel.reopenBank(for: session)
+            } else {
+                viewModel.closeBank(for: session)
+            }
+        } label: {
+            Image(systemName: isBankClosed ? "lock.fill" : "lock.open.fill")
+                .symbolRenderingMode(.hierarchical)
+                .contentTransition(.symbolEffect(.replace))
+        }
+    }
+
 }
 
 private extension SessionBankTransactionType {
@@ -362,12 +388,14 @@ private extension SessionBankTransactionType {
             return "arrow.up.circle"
         }
     }
+    
+    
 }
 
-#Preview {
-    let session = PreviewData.sessionWithBank()
-    
-    return NavigationStack {
+// MARK: - Preview Helper
+
+private func bankPreview(session: Session) -> some View {
+    NavigationStack {
         SessionBankView(session: session)
             .environment(SessionDetailViewModel())
     }
@@ -375,4 +403,12 @@ private extension SessionBankTransactionType {
         for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
         inMemory: true
     )
+}
+
+#Preview("Стандартный банк") {
+    bankPreview(session: PreviewData.sessionWithBank())
+}
+
+#Preview("Полный банк (все секции)") {
+    bankPreview(session: PreviewData.sessionWithFullBank())
 }

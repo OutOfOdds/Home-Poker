@@ -7,6 +7,7 @@ struct SessionListView: View {
     @Query private var sessions: [Session]
     @State private var showingNewSession = false
     @AppStorage("sessionListShowDetails") private var showSessionDetails = true
+    @State private var sessionToDelete: Session?
     
     var body: some View {
         NavigationStack {
@@ -43,6 +44,21 @@ struct SessionListView: View {
             .sheet(isPresented: $showingNewSession) {
                 NewSessionSheet()
             }
+            .alert("Удалить сессию?", isPresented: .constant(sessionToDelete != nil)) {
+                Button("Отмена", role: .cancel) {
+                    sessionToDelete = nil
+                }
+                Button("Удалить", role: .destructive) {
+                    if let session = sessionToDelete {
+                        deleteSessions([session])
+                        sessionToDelete = nil
+                    }
+                }
+            } message: {
+                if let session = sessionToDelete {
+                    Text("Вы уверены, что хотите удалить сессию «\(session.sessionTitle)»? Это действие нельзя отменить.")
+                }
+            }
             .navigationTitle("Сессии")
         }
 
@@ -56,17 +72,18 @@ struct SessionListView: View {
                 } label: {
                     sessionRow(session)
                 }
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
-                        deleteSessions([session])
+                        sessionToDelete = session
                     } label: {
                         Label("Удалить", systemImage: "trash")
                     }
                 }
             }
             .onDelete { offsets in
-                let items = offsets.map { sessions[$0] }
-                deleteSessions(items)
+                if let index = offsets.first {
+                    sessionToDelete = sessions[index]
+                }
             }
         }
     }

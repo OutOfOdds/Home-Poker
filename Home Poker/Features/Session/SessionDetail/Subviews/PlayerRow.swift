@@ -60,7 +60,7 @@ struct PlayerRow: View {
                         }
                     }
                     .buttonStyle(.bordered)
-                    .tint(.green)
+                    .tint(.indigo)
                     
                     Button {
                         showingCashOutSheet = true
@@ -71,7 +71,7 @@ struct PlayerRow: View {
                         }
                     }
                     .buttonStyle(.bordered)
-                    .tint(.red)
+                    .tint(.secondary)
                     
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

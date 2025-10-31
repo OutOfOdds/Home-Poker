@@ -143,6 +143,94 @@ enum PreviewData {
         return session
     }
 
+    /// Сессия с банком, включающая все возможные секции: чаевые, рейк, должников и кредиторов
+    static func sessionWithFullBank() -> Session {
+        let session = Session(
+            startTime: Date().addingTimeInterval(-4 * 60 * 60),
+            location: "Покер Клуб Премиум",
+            gameType: .NLHoldem,
+            status: .awaitingForSettlements,
+            sessionTitle: "Вечерняя игра с банком"
+        )
+        session.smallBlind = 25
+        session.bigBlind = 50
+        session.ante = 5
+        session.chipsToCashRatio = 1
+
+        // Устанавливаем рейк и чаевые для отображения в секции резервов
+        session.rakeAmount = 500  // 500₽ рейка
+        session.tipsAmount = 300  // 300₽ чаевых
+
+        // Создаем игроков с разными балансами
+        let winner = createPlayer(name: "Александр", inGame: false, buyIn: 5000, addOns: [2000], cashOut: 10000)
+        let smallWinner = createPlayer(name: "Дмитрий", inGame: false, buyIn: 3000, cashOut: 4500)
+        let loser1 = createPlayer(name: "Сергей", inGame: false, buyIn: 4000, addOns: [1000], cashOut: 2000)
+        let loser2 = createPlayer(name: "Иван", inGame: false, buyIn: 3000, cashOut: 1500)
+        let breakEven = createPlayer(name: "Максим", inGame: false, buyIn: 2000, cashOut: 2000)
+
+        session.players = [winner, smallWinner, loser1, loser2, breakEven]
+
+        // Создаем банк
+        let bank = SessionBank(session: session, isClosed: true, closedAt: Date().addingTimeInterval(-30 * 60), expectedTotal: 15000)
+        bank.manager = winner
+
+        // Добавляем транзакции в банк
+        var bankTransactions: [SessionBankTransaction] = []
+
+        // Проигравшие вносят в банк
+        bankTransactions.append(SessionBankTransaction(
+            amount: 3000,
+            type: .deposit,
+            player: loser1,
+            bank: bank,
+            note: "Внесение долга",
+            createdAt: Date().addingTimeInterval(-3 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 1500,
+            type: .deposit,
+            player: loser2,
+            bank: bank,
+            note: "Внесение долга",
+            createdAt: Date().addingTimeInterval(-2.5 * 60 * 60)
+        ))
+
+        // Выигравшие получают частичные выплаты
+        bankTransactions.append(SessionBankTransaction(
+            amount: 2000,
+            type: .withdrawal,
+            player: winner,
+            bank: bank,
+            note: "Частичная выплата",
+            createdAt: Date().addingTimeInterval(-2 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 1000,
+            type: .withdrawal,
+            player: smallWinner,
+            bank: bank,
+            note: "Частичная выплата",
+            createdAt: Date().addingTimeInterval(-1.5 * 60 * 60)
+        ))
+
+        // Дополнительные депозиты
+        bankTransactions.append(SessionBankTransaction(
+            amount: 5000,
+            type: .deposit,
+            player: winner,
+            bank: bank,
+            note: "Внесение крупной суммы",
+            createdAt: Date().addingTimeInterval(-1 * 60 * 60)
+        ))
+
+        bank.transactions = bankTransactions
+        session.bank = bank
+
+        return session
+    }
+
     /// Пустая новая сессия
     static func emptySession() -> Session {
         Session(
