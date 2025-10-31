@@ -30,9 +30,12 @@ graph TD
     Detail -->|sheet| AddPlayer[AddPlayerSheet]
     Detail -->|sheet| AddExpense[AddExpenseSheet]
     Detail -->|sheet| BlindsEditor[BlindsEditorSheet]
-    Detail -->|sheet| PlayerCashOut[PlayerCashOutSheet]
-    Detail -->|sheet| PlayerRebuy[RebuyPlayerSheet]
-    Detail -->|sheet| PlayerAddOn[PlayerAddOnSheet]
+    Detail -->|NavigationLink| PlayerDetails[PlayerTransactionsView]
+
+    %% PlayerTransactionsView sheets
+    PlayerDetails -->|sheet| PlayerCashOut[PlayerCashOutSheet]
+    PlayerDetails -->|sheet| PlayerRebuy[RebuyPlayerSheet]
+    PlayerDetails -->|sheet| PlayerAddOn[PlayerAddOnSheet]
 
     %% SessionBankView
     Detail -->|NavigationLink| Bank[SessionBankView]
@@ -204,11 +207,12 @@ graph TB
   - `SessionBankView` - управление банком
   - `ExpenseDetails` - детали расходов
 - **Subviews**:
-  - `SessionInfoSection`, `ChipsStatsSection`, `PlayerList`, `PlayerRow`, `PlayerTransactionsView`
+  - `SessionInfoSection`, `ChipsStatsSection`, `PlayerList`, `PlayerRow`
+  - `PlayerTransactionsView` - детальный экран транзакций игрока
 - **Sheets**:
   - `NewSessionSheet`, `AddPlayerSheet`, `AddExpenseSheet`, `BlindsEditorSheet`
-  - `PlayerCashOutSheet`, `RebuyPlayerSheet`, `PlayerAddOnSheet`
-  - `SessionBankTransactionSheet`
+  - `SessionBankTransactionSheet` - операции с банком (депозит/выплата)
+  - `PlayerCashOutSheet`, `RebuyPlayerSheet`, `PlayerAddOnSheet` - операции из PlayerTransactionsView
 - **ViewModel**: `SessionDetailViewModel`
 - **Service**: `SessionService`
 - **Models**: `Session`, `Player`, `PlayerTransaction`, `SessionBank`, `SessionBankTransaction`, `Expense`
@@ -440,12 +444,17 @@ func calculate(for session: Session) -> SettlementResult {
 - `addPlayer(to:name:buyIn:context:)` - добавить игрока с buy-in
 - `addOn(for:amount:context:)` - add-on для игрока
 - `cashOut(for:amount:context:)` - cash-out игрока
-- `rebuyPlayer(for:amount:context:)` - rebuy игрока
+- `rebuyPlayer(for:amount:context:)` - rebuy игрока (возврат в игру с новой закупкой)
 - `removePlayer(_:from:context:)` - удалить игрока из сессии
+- `removeTransaction(_:from:context:)` - удалить транзакцию игрока
 - `ensureBank(for:context:)` - создать банк если нет
 - `recordBankTransaction(to:type:amount:note:player:context:)` - записать транзакцию банка
+- `removeBankTransaction(_:from:context:)` - удалить транзакцию банка (с пересчетом expectedTotal)
 - `addExpense(to:amount:note:payer:context:)` - добавить расход
+- `removeExpenses(_:from:context:)` - удалить расходы
 - `updateBlinds(for:smallBlind:bigBlind:ante:context:)` - обновить блайнды
+- `closeBank(for:context:)` - закрыть банк
+- `reopenBank(for:context:)` - открыть банк заново
 
 **Использование**: `SessionDetailViewModel` делегирует все операции этому сервису
 
@@ -686,8 +695,16 @@ graph TB
 ⚠️ **Error handling**: Централизованная обработка ошибок
 ⚠️ **Logging**: Добавить логирование критичных операций
 ⚠️ **Repository pattern**: Расширить на все модели, не только Session
+⚠️ **Template persistence**: Реализовать полное сохранение пользовательских шаблонов турниров
+
+### Недавние изменения (октябрь 2025):
+
+✅ **Удаление транзакций банка**: Добавлена возможность удалять транзакции банка по свайпу
+✅ **Упрощение редактирования шаблонов**: Переход на локальное состояние для редактирования
+✅ **Новый алгоритм генерации блайндов**: Улучшенная форма настройки турниров
+✅ **Удаление транзакций игроков**: Реализована логика восстановления статуса inGame
 
 ---
 
-**Документ обновлён**: 28 октября 2025
-**Версия**: 2.0
+**Документ обновлён**: 30 октября 2025
+**Версия**: 2.1

@@ -24,29 +24,27 @@ struct PlayerRow: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    HStack {
-                        Text("Закуп: \(player.buyIn)")
-                        if !player.inGame {
-                            Text("-> Вывод: \(player.cashOut)")
-                        }
-                    }
-                    .foregroundStyle(.secondary)
-                    .font(.subheadline)
-                    .fontDesign(.monospaced)
                     
                     if !player.inGame {
                         HStack {
                             Text("\(player.profit >= 0 ? "+" : "")\(player.profit)")
                                 .font(.title3)
                                 .bold()
-                                .foregroundColor(displayedProfitColor)
+                                .foregroundColor(.dynamicColor(value: player.profit))
                                 .fontDesign(.monospaced)
-                            Image(systemName: "circle.fill")
-                                .font(.title3)
-                                .fontDesign(.monospaced)
-                                .foregroundColor(displayedProfitColor)
                         }
                     }
+                    
+                    VStack(alignment: .leading) {
+                        Text("Закуплено фишек: \(player.buyIn)")
+                        if !player.inGame {
+                            Text("Выведено фишек: \(player.cashOut)")
+                        }
+                    }
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+                    .italic()
+                    .fontDesign(.monospaced)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -84,7 +82,7 @@ struct PlayerRow: View {
                     } label: {
                         HStack {
                             Image(systemName: "arrow.uturn.left")
-                            Text("Вернуться в игру")
+                            Text("Вернуть в игру")
                         }
                     }
                     .buttonStyle(.bordered)

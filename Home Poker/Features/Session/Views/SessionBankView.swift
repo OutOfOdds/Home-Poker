@@ -161,9 +161,38 @@ struct SessionBankView: View {
                 value: formatCurrency(bank.netBalance),
                 color: bank.netBalance > 0 ? .green : (bank.netBalance < 0 ? .red : .secondary)
             )
-            
-            
-            
+
+            // Показываем резервы если есть рейк или чаевые
+            if bank.totalReserved > 0 {
+                Text("Зарезервировано всего \(formatCurrency(bank.totalReserved)):")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if bank.reservedForRake > 0 {
+                    HStack {
+                        Text("• Рейк")
+                            .font(.caption2)
+                        Spacer()
+                        Text(formatCurrency(bank.reservedForRake))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.leading, 12)
+                }
+
+                if bank.reservedForTips > 0 {
+                    HStack {
+                        Text("• Чаевые")
+                            .font(.caption2)
+                        Spacer()
+                        Text(formatCurrency(bank.reservedForTips))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.leading, 12)
+                }
+            }
+
             let totalDebt = bank.playersOwingBank.reduce(0) { $0 + bank.amountOwedToBank(for: $1) }
             if totalDebt > 0 {
                 summaryRow(
@@ -319,9 +348,9 @@ private extension SessionBankTransactionType {
     var displayName: String {
         switch self {
         case .deposit:
-            return "Взнос"
+            return "Игрок передал в банк"
         case .withdrawal:
-            return "Выплата"
+            return "Банк передал игроку"
         }
     }
     

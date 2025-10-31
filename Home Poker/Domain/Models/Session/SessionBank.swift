@@ -15,9 +15,26 @@ final class SessionBank {
     var netBalance: Int {
         totalDeposited - totalWithdrawn
     }
-    
+
     var remainingToCollect: Int {
         max(expectedTotal - totalDeposited, 0)
+    }
+
+    // MARK: - Резервы (рейк и чаевые)
+
+    /// Сумма рейка зарезервированная в балансе банка (в деньгах)
+    var reservedForRake: Int {
+        session.rakeAmount * session.chipsToCashRatio
+    }
+
+    /// Сумма чаевых зарезервированная в балансе банка (в деньгах)
+    var reservedForTips: Int {
+        session.tipsAmount * session.chipsToCashRatio
+    }
+
+    /// Общая сумма зарезервированная под рейк и чаевые
+    var totalReserved: Int {
+        reservedForRake + reservedForTips
     }
 
     init(

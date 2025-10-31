@@ -151,7 +151,26 @@ final class SessionDetailViewModel {
     func reopenBank(for session: Session) {
         service.reopenBank(for: session)
     }
-    
+
+    // MARK: - Рейк и чаевые
+
+    /// Записывает рейк и чаевые из остатка фишек
+    /// Сохраняет информационные значения в Session
+    /// - Returns: `true` если успешно, `false` при ошибке
+    func recordRakeAndTips(for session: Session, rake: Int?, tips: Int?) -> Bool {
+        guard validateAmount(rake, allowZero: true) else { return false }
+        guard validateAmount(tips, allowZero: true) else { return false }
+        return performServiceCall {
+            try service.recordRakeAndTips(for: session, rake: rake!, tips: tips!)
+        }
+    }
+
+    /// Очищает записанные рейк и чаевые
+    /// - Parameter session: Сессия для очистки
+    func clearRakeAndTips(for session: Session) {
+        service.clearRakeAndTips(for: session)
+    }
+
     // MARK: - Helpers
 
     /// Универсальный метод валидации суммы.

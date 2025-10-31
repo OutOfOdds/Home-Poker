@@ -901,6 +901,54 @@ graph LR
 
 ---
 
+## Удаление транзакций банка
+
+### Функциональность удаления (SessionService.removeBankTransaction)
+
+При удалении транзакции банка происходит автоматический пересчет `expectedTotal`:
+
+```swift
+func removeBankTransaction(_ transaction: SessionBankTransaction, from session: Session) {
+    guard let bank = session.bank else { return }
+
+    // Удаляем транзакцию
+    bank.transactions.removeAll { $0.id == transaction.id }
+    context.delete(transaction)
+
+    // ВАЖНО: Пересчитываем expectedTotal
+    refreshBankExpectation(for: session)
+}
+```
+
+### Когда используется:
+
+1. **Ошибочно внесенная сумма** - игрок внес не ту сумму, нужно удалить и создать новую транзакцию
+2. **Дублирование записи** - случайно создали две одинаковые транзакции
+3. **Отмена операции** - игрок передумал вносить/получать деньги
+
+### UI:
+
+В [SessionBankView](../Features/Session/Views/SessionBankView.swift) реализовано удаление по свайпу:
+
+```swift
+.swipeActions(edge: .trailing) {
+    Button(role: .destructive) {
+        viewModel.deleteBankTransaction(transaction, from: session)
+    } label: {
+        Label("Удалить", systemImage: "trash")
+    }
+}
+```
+
+### Важные особенности:
+
+- Удаление транзакции НЕ влияет на chip-транзакции игроков (buy-in, cash-out)
+- Пересчитывается только `expectedTotal` банка
+- Балансы игроков в фишках остаются неизменными
+- Изменяется только cash-учет в банке
+
+---
+
 ## Ключевые принципы
 
 1. **Chip Economy** = виртуальная игровая валюта (buy-in, cash-out, profit)
@@ -912,5 +960,31 @@ graph LR
 
 ---
 
+## Недавние обновления (октябрь 2025)
+
+### ✅ Удаление транзакций банка по свайпу
+
+Реализована возможность удалять ошибочные транзакции банка:
+- Свайп влево на транзакции в SessionBankView
+- Автоматический пересчет expectedTotal
+- Не влияет на chip-балансы игроков
+
+### ✅ Улучшенная логика восстановления статуса игрока
+
+При удалении транзакции cash-out:
+- Игрок автоматически возвращается в игру (inGame = true), если это был единственный cash-out
+- Если есть другие cash-out, статус остается false
+- Пересчет баланса и profit происходит автоматически
+
+### ✅ Рефакторинг expectedBankTotal
+
+Улучшена формула расчета ожидаемой суммы банка:
+- Учитываются только завершившие игроки (!player.inGame)
+- Учитываются только должники (chipBalance > 0)
+- Конвертация через chipToCashRatio
+
+---
+
 **Документ создан**: 29 октября 2025
-**Версия**: 1.0
+**Документ обновлён**: 30 октября 2025
+**Версия**: 1.1

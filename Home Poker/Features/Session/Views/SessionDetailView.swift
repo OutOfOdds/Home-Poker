@@ -8,17 +8,15 @@ struct SessionDetailView: View {
     @State private var showAddPlayer = false
     @State private var showAddExpense = false
     @State private var showingBlindsSheet = false
-    
+    @State private var showingRakeSheet = false
+
     @Environment(SessionDetailViewModel.self) var viewModel
     
     var body: some View {
         List {
-            SessionInfoSection(
-                session: session,
-                showingBlindsSheet: $showingBlindsSheet
-            )
+            SessionInfoSection(session: session,showingBlindsSheet: $showingBlindsSheet)
             
-            ChipsStatsSection(session: session)
+            ChipsStatsSection(session: session, showingRakeSheet: $showingRakeSheet)
             
             if !session.players.isEmpty {
                 PlayerList(session: session)
@@ -47,26 +45,34 @@ struct SessionDetailView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showingRakeSheet) {
+            RakeAndTipsSheet(session: session)
+        }
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
+                NavigationLink {
+                    SessionBankView(session: session)
+                        .environment(viewModel)
+                } label: {
+                    HStack {
+                        Image(systemName: "building.columns")
+                        Text("Банк сессии")
+                    }
+                }
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {
                         showAddPlayer = true
                     } label: {
                         Label("Добавить игрока", systemImage: "person.badge.plus")
                     }
-                    
+
                     Button {
                         showAddExpense = true
                     } label: {
                         Label("Добавить расход", systemImage: "cart.fill.badge.plus")
-                    }
-                    
-                    NavigationLink {
-                        SessionBankView(session: session)
-                            .environment(viewModel)
-                    } label: {
-                        Label("Банк сессии", systemImage: "building.columns")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -92,10 +98,29 @@ struct SessionDetailView: View {
 
 #Preview {
     let session = PreviewData.activeSession()
-
-    NavigationStack {
-        SessionDetailView(session: session)
-            .environment(SessionDetailViewModel())
+    
+    if #available(iOS 26.0, *) {
+        TabView {
+            NavigationStack {
+                SessionDetailView(session: session)
+                    .environment(SessionDetailViewModel())
+                 
+            }
+            .tabItem {
+                Label("Сессия", systemImage: "clock")
+            }
+            
+            // Для наглядности можно добавить вторую вкладку
+            Text("Другое")
+                .tabItem {
+                    Label("Другое", systemImage: "square.grid.2x2")
+                }
+        }
+        .modelContainer(
+            for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
+            inMemory: true
+        )
+    } else {
+        // Fallback on earlier versions
     }
-    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self], inMemory: true)
 }

@@ -22,7 +22,11 @@ protocol SessionServiceProtocol {
     // Управление расходами
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws
     func removeExpenses(_ expenses: [Expense], from session: Session)
-    
+
+    // Рейк и чаевые
+    func recordRakeAndTips(for session: Session, rake: Int, tips: Int) throws
+    func clearRakeAndTips(for session: Session)
+
     // Настройки сессии
     func updateBlinds(for session: Session, small: Int, big: Int, ante: Int) throws
 }
@@ -193,7 +197,44 @@ struct SessionService: SessionServiceProtocol {
         let ids = expenses.map { $0.id }
         session.expenses.removeAll { ids.contains($0.id) }
     }
-    
+
+    // MARK: - Рейк и чаевые
+
+    /// Записывает рейк и чаевые из остатка фишек на столе
+    /// Сохраняет только информационные значения в Session, не создаёт транзакции
+    /// Рейк и чаевые автоматически учитываются в балансе банка через разницу депозитов/снятий
+    /// - Parameters:
+    ///   - session: Сессия
+    ///   - rake: Количество фишек рейка
+    ///   - tips: Количество фишек чаевых
+    /// - Throws: SessionServiceError если валидация не прошла
+    func recordRakeAndTips(for session: Session, rake: Int, tips: Int) throws {
+        try validateNonNegativeAmount(rake)
+        try validateNonNegativeAmount(tips)
+
+        let total = rake + tips
+        guard total <= session.chipsInGame else {
+            throw SessionServiceError.rakeExceedsRemaining
+        }
+
+        // Записываем информацию о рейке и чаевых в Session (в фишках)
+        // Эти значения объясняют, почему в балансе банка остаются деньги
+        // Транзакции НЕ создаются - баланс уже корректен через депозиты/снятия игроков
+        session.rakeAmount = rake
+        session.tipsAmount = tips
+
+        // Создаём банк если его нет (для корректного отображения в UI)
+        _ = ensureBank(for: session)
+    }
+
+    /// Очищает записанные рейк и чаевые
+    /// Используется для отмены распределения остатков
+    /// - Parameter session: Сессия
+    func clearRakeAndTips(for session: Session) {
+        session.rakeAmount = 0
+        session.tipsAmount = 0
+    }
+
     // MARK: - Настройки сессии
     // Обновляет параметры блайндов и анте у сессии.
     func updateBlinds(for session: Session, small: Int, big: Int, ante: Int) throws {
@@ -250,6 +291,7 @@ enum SessionServiceError: LocalizedError {
     case playerNotInSession
     case bankNotBalanced
     case playerAlreadyInGame
+    case rakeExceedsRemaining
 
     var errorDescription: String? {
         switch self {
@@ -271,6 +313,8 @@ enum SessionServiceError: LocalizedError {
             return "Не хватает средств, чтобы закрыть банк."
         case .playerAlreadyInGame:
             return "Игрок уже в игре."
+        case .rakeExceedsRemaining:
+            return "Сумма рейка и чаевых превышает остаток фишек на столе."
         }
     }
 }

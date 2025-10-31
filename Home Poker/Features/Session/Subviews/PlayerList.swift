@@ -70,7 +70,7 @@ struct PlayerList: View {
                 } header: {
                     HStack {
                         Text("Завершившие (\(finishedPlayers.count))")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(.secondary)
                             .animation(nil, value: finishedPlayers.count)
                         Spacer()
                     }
