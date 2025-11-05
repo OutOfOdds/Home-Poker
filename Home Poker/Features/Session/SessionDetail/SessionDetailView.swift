@@ -10,7 +10,7 @@ struct SessionDetailView: View {
     @Environment(SessionDetailViewModel.self) var viewModel
     
     private let addPlayerTip = AddPlayerTip()
-    
+    private let bankTip = SessionBankTip()
     enum SheetType: Identifiable {
         case addPlayer
         case addExpense
@@ -60,16 +60,6 @@ struct SessionDetailView: View {
             if !session.players.isEmpty {
                 PlayerList(session: session)
             }
-            
-            TipView(addPlayerTip, arrowEdge: .bottom)
-            
-            
-            Button {
-                activeSheet = .addPlayer
-                addPlayerTip.invalidate(reason: .actionPerformed)
-            } label: {
-                Label("Добавить игрока", systemImage: "person.badge.plus")
-            }
         }
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.automatic)
@@ -80,7 +70,7 @@ struct SessionDetailView: View {
         // MARK: - Toolbar
         
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItem {
                 NavigationLink {
                     SessionBankView(session: session)
                         .environment(viewModel)
@@ -90,30 +80,31 @@ struct SessionDetailView: View {
                         Text("Банк сессии")
                     }
                 }
+                .popoverTip(bankTip, arrowEdge: .top)
             }
             
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button {
-                        activeSheet = .addPlayer
-                    } label: {
-                        Label("Добавить игрока", systemImage: "person.badge.plus")
-                    }
-                    
-                    Button {
-                        activeSheet = .addExpense
-                    } label: {
-                        Label("Добавить расход", systemImage: "cart.fill.badge.plus")
-                    }
+            if #available(iOS 26.0, *) {
+                ToolbarSpacer(.fixed)
+            }
+            
+            ToolbarItem {
+                Button {
+                    activeSheet = .addPlayer
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "person.badge.plus")
                 }
+                .popoverTip(addPlayerTip, arrowEdge: .top)
             }
         }
         .alert("Ошибка", isPresented: $bindableViewModel.showAlert) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(bindableViewModel.alertMessage ?? "")
+        }
+        .onChange(of: session.players.count) { oldValue, newValue in
+            if oldValue == 0 && newValue > 0 {
+                SessionBankTip.hasAddedFirstPlayer = true
+            }
         }
     }
     
@@ -144,7 +135,7 @@ private func sessionDetailPreview(session: Session) -> some View {
             .environment(SessionDetailViewModel())
     }
     .modelContainer(
-        for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
+        for: [Session.self, Player.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
         inMemory: true
     )
     .task {
@@ -156,6 +147,10 @@ private func sessionDetailPreview(session: Session) -> some View {
 
 #Preview("Активная сессия") {
     sessionDetailPreview(session: PreviewData.activeSession())
+}
+
+#Preview("Пустая сессия с TipKit") {
+    sessionDetailPreview(session: PreviewData.emptySession())
 }
 
 #Preview("Завершенная сессия") {

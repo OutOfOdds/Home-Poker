@@ -9,7 +9,7 @@ final class Player {
 
     // Финансовые операции теперь через транзакции
     @Relationship(deleteRule: .cascade)
-    var transactions: [PlayerTransaction] = []
+    var transactions: [PlayerChipTransaction] = []
 
     @Relationship(deleteRule: .cascade)
     var sessionBankTransactions: [SessionBankTransaction] = []
@@ -27,10 +27,10 @@ final class Player {
     private func calculateFinancials() -> (buyIn: Int, cashOut: Int) {
         transactions.reduce((buyIn: 0, cashOut: 0)) { result, transaction in
             switch transaction.type {
-            case .buyIn, .addOn:
-                return (result.buyIn + transaction.amount, result.cashOut)
-            case .cashOut:
-                return (result.buyIn, result.cashOut + transaction.amount)
+            case .chipBuyIn, .chipAddOn:
+                return (result.buyIn + transaction.chipAmount, result.cashOut)
+            case .ChipCashOut:
+                return (result.buyIn, result.cashOut + transaction.chipAmount)
             }
         }
     }
@@ -63,6 +63,6 @@ final class Player {
 
     /// Начальный buy-in игрока (первая транзакция типа .buyIn).
     var initialBuyIn: Int {
-        transactions.first(where: { $0.type == .buyIn })?.amount ?? 0
+        transactions.first(where: { $0.type == .chipBuyIn })?.chipAmount ?? 0
     }
 }

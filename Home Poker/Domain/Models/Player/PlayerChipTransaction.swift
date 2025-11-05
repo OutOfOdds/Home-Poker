@@ -2,16 +2,16 @@ import Foundation
 import SwiftData
 
 @Model
-final class PlayerTransaction {
+final class PlayerChipTransaction {
     @Attribute(.unique) var id: UUID = UUID()
     var timestamp: Date
     var type: TransactionType
-    var amount: Int
+    var chipAmount: Int
     @Relationship var player: Player?
 
     init(type: TransactionType, amount: Int, player: Player?, timestamp: Date = Date()) {
         self.type = type
-        self.amount = amount
+        self.chipAmount = amount
         self.player = player
         self.timestamp = timestamp
     }
@@ -19,7 +19,7 @@ final class PlayerTransaction {
 
 
 enum TransactionType: String, Codable, CaseIterable {
-    case buyIn
-    case addOn
-    case cashOut
+    case chipBuyIn
+    case chipAddOn
+    case ChipCashOut
 }

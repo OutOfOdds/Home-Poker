@@ -332,11 +332,11 @@ enum PreviewData {
             player.rakeback = 100 // Пример рейкбека
         }
 
-        var transactions: [PlayerTransaction] = []
+        var transactions: [PlayerChipTransaction] = []
 
         // Buy-in
-        transactions.append(PlayerTransaction(
-            type: .buyIn,
+        transactions.append(PlayerChipTransaction(
+            type: .chipBuyIn,
             amount: buyIn,
             player: player,
             timestamp: Date().addingTimeInterval(-3 * 60 * 60)
@@ -344,8 +344,8 @@ enum PreviewData {
 
         // Add-ons
         for (index, addOn) in addOns.enumerated() {
-            transactions.append(PlayerTransaction(
-                type: .addOn,
+            transactions.append(PlayerChipTransaction(
+                type: .chipAddOn,
                 amount: addOn,
                 player: player,
                 timestamp: Date().addingTimeInterval(-Double(2 * 60 * 60 - index * 30 * 60))
@@ -354,8 +354,8 @@ enum PreviewData {
 
         // Cash-out
         if let cashOut = cashOut {
-            transactions.append(PlayerTransaction(
-                type: .cashOut,
+            transactions.append(PlayerChipTransaction(
+                type: .ChipCashOut,
                 amount: cashOut,
                 player: player,
                 timestamp: Date().addingTimeInterval(-30 * 60)
@@ -481,7 +481,7 @@ enum PreviewData {
         let schema = Schema([
             Session.self,
             Player.self,
-            PlayerTransaction.self,
+            PlayerChipTransaction.self,
             Expense.self,
             SessionBank.self,
             SessionBankTransaction.self

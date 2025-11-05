@@ -221,21 +221,21 @@ struct Line:Shape{
 
     let p1 = Player(name: "Билл", inGame: true)
     p1.transactions = [
-        PlayerTransaction(type: .buyIn, amount: 1_000_000_000, player: p1),      // 1 млрд
-        PlayerTransaction(type: .addOn, amount: 500_000_000, player: p1)         // +0.5 млрд
+        PlayerChipTransaction(type: .chipBuyIn, amount: 1_000_000_000, player: p1),      // 1 млрд
+        PlayerChipTransaction(type: .chipAddOn, amount: 500_000_000, player: p1)         // +0.5 млрд
     ]
 
     let p2 = Player(name: "Илон", inGame: false)
     p2.transactions = [
-        PlayerTransaction(type: .buyIn, amount: 2_000_000_000, player: p2),      // 2 млрд
-        PlayerTransaction(type: .cashOut, amount: 1_800_000_000, player: p2)     // вывел 1.8 млрд
+        PlayerChipTransaction(type: .chipBuyIn, amount: 2_000_000_000, player: p2),      // 2 млрд
+        PlayerChipTransaction(type: .ChipCashOut, amount: 1_800_000_000, player: p2)     // вывел 1.8 млрд
     ]
 
     let p3 = Player(name: "Джефф", inGame: true)
     p3.transactions = [
-        PlayerTransaction(type: .buyIn, amount: 750_000_000, player: p3),        // 0.75 млрд
-        PlayerTransaction(type: .addOn, amount: 750_000_000, player: p3),        // +0.75 млрд
-        PlayerTransaction(type: .cashOut, amount: 100_000_000, player: p3)       // вывел 0.1 млрд
+        PlayerChipTransaction(type: .chipBuyIn, amount: 750_000_000, player: p3),        // 0.75 млрд
+        PlayerChipTransaction(type: .chipAddOn, amount: 750_000_000, player: p3),        // +0.75 млрд
+        PlayerChipTransaction(type: .ChipCashOut, amount: 100_000_000, player: p3)       // вывел 0.1 млрд
     ]
 
     huge.players = [p1, p2, p3]
@@ -259,6 +259,6 @@ struct Line:Shape{
         }
         .navigationTitle("Превью статистики банка")
     }
-    .modelContainer(for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self], inMemory: true)
+    .modelContainer(for: [Session.self, Player.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self], inMemory: true)
     .environment(SessionDetailViewModel())
 }

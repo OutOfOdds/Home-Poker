@@ -8,7 +8,7 @@ protocol SessionServiceProtocol {
     func cashOut(player: Player, amount: Int, in session: Session) throws
     func returnPlayerWithRebuy(_ player: Player, amount: Int, in session: Session) throws
     func removePlayer(_ player: Player, from session: Session)
-    func removeTransaction(_ transaction: PlayerTransaction, from session: Session)
+    func removeTransaction(_ transaction: PlayerChipTransaction, from session: Session)
 
     // Управление банком
     @discardableResult
@@ -16,9 +16,7 @@ protocol SessionServiceProtocol {
     func setBankManager(_ player: Player?, for session: Session)
     func recordBankTransaction(for session: Session, player: Player, amount: Int, note: String?, type: SessionBankTransactionType) throws
     func removeBankTransaction(_ transaction: SessionBankTransaction, from session: Session) throws
-    func closeBank(for session: Session) throws
-    func reopenBank(for session: Session)
-    
+
     // Управление расходами
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws
     func removeExpenses(_ expenses: [Expense], from session: Session)
@@ -40,7 +38,7 @@ struct SessionService: SessionServiceProtocol {
         try validatePositiveAmount(buyIn)
         
         let player = Player(name: trimmedName, inGame: true)
-        let transaction = PlayerTransaction(type: .buyIn, amount: buyIn, player: player)
+        let transaction = PlayerChipTransaction(type: .chipBuyIn, amount: buyIn, player: player)
         player.transactions.append(transaction)
         session.players.append(player)
         refreshBankExpectation(for: session)
@@ -49,7 +47,7 @@ struct SessionService: SessionServiceProtocol {
     // Регистрирует докупку (add-on) для игрока в рамках сессии.
     func addOn(player: Player, amount: Int, in session: Session) throws {
         try validatePositiveAmount(amount)
-        let transaction = PlayerTransaction(type: .addOn, amount: amount, player: player)
+        let transaction = PlayerChipTransaction(type: .chipAddOn, amount: amount, player: player)
         player.transactions.append(transaction)
         refreshBankExpectation(for: session)
     }
@@ -61,7 +59,7 @@ struct SessionService: SessionServiceProtocol {
             throw SessionServiceError.insufficientBank
         }
 
-        let transaction = PlayerTransaction(type: .cashOut, amount: amount, player: player)
+        let transaction = PlayerChipTransaction(type: .ChipCashOut, amount: amount, player: player)
         player.transactions.append(transaction)
         player.inGame = false
         refreshBankExpectation(for: session)
@@ -76,7 +74,7 @@ struct SessionService: SessionServiceProtocol {
         try validatePositiveAmount(amount)
 
         // Новая закупка при возврате - это новые деньги в банк
-        let transaction = PlayerTransaction(type: .buyIn, amount: amount, player: player)
+        let transaction = PlayerChipTransaction(type: .chipBuyIn, amount: amount, player: player)
         player.transactions.append(transaction)
         player.inGame = true
         refreshBankExpectation(for: session)
@@ -94,11 +92,11 @@ struct SessionService: SessionServiceProtocol {
     }
 
     // Удаляет транзакцию игрока и обновляет состояние сессии.
-    func removeTransaction(_ transaction: PlayerTransaction, from session: Session) {
+    func removeTransaction(_ transaction: PlayerChipTransaction, from session: Session) {
         if let player = transaction.player {
             player.transactions.removeAll { $0.id == transaction.id }
-            if transaction.type == .cashOut {
-                let hasCashOut = player.transactions.contains { $0.type == .cashOut }
+            if transaction.type == .ChipCashOut {
+                let hasCashOut = player.transactions.contains { $0.type == .ChipCashOut }
                 player.inGame = !hasCashOut
             }
         }
@@ -137,9 +135,6 @@ struct SessionService: SessionServiceProtocol {
     ) throws {
         try validatePositiveAmount(amount)
         let bank = ensureBank(for: session)
-        guard !bank.isClosed else {
-            throw SessionServiceError.bankClosed
-        }
         guard session.players.contains(where: { $0.id == player.id }) else {
             throw SessionServiceError.playerNotInSession
         }
@@ -158,30 +153,10 @@ struct SessionService: SessionServiceProtocol {
         guard let bank = session.bank else {
             throw SessionServiceError.bankUnavailable
         }
-        guard !bank.isClosed else {
-            throw SessionServiceError.bankClosed
-        }
         bank.transactions.removeAll { $0.id == transaction.id }
         transaction.modelContext?.delete(transaction)
     }
 
-    // Помечает наличный банк закрытым, если все расчёты завершены.
-    func closeBank(for session: Session) throws {
-        let bank = ensureBank(for: session)
-        guard bank.remainingToCollect == 0 else {
-            throw SessionServiceError.bankNotBalanced
-        }
-        bank.isClosed = true
-        bank.closedAt = Date()
-    }
-
-    // Повторно открывает банк, разрешая дальнейшие операции.
-    func reopenBank(for session: Session) {
-        let bank = ensureBank(for: session)
-        bank.isClosed = false
-        bank.closedAt = nil
-    }
-    
     // MARK: - Расходы
     
     // Регистрирует расход, совершённый в рамках сессии.
@@ -286,10 +261,8 @@ enum SessionServiceError: LocalizedError {
     case invalidAmount
     case emptyPlayerName
     case invalidBlinds
-    case bankClosed
     case bankUnavailable
     case playerNotInSession
-    case bankNotBalanced
     case playerAlreadyInGame
     case rakeExceedsRemaining
 
@@ -303,14 +276,10 @@ enum SessionServiceError: LocalizedError {
             return "Введите имя игрока."
         case .invalidBlinds:
             return "Укажите корректные значения блайндов."
-        case .bankClosed:
-            return "Банк закрыт. Откройте его, чтобы продолжить операции."
         case .bankUnavailable:
             return "Не удалось получить банк для сессии."
         case .playerNotInSession:
             return "Игрок не найден в этой сессии."
-        case .bankNotBalanced:
-            return "Не хватает средств, чтобы закрыть банк."
         case .playerAlreadyInGame:
             return "Игрок уже в игре."
         case .rakeExceedsRemaining:

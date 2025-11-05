@@ -59,7 +59,7 @@ final class SessionDetailViewModel {
         service.removePlayer(player, from: session)
     }
 
-    func removeTransaction(_ transaction: PlayerTransaction, from session: Session) {
+    func removeTransaction(_ transaction: PlayerChipTransaction, from session: Session) {
         service.removeTransaction(transaction, from: session)
     }
     
@@ -140,18 +140,6 @@ final class SessionDetailViewModel {
         performServiceCall {
             try service.removeBankTransaction(transaction, from: session)
         }
-    }
-
-    /// Пытается закрыть сессионный банк. Alert покажется автоматически при ошибке.
-    func closeBank(for session: Session) {
-        performServiceCall {
-            try service.closeBank(for: session)
-        }
-    }
-    
-    /// Снова открывает банк после закрытия.
-    func reopenBank(for session: Session) {
-        service.reopenBank(for: session)
     }
 
     // MARK: - Рейк и чаевые

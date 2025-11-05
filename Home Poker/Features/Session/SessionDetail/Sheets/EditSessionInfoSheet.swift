@@ -160,7 +160,7 @@ struct EditSessionInfoSheet: View {
     let session = PreviewData.activeSession()
     return EditSessionInfoSheet(session: session)
         .modelContainer(
-            for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
+            for: [Session.self, Player.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
             inMemory: true
         )
 }

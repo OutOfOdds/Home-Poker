@@ -5,7 +5,7 @@ struct PlayerTransactionsView: View {
     let player: Player
     let session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
-    @State private var transactionToDelete: PlayerTransaction?
+    @State private var transactionToDelete: PlayerChipTransaction?
     @State private var showDeleteAlert = false
 
     var body: some View {
@@ -24,7 +24,7 @@ struct PlayerTransactionsView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Text(transaction.amount.asCurrency())
+                        Text(transaction.chipAmount.asCurrency())
                             .font(.headline)
                             .foregroundStyle(color(for: transaction.type))
                     }
@@ -52,15 +52,15 @@ struct PlayerTransactionsView: View {
                 transactionToDelete = nil
             }
         } message: { transaction in
-            Text("\(transactionTypeDisplay(transaction.type)) на сумму \(transaction.amount.asCurrency()) будет удалена.")
+            Text("\(transactionTypeDisplay(transaction.type)) на сумму \(transaction.chipAmount.asCurrency()) будет удалена.")
         }
     }
 
     private func transactionTypeDisplay(_ type: TransactionType) -> String {
         switch type {
-        case .buyIn: return "Закупил фишек"
-        case .addOn: return "Докупил фишек"
-        case .cashOut: return "Вывел фишки"
+        case .chipBuyIn: return "Закупил фишек"
+        case .chipAddOn: return "Докупил фишек"
+        case .ChipCashOut: return "Вывел фишки"
         }
     }
 
@@ -74,21 +74,21 @@ struct PlayerTransactionsView: View {
 
     private func iconName(for type: TransactionType) -> String {
         switch type {
-        case .buyIn: return "figure.walk.arrival"
-        case .addOn: return "plus.circle.fill"
-        case .cashOut: return "figure.walk.departure"
+        case .chipBuyIn: return "figure.walk.arrival"
+        case .chipAddOn: return "plus.circle.fill"
+        case .ChipCashOut: return "figure.walk.departure"
         }
     }
 
     private func color(for type: TransactionType) -> Color {
         switch type {
-        case .buyIn: return .purple
-        case .addOn: return .green
-        case .cashOut: return .orange
+        case .chipBuyIn: return .purple
+        case .chipAddOn: return .green
+        case .ChipCashOut: return .orange
         }
     }
 
-    private var sortedTransactions: [PlayerTransaction] {
+    private var sortedTransactions: [PlayerChipTransaction] {
         player.transactions.sorted { $0.timestamp > $1.timestamp }
     }
 }

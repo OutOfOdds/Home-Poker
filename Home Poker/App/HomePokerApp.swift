@@ -10,17 +10,18 @@ struct Home_PokerApp: App {
             MainView()
                 .environment(sessionDetailVM)
                 .task {
-                    try? Tips.configure()
+                    do {
+                        try Tips.resetDatastore()
+                        try Tips.configure()
+                    }
+                    catch {
+                        print("Error initializing TipKit \(error.localizedDescription)")
+                    }
                 }
                 .onAppear {
-                    print(
-    FileManager.default.urls(
-        for: .applicationSupportDirectory,
-        in: .userDomainMask
-    ).first!
-)
+                    print(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!)
                 }
         }
-        .modelContainer(for: [Player.self, Session.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self])
+        .modelContainer(for: [Player.self, Session.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self])
     }
 }

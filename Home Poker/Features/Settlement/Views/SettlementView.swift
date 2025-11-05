@@ -35,8 +35,26 @@ struct SettlementView: View {
                         }
                     }
                 }
-                
-                Section("Переводы") {
+
+                if !viewModel.bankTransfers.isEmpty {
+                    Section("Переводы через банк") {
+                        ForEach(Array(viewModel.bankTransfers.enumerated()), id: \.offset) { _, bt in
+                            HStack {
+                                Text("Из банка")
+                                    .foregroundStyle(.secondary)
+                                Image(systemName: "arrow.right")
+                                    .foregroundStyle(.secondary)
+                                Text(bt.to.name)
+                                Spacer()
+                                Text(bt.amount.asCurrency())
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.green)
+                            }
+                        }
+                    }
+                }
+
+                Section("Прямые переводы") {
                     if viewModel.transfers.isEmpty {
                         Text("Переводы не требуются")
                             .foregroundStyle(.secondary)
@@ -73,7 +91,7 @@ struct SettlementView: View {
 
     SettlementView(viewModel: vm)
         .modelContainer(
-            for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
+            for: [Session.self, Player.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
             inMemory: true
         )
 }

@@ -6,11 +6,27 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		6B3A0C522EBB747C000FD68C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6BCB946B2E8ED0BF007212D5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6BCB94722E8ED0BF007212D5;
+			remoteInfo = "Home Poker";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		6B3A0C4E2EBB747C000FD68C /* Home PokerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Home PokerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6BCB94732E8ED0BF007212D5 /* Home Poker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Home Poker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		6B3A0C4F2EBB747C000FD68C /* Home PokerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Home PokerTests";
+			sourceTree = "<group>";
+		};
 		6B74D0512EA8E74100A85B0E /* Home Poker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "Home Poker";
@@ -19,6 +35,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		6B3A0C4B2EBB747C000FD68C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6BCB94702E8ED0BF007212D5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				6B74D0512EA8E74100A85B0E /* Home Poker */,
+				6B3A0C4F2EBB747C000FD68C /* Home PokerTests */,
 				6BCB94742E8ED0BF007212D5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				6BCB94732E8ED0BF007212D5 /* Home Poker.app */,
+				6B3A0C4E2EBB747C000FD68C /* Home PokerTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,6 +73,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		6B3A0C4D2EBB747C000FD68C /* Home PokerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6B3A0C562EBB747C000FD68C /* Build configuration list for PBXNativeTarget "Home PokerTests" */;
+			buildPhases = (
+				6B3A0C4A2EBB747C000FD68C /* Sources */,
+				6B3A0C4B2EBB747C000FD68C /* Frameworks */,
+				6B3A0C4C2EBB747C000FD68C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6B3A0C532EBB747C000FD68C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6B3A0C4F2EBB747C000FD68C /* Home PokerTests */,
+			);
+			name = "Home PokerTests";
+			packageProductDependencies = (
+			);
+			productName = "Home PokerTests";
+			productReference = 6B3A0C4E2EBB747C000FD68C /* Home PokerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		6BCB94722E8ED0BF007212D5 /* Home Poker */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6BCB94802E8ED0C0007212D5 /* Build configuration list for PBXNativeTarget "Home Poker" */;
@@ -80,6 +128,10 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					6B3A0C4D2EBB747C000FD68C = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 6BCB94722E8ED0BF007212D5;
+					};
 					6BCB94722E8ED0BF007212D5 = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
@@ -103,11 +155,19 @@
 			projectRoot = "";
 			targets = (
 				6BCB94722E8ED0BF007212D5 /* Home Poker */,
+				6B3A0C4D2EBB747C000FD68C /* Home PokerTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		6B3A0C4C2EBB747C000FD68C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6BCB94712E8ED0BF007212D5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -118,6 +178,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		6B3A0C4A2EBB747C000FD68C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6BCB946F2E8ED0BF007212D5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -127,7 +194,62 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		6B3A0C532EBB747C000FD68C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6BCB94722E8ED0BF007212D5 /* Home Poker */;
+			targetProxy = 6B3A0C522EBB747C000FD68C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		6B3A0C542EBB747C000FD68C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L6TR2N4F28;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mikemailyan.Home-PokerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Home Poker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Home Poker";
+			};
+			name = Debug;
+		};
+		6B3A0C552EBB747C000FD68C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L6TR2N4F28;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mikemailyan.Home-PokerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Home Poker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Home Poker";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		6BCB947E2E8ED0C0007212D5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -251,7 +373,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -298,7 +420,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -341,6 +463,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		6B3A0C562EBB747C000FD68C /* Build configuration list for PBXNativeTarget "Home PokerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6B3A0C542EBB747C000FD68C /* Debug */,
+				6B3A0C552EBB747C000FD68C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		6BCB946E2E8ED0BF007212D5 /* Build configuration list for PBXProject "Home Poker" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

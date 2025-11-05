@@ -200,7 +200,7 @@ enum Mode {
 
     return SessionBankTransactionSheet(session: session, mode: .deposit)
         .modelContainer(
-            for: [Session.self, Player.self, PlayerTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
+            for: [Session.self, Player.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
             inMemory: true
         )
         .environment(SessionDetailViewModel())
