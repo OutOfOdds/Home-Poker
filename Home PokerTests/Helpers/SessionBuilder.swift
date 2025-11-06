@@ -8,18 +8,6 @@
 import Foundation
 @testable import Home_Poker
 
-/// Fluent builder для создания тестовых сессий с читаемым синтаксисом
-///
-/// Пример использования:
-/// ```swift
-/// let session = SessionBuilder()
-///     .withChipRatio(10)
-///     .addPlayer("Alice", buyIn: 100, cashOut: 150)
-///     .addPlayer("Bob", buyIn: 100, cashOut: 50)
-///     .withBank()
-///     .addBankDeposit(player: "Bob", amount: 300)
-///     .build()
-/// ```
 final class SessionBuilder {
     private var chipsToCashRatio: Int = 1
     private var rakeAmount: Int = 0

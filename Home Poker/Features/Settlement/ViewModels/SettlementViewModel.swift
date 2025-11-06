@@ -29,7 +29,7 @@ final class SettlementViewModel {
 
     // Пересчет на основе текущего состояния сессии с учётом банка
     func calculate(for session: Session) {
-        let result = service.calculateWithBank(for: session)
+        let result = service.calculate(for: session)
         self.balances = result.balances
         self.bankTransfers = result.bankTransfers
         self.transfers = result.playerTransfers
