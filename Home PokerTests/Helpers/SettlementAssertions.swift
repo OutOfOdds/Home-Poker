@@ -9,7 +9,7 @@ import Foundation
 import Testing
 @testable import Home_Poker
 
-// MARK: - Balance Assertions
+// MARK: - Проверки балансов
 
 /// Проверяет баланс игрока по имени
 /// - Parameters:
@@ -17,33 +17,19 @@ import Testing
 ///   - playerName: Имя игрока
 ///   - expectedNetCash: Ожидаемый результат в рублях (положительный = выигрыш, отрицательный = проигрыш)
 func assertBalance(
-    _ result: SettlementResult,
-    player playerName: String,
-    netCash expectedNetCash: Int,
-    sourceLocation: SourceLocation = #_sourceLocation
-) {
-    guard let balance = result.balances.first(where: { $0.player.name == playerName }) else {
-        Issue.record("Player '\(playerName)' not found in balances", sourceLocation: sourceLocation)
-        return
-    }
-    #expect(balance.netCash == expectedNetCash, "Expected \(playerName) to have netCash=\(expectedNetCash), got \(balance.netCash)", sourceLocation: sourceLocation)
-}
-
-/// Проверяет балансы для расширенного результата (с банком)
-func assertBalance(
     _ result: EnhancedSettlementResult,
     player playerName: String,
     netCash expectedNetCash: Int,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     guard let balance = result.balances.first(where: { $0.player.name == playerName }) else {
-        Issue.record("Player '\(playerName)' not found in balances", sourceLocation: sourceLocation)
+        Issue.record("Игрок '\(playerName)' не найден в балансах", sourceLocation: sourceLocation)
         return
     }
-    #expect(balance.netCash == expectedNetCash, "Expected \(playerName) to have netCash=\(expectedNetCash), got \(balance.netCash)", sourceLocation: sourceLocation)
+    #expect(balance.netCash == expectedNetCash, "Ожидался баланс \(expectedNetCash)₽ для игрока \(playerName), получен \(balance.netCash)₽", sourceLocation: sourceLocation)
 }
 
-// MARK: - Player Transfer Assertions
+// MARK: - Проверки прямых переводов между игроками
 
 /// Проверяет наличие прямого перевода между игроками
 /// - Parameters:
@@ -51,26 +37,6 @@ func assertBalance(
 ///   - from: Имя игрока, который должен отправить деньги
 ///   - to: Имя игрока, который должен получить деньги
 ///   - amount: Ожидаемая сумма перевода в рублях
-func assertPlayerTransfer(
-    _ result: SettlementResult,
-    from fromName: String,
-    to toName: String,
-    amount expectedAmount: Int,
-    sourceLocation: SourceLocation = #_sourceLocation
-) {
-    let transfer = result.transfers.first { t in
-        t.from.name == fromName && t.to.name == toName
-    }
-
-    guard let transfer = transfer else {
-        Issue.record("Transfer from '\(fromName)' to '\(toName)' not found", sourceLocation: sourceLocation)
-        return
-    }
-
-    #expect(transfer.amount == expectedAmount, "Expected transfer amount \(expectedAmount), got \(transfer.amount)", sourceLocation: sourceLocation)
-}
-
-/// Проверяет наличие прямого перевода для расширенного результата
 func assertPlayerTransfer(
     _ result: EnhancedSettlementResult,
     from fromName: String,
@@ -83,14 +49,14 @@ func assertPlayerTransfer(
     }
 
     guard let transfer = transfer else {
-        Issue.record("Transfer from '\(fromName)' to '\(toName)' not found", sourceLocation: sourceLocation)
+        Issue.record("Перевод от '\(fromName)' к '\(toName)' не найден", sourceLocation: sourceLocation)
         return
     }
 
-    #expect(transfer.amount == expectedAmount, "Expected transfer amount \(expectedAmount), got \(transfer.amount)", sourceLocation: sourceLocation)
+    #expect(transfer.amount == expectedAmount, "Ожидалась сумма перевода \(expectedAmount)₽, получена \(transfer.amount)₽", sourceLocation: sourceLocation)
 }
 
-// MARK: - Bank Transfer Assertions
+// MARK: - Проверки переводов из банка
 
 /// Проверяет наличие перевода из банка игроку
 /// - Parameters:
@@ -104,33 +70,25 @@ func assertBankTransfer(
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     let transfer = result.bankTransfers.first { t in
-        t.to.name == toName
+        t.to.name == toName && t.amount == expectedAmount
     }
 
     guard let transfer = transfer else {
-        Issue.record("Bank transfer to '\(toName)' not found", sourceLocation: sourceLocation)
+        Issue.record("Перевод из банка игроку '\(toName)' на сумму \(expectedAmount)₽ не найден", sourceLocation: sourceLocation)
         return
     }
 
-    #expect(transfer.amount == expectedAmount, "Expected bank transfer amount \(expectedAmount), got \(transfer.amount)", sourceLocation: sourceLocation)
+    #expect(transfer.amount == expectedAmount, "Ожидалась сумма перевода из банка \(expectedAmount)₽, получена \(transfer.amount)₽", sourceLocation: sourceLocation)
 }
 
-// MARK: - No Transfers Assertions
+// MARK: - Проверки отсутствия переводов
 
 /// Проверяет, что нет никаких прямых переводов между игроками
-func assertNoPlayerTransfers(
-    _ result: SettlementResult,
-    sourceLocation: SourceLocation = #_sourceLocation
-) {
-    #expect(result.transfers.isEmpty, "Expected no player transfers, found \(result.transfers.count)", sourceLocation: sourceLocation)
-}
-
-/// Проверяет, что нет никаких прямых переводов для расширенного результата
 func assertNoPlayerTransfers(
     _ result: EnhancedSettlementResult,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
-    #expect(result.playerTransfers.isEmpty, "Expected no player transfers, found \(result.playerTransfers.count)", sourceLocation: sourceLocation)
+    #expect(result.playerTransfers.isEmpty, "Не должно быть прямых переводов, найдено \(result.playerTransfers.count)", sourceLocation: sourceLocation)
 }
 
 /// Проверяет, что нет никаких переводов из банка
@@ -138,27 +96,18 @@ func assertNoBankTransfers(
     _ result: EnhancedSettlementResult,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
-    #expect(result.bankTransfers.isEmpty, "Expected no bank transfers, found \(result.bankTransfers.count)", sourceLocation: sourceLocation)
+    #expect(result.bankTransfers.isEmpty, "Не должно быть переводов из банка, найдено \(result.bankTransfers.count)", sourceLocation: sourceLocation)
 }
 
-// MARK: - Count Assertions
+// MARK: - Проверки количества переводов
 
 /// Проверяет общее количество прямых переводов
-func assertPlayerTransferCount(
-    _ result: SettlementResult,
-    count expectedCount: Int,
-    sourceLocation: SourceLocation = #_sourceLocation
-) {
-    #expect(result.transfers.count == expectedCount, "Expected \(expectedCount) transfers, got \(result.transfers.count)", sourceLocation: sourceLocation)
-}
-
-/// Проверяет общее количество прямых переводов для расширенного результата
 func assertPlayerTransferCount(
     _ result: EnhancedSettlementResult,
     count expectedCount: Int,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
-    #expect(result.playerTransfers.count == expectedCount, "Expected \(expectedCount) player transfers, got \(result.playerTransfers.count)", sourceLocation: sourceLocation)
+    #expect(result.playerTransfers.count == expectedCount, "Ожидалось \(expectedCount) прямых переводов, получено \(result.playerTransfers.count)", sourceLocation: sourceLocation)
 }
 
 /// Проверяет общее количество переводов из банка
@@ -167,5 +116,5 @@ func assertBankTransferCount(
     count expectedCount: Int,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
-    #expect(result.bankTransfers.count == expectedCount, "Expected \(expectedCount) bank transfers, got \(result.bankTransfers.count)", sourceLocation: sourceLocation)
+    #expect(result.bankTransfers.count == expectedCount, "Ожидалось \(expectedCount) переводов из банка, получено \(result.bankTransfers.count)", sourceLocation: sourceLocation)
 }

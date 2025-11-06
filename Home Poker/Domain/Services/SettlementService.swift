@@ -1,45 +1,10 @@
 import Foundation
 
 protocol SettlementProtocol {
-    func calculate(for session: Session) -> SettlementResult
-    func calculateWithBank(for session: Session) -> EnhancedSettlementResult
+    func calculate(for session: Session) -> EnhancedSettlementResult
 }
 
 struct SettlementService: SettlementProtocol {
-    
-    /// Выполняет расчёт балансов и необходимых переводов по данным сессии.
-    ///
-    /// Алгоритм учитывает только покерные результаты (buy-in и cash-out):
-    /// - Вычисляет агрегированные балансы для каждого игрока (`PlayerBalance`).
-    /// - Формирует список переводов между должниками и кредиторами с помощью жадного алгоритма.
-    ///
-    /// Предполагается, что сессия завершена и у всех игроков корректно рассчитаны buy-in/cash-out.
-    /// Операции с сессионным банком здесь не учитываются.
-    ///
-    /// - Parameter session: Сессия, для которой выполняется расчёт.
-    /// - Returns: Структура с балансами игроков и предложениями переводов.
-    func calculate(for session: Session) -> SettlementResult {
-        var balances: [PlayerBalance] = []
-        for player in session.players {
-            let buyIn = player.buyIn
-            let cashOut = player.cashOut
-            let netChips = cashOut - buyIn
-            let netCash = netChips * session.chipsToCashRatio
-            balances.append(
-                PlayerBalance(
-                    player: player,
-                    buyIn: buyIn,
-                    cashOut: cashOut,
-                    netChips: netChips,
-                    netCash: netCash
-                )
-            )
-        }
-
-        let transfers = greedyTransfers(from: balances, chipToCashRatio: session.chipsToCashRatio)
-
-        return SettlementResult(balances: balances, transfers: transfers)
-    }
 
     /// Выполняет расчёт балансов и переводов с учётом операций банка.
     ///
@@ -52,9 +17,12 @@ struct SettlementService: SettlementProtocol {
     /// 6. Обрабатывает переплаты
     /// 7. Для остатков применяет стандартный жадный алгоритм player-to-player
     ///
-    /// - Parameter session: Сессия с банком для расчёта.
-    /// - Returns: Расширенная структура с балансами, банковскими и прямыми переводами.
-    func calculateWithBank(for session: Session) -> EnhancedSettlementResult {
+    /// Метод работает для сессий как с банком, так и без него.
+    /// Если банк отсутствует, выполняется стандартный расчёт прямых переводов между игроками.
+    ///
+    /// - Parameter session: Сессия для расчёта.
+    /// - Returns: Структура с балансами, банковскими переводами и прямыми переводами между игроками.
+    func calculate(for session: Session) -> EnhancedSettlementResult {
         // Шаг 1: Рассчитываем базовые балансы игроков
         var balances: [PlayerBalance] = []
         for player in session.players {
@@ -278,13 +246,7 @@ struct BankTransfer {
     let amount: Int  // В рублях (cash)
 }
 
-/// Совокупный результат работы калькулятора: балансы и список переводов.
-struct SettlementResult {
-    let balances: [PlayerBalance]
-    let transfers: [TransferProposal]
-}
-
-/// Расширенный результат работы калькулятора с учётом банка.
+/// Результат работы калькулятора расчётов: балансы игроков, банковские переводы и прямые переводы.
 struct EnhancedSettlementResult {
     let balances: [PlayerBalance]
     let bankTransfers: [BankTransfer]
