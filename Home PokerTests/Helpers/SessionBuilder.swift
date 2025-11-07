@@ -121,7 +121,7 @@ final class SessionBuilder {
             // Добавляем cash-out транзакцию
             if playerData.cashOut > 0 {
                 let cashOutTx = PlayerChipTransaction(
-                    type: .ChipCashOut,
+                    type: .сhipCashOut,
                     amount: playerData.cashOut,
                     player: player,
                     timestamp: Date()

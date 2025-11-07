@@ -60,7 +60,7 @@ struct PlayerTransactionsView: View {
         switch type {
         case .chipBuyIn: return "Закупил фишек"
         case .chipAddOn: return "Докупил фишек"
-        case .ChipCashOut: return "Вывел фишки"
+        case .сhipCashOut: return "Вывел фишки"
         }
     }
 
@@ -76,7 +76,7 @@ struct PlayerTransactionsView: View {
         switch type {
         case .chipBuyIn: return "figure.walk.arrival"
         case .chipAddOn: return "plus.circle.fill"
-        case .ChipCashOut: return "figure.walk.departure"
+        case .сhipCashOut: return "figure.walk.departure"
         }
     }
 
@@ -84,7 +84,7 @@ struct PlayerTransactionsView: View {
         switch type {
         case .chipBuyIn: return .purple
         case .chipAddOn: return .green
-        case .ChipCashOut: return .orange
+        case .сhipCashOut: return .orange
         }
     }
 

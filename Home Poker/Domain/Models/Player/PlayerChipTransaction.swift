@@ -21,5 +21,5 @@ final class PlayerChipTransaction {
 enum TransactionType: String, Codable, CaseIterable {
     case chipBuyIn
     case chipAddOn
-    case ChipCashOut
+    case сhipCashOut
 }
