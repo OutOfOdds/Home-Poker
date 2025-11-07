@@ -228,14 +228,14 @@ struct Line:Shape{
     let p2 = Player(name: "Илон", inGame: false)
     p2.transactions = [
         PlayerChipTransaction(type: .chipBuyIn, amount: 2_000_000_000, player: p2),      // 2 млрд
-        PlayerChipTransaction(type: .ChipCashOut, amount: 1_800_000_000, player: p2)     // вывел 1.8 млрд
+        PlayerChipTransaction(type: .сhipCashOut, amount: 1_800_000_000, player: p2)     // вывел 1.8 млрд
     ]
 
     let p3 = Player(name: "Джефф", inGame: true)
     p3.transactions = [
         PlayerChipTransaction(type: .chipBuyIn, amount: 750_000_000, player: p3),        // 0.75 млрд
         PlayerChipTransaction(type: .chipAddOn, amount: 750_000_000, player: p3),        // +0.75 млрд
-        PlayerChipTransaction(type: .ChipCashOut, amount: 100_000_000, player: p3)       // вывел 0.1 млрд
+        PlayerChipTransaction(type: .сhipCashOut, amount: 100_000_000, player: p3)       // вывел 0.1 млрд
     ]
 
     huge.players = [p1, p2, p3]
