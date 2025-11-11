@@ -96,23 +96,6 @@ struct ChipsStatsSection: View {
                 }
                 .italic()
                 .fontDesign(.monospaced)
-                
-                if !session.expenses.isEmpty {
-                    NavigationLink {
-                        ExpenseDetails(session: session)
-                    } label: {
-                        HStack {
-                            Image(systemName: "cart.fill.badge.plus")
-                            Text("Расходы")
-                            Spacer()
-                            Text(session.expenses.reduce(0) { $0 + $1.amount }.asCurrency())
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fontDesign(.monospaced)
-                    }
-                }
-                
             }
         }
         Section {

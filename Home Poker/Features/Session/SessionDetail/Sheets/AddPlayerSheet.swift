@@ -95,7 +95,7 @@ struct AddPlayerSheet: View {
                     session: session,
                     player: player,
                     amount: bankAmount,
-                    note: "Первичный взнос при закупе"
+                    note: "Передал деньги в банк при первичной закупке фишек"
                 ) else {
                     return
                 }

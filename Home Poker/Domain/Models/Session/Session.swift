@@ -91,6 +91,8 @@ final class Session {
     var activePlayers: [Player] {
         players.filter { $0.inGame }
     }
+    
+    
 }
 
 enum GameType: String, Codable {
