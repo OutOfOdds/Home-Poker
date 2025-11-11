@@ -26,9 +26,9 @@ struct RebuyPlayerSheet: View {
                             Text("Предыдущий результат:")
                                 .foregroundStyle(.secondary)
                             Spacer()
-                            Text(player.profit.asCurrency())
+                            Text(player.chipProfit.asCurrency())
                                 .fontWeight(.semibold)
-                                .foregroundStyle(player.profit >= 0 ? .green : .red)
+                                .foregroundStyle(player.chipProfit >= 0 ? .green : .red)
                         }
                         .font(.subheadline)
                     }

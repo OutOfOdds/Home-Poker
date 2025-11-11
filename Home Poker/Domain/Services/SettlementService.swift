@@ -1,33 +1,42 @@
 import Foundation
 
 protocol SettlementProtocol {
-    func calculate(for session: Session) -> EnhancedSettlementResult
+    func calculate(for session: Session) -> SettlementResult
 }
 
 struct SettlementService: SettlementProtocol {
 
     /// Выполняет расчёт балансов и переводов с учётом операций банка.
     ///
-    /// Алгоритм учитывает все банковские операции (deposits и withdrawals):
-    /// 1. Рассчитывает базовые балансы игроков из покерных результатов
-    /// 2. Собирает net-contribution каждого игрока (deposited - withdrawn)
-    /// 3. Корректирует балансы с учётом банковских операций
-    /// 4. Собирает активные депозиты (положительные net-contributions)
-    /// 5. Применяет жадный алгоритм для схлопывания оставшихся депозитов с выигрышами
-    /// 6. Обрабатывает переплаты
-    /// 7. Для остатков применяет стандартный жадный алгоритм player-to-player
+    /// ПРАВИЛЬНАЯ ЛОГИКА (без двойного учёта):
+    /// 1. Рассчитывает базовые балансы игроков из покерных результатов (chip economy)
+    /// 2. Применяет рейкбек к балансам (money economy)
+    /// 3. Собирает net-contribution каждого игрока (deposited - withdrawn)
+    /// 4. Собирает начальных победителей (netCash > 0) и депозиты (netContribution > 0)
+    /// 5. РАСПРЕДЕЛЯЕТ депозиты победителям через банк + ЗАПОМИНАЕТ суммы
+    /// 6. ФОРМИРУЕТ ОКОНЧАТЕЛЬНЫХ creditors с учётом полученных денег из банка
+    /// 7. ФОРМИРУЕТ ОКОНЧАТЕЛЬНЫХ debtors с учётом отправленных денег через банк
+    /// 8. Обрабатывает переплаты (возврат из банка)
+    /// 9. Формирует прямые переводы player-to-player для оставшихся сумм
     ///
-    /// Метод работает для сессий как с банком, так и без него.
-    /// Если банк отсутствует, выполняется стандартный расчёт прямых переводов между игроками.
+    /// Ключевое отличие от старой версии:
+    /// - Старая: формировала creditors/debtors ДО распределения депозитов (prediction)
+    /// - Новая: формирует creditors/debtors ПОСЛЕ распределения депозитов (fact)
+    /// Это устраняет двойной учёт денег игроков с частичными депозитами.
     ///
     /// - Parameter session: Сессия для расчёта.
     /// - Returns: Структура с балансами, банковскими переводами и прямыми переводами между игроками.
-    func calculate(for session: Session) -> EnhancedSettlementResult {
-        // Шаг 1: Рассчитываем базовые балансы игроков
+    func calculate(for session: Session) -> SettlementResult {
+        // ============================================================
+        // ШАГ 1: CHIP ECONOMY
+        // ============================================================
+        // Рассчитываем покерные результаты каждого игрока в фишках:
+        // netChips = cashOut - buyIn
+        // Затем конвертируем в деньги: netCash = netChips × chipsToCashRatio
         var balances: [PlayerBalance] = []
         for player in session.players {
-            let buyIn = player.buyIn
-            let cashOut = player.cashOut
+            let buyIn = player.chipBuyIn
+            let cashOut = player.chipCashOut
             let netChips = cashOut - buyIn
             let netCash = netChips * session.chipsToCashRatio
             balances.append(
@@ -36,22 +45,82 @@ struct SettlementService: SettlementProtocol {
                     buyIn: buyIn,
                     cashOut: cashOut,
                     netChips: netChips,
-                    netCash: netCash
+                    netCash: netCash,
+                    rakeback: 0,
+                    expensePaid: 0,
+                    expenseShare: 0
                 )
             )
         }
 
+        // ============================================================
+        // ШАГ 2: ПРИМЕНЕНИЕ РЕЙКБЕКА
+        // ============================================================
+        // Рейкбек добавляется к netCash ПЕРЕД всеми расчётами settlement.
+        // Это часть базового баланса игрока, учитывается во всех дальнейших расчётах.
+        //
+        // Примеры:
+        // - Игрок проиграл 50₽, получил 10₽ рейкбека → netCash = -40₽ (долг уменьшился)
+        // - Игрок выиграл 30₽, получил 5₽ рейкбека → netCash = +35₽ (выигрыш увеличился)
+        for i in balances.indices {
+            if balances[i].player.getsRakeback && balances[i].player.rakeback > 0 {
+                balances[i].rakeback = balances[i].player.rakeback
+                balances[i].netCash += balances[i].player.rakeback
+            }
+        }
+
+        // ============================================================
+        // ШАГ 3: УЧЁТ РАСХОДОВ
+        // ============================================================
+        // Расходы работают следующим образом:
+        // 1. Если игрок оплатил расход → expensePaid (он должен получить эти деньги обратно)
+        // 2. Каждый игрок имеет свою долю в расходах → expenseShare (он должен заплатить)
+        // 3. Влияние на netCash: +expensePaid (возврат) - expenseShare (оплата доли)
+        //
+        // Примеры:
+        // - Игрок оплатил 1000₽, его доля 250₽ → netCash += 1000 - 250 = +750₽
+        // - Игрок не платил, его доля 250₽ → netCash += 0 - 250 = -250₽
+        // - Игрок оплатил 1000₽, не участвует в оплате → netCash += 1000₽
+        for i in balances.indices {
+            let playerId = balances[i].player.id
+
+            // Подсчитываем, сколько игрок оплатил как плательщик
+            let paid = session.expenses
+                .filter { $0.payer?.id == playerId }
+                .reduce(0) { $0 + $1.amount }
+
+            // Подсчитываем долю игрока в расходах
+            let share = session.expenses
+                .flatMap { $0.distributions }
+                .filter { $0.player.id == playerId }
+                .reduce(0) { $0 + $1.amount }
+
+            balances[i].expensePaid = paid
+            balances[i].expenseShare = share
+
+            // Применяем к netCash: возврат оплаченного минус доля
+            balances[i].netCash += paid - share
+        }
+
         // Если банка нет, возвращаем стандартный расчёт без банковских переводов
         guard let bank = session.bank else {
-            let transfers = greedyTransfers(from: balances, chipToCashRatio: session.chipsToCashRatio)
-            return EnhancedSettlementResult(
+            let transfers = greedyTransfers(from: balances)
+            return SettlementResult(
                 balances: balances,
                 bankTransfers: [],
                 playerTransfers: transfers
             )
         }
 
-        // Шаг 2: Собираем net-contribution каждого игрока (deposited - withdrawn)
+        // ============================================================
+        // ШАГ 3: СБОР NET-CONTRIBUTION
+        // ============================================================
+        // netContribution = deposited - withdrawn
+        //
+        // Интерпретация:
+        // - netContribution > 0: игрок внёс больше, чем получил (активный депозит в банк)
+        // - netContribution < 0: игрок получил больше, чем внёс (уже получил выплату из банка)
+        // - netContribution = 0: игрок не взаимодействовал с банком
         var playerNetContributions: [UUID: Int] = [:]
         for player in session.players {
             let (deposited, withdrawn) = bank.contributions(for: player)
@@ -59,33 +128,20 @@ struct SettlementService: SettlementProtocol {
             playerNetContributions[player.id] = netContribution
         }
 
-        // Шаг 3: Корректируем балансы с учётом банковских операций
-        // netContribution = deposited - withdrawn
-        // Если netContribution < 0: игрок получил больше чем внёс (уже получил выплату)
-        // Если netContribution > 0: игрок внёс больше чем получил (активный депозит)
-        var creditors = balances
-            .compactMap { balance -> (Player, Int)? in
-                let netContribution = playerNetContributions[balance.player.id] ?? 0
-                // Скорректированный выигрыш = покерный выигрыш + net contribution
-                // Если withdrawn > deposited (negative netContribution), это УВЕЛИЧИВАЕТ выигрыш
-                // Пример: выиграл 80, получил из банка 80 (netContribution = -80) → adjustedWin = 80 + (-80) = 0
-                let adjustedWin = balance.netCash + netContribution
-                return adjustedWin > 0 ? (balance.player, adjustedWin) : nil
-            }
-            .sorted { $0.1 > $1.1 } // по убыванию
+        let balancesByPlayerId = Dictionary(uniqueKeysWithValues: balances.map { ($0.player.id, $0) })
 
-        var debtors = balances
-            .compactMap { balance -> (Player, Int)? in
-                let netContribution = playerNetContributions[balance.player.id] ?? 0
-                // Скорректированный долг = покерный долг - net contribution
-                // Если deposited > withdrawn (positive netContribution), это УМЕНЬШАЕТ долг
-                // Пример: проиграл 100, внёс в банк 100 (netContribution = 100) → adjustedDebt = 100 - 100 = 0 ✅
-                let adjustedDebt = -balance.netCash - netContribution
-                return adjustedDebt > 0 ? (balance.player, adjustedDebt) : nil
-            }
-            .sorted { $0.1 > $1.1 } // по убыванию
+        // ============================================================
+        // ШАГ 4: СБОР НАЧАЛЬНЫХ ПОБЕДИТЕЛЕЙ И ДЕПОЗИТОВ
+        // ============================================================
+        // Победители: игроки с netCash > 0 (должны получить деньги)
+        // Депозиты: игроки с netContribution > 0 (внесли деньги в банк)
+        //
+        // НА ЭТОМ ЭТАПЕ мы собираем НАЧАЛЬНЫЕ суммы, но НЕ формируем окончательных creditors/debtors!
+        var initialWinners: [(player: Player, amount: Int)] = balances
+            .filter { $0.netCash > 0 }
+            .map { ($0.player, $0.netCash) }
+            .sorted { $0.amount > $1.amount } // по убыванию
 
-        // Шаг 4: Собираем активные депозиты (положительные net-contribution)
         var playerDeposits: [(player: Player, netDeposit: Int)] = []
         for player in session.players {
             let netContribution = playerNetContributions[player.id] ?? 0
@@ -93,61 +149,124 @@ struct SettlementService: SettlementProtocol {
                 playerDeposits.append((player: player, netDeposit: netContribution))
             }
         }
+        playerDeposits.sort { $0.netDeposit > $1.netDeposit } // по убыванию
 
-        // Сортируем депозиты по убыванию для жадного алгоритма
-        playerDeposits.sort { $0.netDeposit > $1.netDeposit }
-
+        // ============================================================
+        // ШАГ 5: РАСПРЕДЕЛЕНИЕ ДЕПОЗИТОВ + ОТСЛЕЖИВАНИЕ СУММ
+        // ============================================================
+        // Применяем жадный алгоритм: депозиты победителям через банк.
+        // ВАЖНО: запоминаем ФАКТИЧЕСКИЕ суммы переведённые через банк!
+        //
+        // amountReceivedFromBank[playerId] = сколько игрок ПОЛУЧИЛ из банка
+        // amountSentViaBank[playerId] = сколько денег игрока УШЛО через банк победителям
         var bankTransfers: [BankTransfer] = []
+        var amountReceivedFromBank: [UUID: Int] = [:]
+        var amountSentViaBank: [UUID: Int] = [:]
 
-        // Шаг 5: Применяем жадный алгоритм для схлопывания оставшихся депозитов с winners
         var depositIndex = 0
-        var creditorIndex = 0
+        var winnerIndex = 0
 
-        while depositIndex < playerDeposits.count && creditorIndex < creditors.count {
-            let (_, depositAmount) = playerDeposits[depositIndex]
-            let (winner, winnerAmount) = creditors[creditorIndex]
+        while depositIndex < playerDeposits.count && winnerIndex < initialWinners.count {
+            let depositor = playerDeposits[depositIndex].player
+            var depositAmount = playerDeposits[depositIndex].netDeposit
+
+            let winner = initialWinners[winnerIndex].player
+            var winnerAmount = initialWinners[winnerIndex].amount
 
             let transferAmount = min(depositAmount, winnerAmount)
 
             if transferAmount > 0 {
-                // Создаём перевод из банка winner'у
+                // Создаём перевод из банка победителю
                 bankTransfers.append(BankTransfer(to: winner, amount: transferAmount))
+
+                // ЗАПОМИНАЕМ: сколько winner получил из банка
+                amountReceivedFromBank[winner.id, default: 0] += transferAmount
+
+                // ЗАПОМИНАЕМ: сколько денег depositor'а ушло победителям через банк
+                amountSentViaBank[depositor.id, default: 0] += transferAmount
             }
 
-            let remainingDeposit = depositAmount - transferAmount
-            let remainingWin = winnerAmount - transferAmount
+            depositAmount -= transferAmount
+            winnerAmount -= transferAmount
 
             // Обновляем остатки
-            playerDeposits[depositIndex].netDeposit = remainingDeposit
-            creditors[creditorIndex].1 = remainingWin
+            playerDeposits[depositIndex].netDeposit = depositAmount
+            initialWinners[winnerIndex].amount = winnerAmount
 
-            if remainingDeposit == 0 { depositIndex += 1 }
-            if remainingWin == 0 { creditorIndex += 1 }
+            if depositAmount == 0 { depositIndex += 1 }
+            if winnerAmount == 0 { winnerIndex += 1 }
         }
 
-        // Шаг 6: Обрабатываем переплаты (депозиты больше долга)
-        // Если у игрока остался депозит, но он не должен (или выиграл), банк должен ему вернуть
-        for depositIdx in depositIndex..<playerDeposits.count {
-            let (depositor, remainingDeposit) = playerDeposits[depositIdx]
-            if remainingDeposit > 0 {
-                // Проверяем, есть ли у него долг
-                if let debtorIdx = debtors.firstIndex(where: { $0.0.id == depositor.id }) {
-                    let debt = debtors[debtorIdx].1
-                    if debt > 0 {
-                        // У него ещё есть долг, применим в следующей фазе
-                        continue
-                    }
-                }
-                // Переплата - банк должен вернуть
-                bankTransfers.append(BankTransfer(to: depositor, amount: remainingDeposit))
+        // ============================================================
+        // ШАГ 6: ФОРМИРОВАНИЕ ОКОНЧАТЕЛЬНЫХ CREDITORS
+        // ============================================================
+        // adjustedWin = netCash - amountReceivedFromBank
+        //
+        // Логика: Если игрок выиграл 130₽ и получил 120₽ из банка,
+        // то в прямых переводах он должен получить только 10₽ (остаток).
+        //
+        // Пример:
+        // - Алексей выиграл 130₽, получил 120₽ из банка → adjustedWin = 10₽
+        // - Борис выиграл 70₽, получил 20₽ из банка → adjustedWin = 50₽
+        var creditors = balances
+            .compactMap { balance -> (Player, Int)? in
+                guard balance.netCash > 0 else { return nil }
+                let received = amountReceivedFromBank[balance.player.id] ?? 0
+                let adjustedWin = balance.netCash - received
+                return adjustedWin > 0 ? (balance.player, adjustedWin) : nil
+            }
+            .sorted { $0.1 > $1.1 } // по убыванию
+
+        // ============================================================
+        // ШАГ 7: ФОРМИРОВАНИЕ ОКОНЧАТЕЛЬНЫХ DEBTORS
+        // ============================================================
+        // adjustedDebt = abs(netCash) - amountSentViaBank
+        //
+        // Логика: Если игрок проиграл 40₽ и его 20₽ депозита уже ушли победителям,
+        // то в прямых переводах он должен отдать только 20₽ (остаток).
+        //
+        // Примеры:
+        // - Евгений проиграл 50₽, внёс 70₽ → 50₽ ушли победителям, 20₽ переплата → adjustedDebt = 0₽
+        // - Жанна проиграла 40₽, внесла 20₽ → 20₽ ушли победителям → adjustedDebt = 20₽
+        // - Игорь проиграл 80₽, внёс 50₽ → 50₽ ушли победителям → adjustedDebt = 30₽
+        // - Дмитрий проиграл 20₽, не вносил → adjustedDebt = 20₽
+        var debtors = balances
+            .compactMap { balance -> (Player, Int)? in
+                guard balance.netCash < 0 else { return nil }
+                let sent = amountSentViaBank[balance.player.id] ?? 0
+                let adjustedDebt = abs(balance.netCash) - sent
+                return adjustedDebt > 0 ? (balance.player, adjustedDebt) : nil
+            }
+            .sorted { $0.1 > $1.1 } // по убыванию
+
+        // ============================================================
+        // ШАГ 8: ОБРАБОТКА ПЕРЕПЛАТ
+        // ============================================================
+        // Если игрок внёс больше своего оригинального долга (до рейкбека),
+        // возвращаем переплату из банка.
+        //
+        // Пример:
+        // - Евгений проиграл 50₽, внёс 70₽ → переплата 20₽ → банк возвращает 20₽
+        for player in session.players {
+            let netContribution = playerNetContributions[player.id] ?? 0
+            guard netContribution > 0,
+                  let balance = balancesByPlayerId[player.id] else { continue }
+
+            let overpayment = calculateOverpayment(
+                for: player,
+                balance: balance,
+                deposited: netContribution
+            )
+            if overpayment > 0 {
+                bankTransfers.append(BankTransfer(to: player, amount: overpayment))
             }
         }
 
-        // Шаг 7: Рассчитываем оставшиеся прямые переводы player-to-player
-        // Убираем игроков с нулевыми остатками
-        creditors = creditors.filter { $0.1 > 0 }
-        debtors = debtors.filter { $0.1 > 0 }
-
+        // ============================================================
+        // ШАГ 9: ПРЯМЫЕ ПЕРЕВОДЫ PLAYER-TO-PLAYER
+        // ============================================================
+        // Для оставшихся сумм (после распределения через банк) применяем
+        // жадный алгоритм прямых переводов между игроками.
         var playerTransfers: [TransferProposal] = []
         var i = 0
         var j = 0
@@ -161,28 +280,43 @@ struct SettlementService: SettlementProtocol {
                 playerTransfers.append(TransferProposal(from: debtPlayer, to: credPlayer, amount: pay))
             }
 
-            let newCred = credAmt - pay
-            let newDebt = debtAmt - pay
+            creditors[i].1 -= pay
+            debtors[j].1 -= pay
 
-            creditors[i].1 = newCred
-            debtors[j].1 = newDebt
-
-            if newCred == 0 { i += 1 }
-            if newDebt == 0 { j += 1 }
+            if creditors[i].1 == 0 { i += 1 }
+            if debtors[j].1 == 0 { j += 1 }
         }
 
-        return EnhancedSettlementResult(
+        return SettlementResult(
             balances: balances,
             bankTransfers: bankTransfers,
             playerTransfers: playerTransfers
         )
     }
 
+    /// Вычисляет реальную переплату игрока в банк
+    /// Переплата = когда игрок внёс больше своего долга (ПОСЛЕ применения рейкбека)
+    ///
+    /// Пример:
+    /// - Игрок проиграл 1000₽ (netChips = -1000₽)
+    /// - Получил 300₽ рейкбека
+    /// - Долг ПОСЛЕ рейкбека: 1000 - 300 = 700₽
+    /// - Внёс в банк: 1000₽
+    /// - Переплата: 1000 - 700 = 300₽ → должен вернуться из банка
+    private func calculateOverpayment(
+        for player: Player,
+        balance: PlayerBalance,
+        deposited: Int
+    ) -> Int {
+        // Долг ПОСЛЕ применения рейкбека (это итоговый netCash, если он отрицательный)
+        let debtAfterRakeback = abs(min(balance.netCash, 0))
+        return max(deposited - debtAfterRakeback, 0)
+    }
+
     /// Жадный алгоритм, сопоставляющий игроков с положительным и отрицательным результатом.
     /// Переводы формируются так, чтобы максимально быстро обнулить долги,
     /// при этом каждый перевод идёт от текущего должника к текущему кредитору.
-    /// Все переводы в РУБЛЯХ.
-    private func greedyTransfers(from balances: [PlayerBalance], chipToCashRatio: Int) -> [TransferProposal] {
+    private func greedyTransfers(from balances: [PlayerBalance]) -> [TransferProposal] {
         var creditors = balances
             .filter { $0.netCash > 0 }
             .map { ($0.player, $0.netCash) }
@@ -229,7 +363,13 @@ struct PlayerBalance {
     /// Итоговый результат игрока в фишках (положительный — выигрыш, отрицательный — проигрыш).
     let netChips: Int
     /// Итоговый результат игрока в рублях (netChips × chipToCashRatio).
-    let netCash: Int
+    var netCash: Int
+    /// Рейкбек, полученный игроком (в рублях).
+    var rakeback: Int
+    /// Сумма расходов, оплаченных игроком (если он плательщик).
+    var expensePaid: Int
+    /// Доля игрока в общих расходах (сколько он должен за расходы).
+    var expenseShare: Int
 }
 
 /// Предложение перевода между двумя игроками, полученное после рассчёта.
@@ -247,7 +387,7 @@ struct BankTransfer {
 }
 
 /// Результат работы калькулятора расчётов: балансы игроков, банковские переводы и прямые переводы.
-struct EnhancedSettlementResult {
+struct SettlementResult {
     let balances: [PlayerBalance]
     let bankTransfers: [BankTransfer]
     let playerTransfers: [TransferProposal]

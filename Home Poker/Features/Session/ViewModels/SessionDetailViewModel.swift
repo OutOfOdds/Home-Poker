@@ -77,7 +77,14 @@ final class SessionDetailViewModel {
     func removeExpenses(_ expenses: [Expense], from session: Session) {
         service.removeExpenses(expenses, from: session)
     }
-    
+
+    // Сохраняет распределение расхода между игроками и показывает alert при ошибке.
+    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)]) -> Bool {
+        return performServiceCall {
+            try service.saveExpenseDistribution(for: expense, distributions: distributions)
+        }
+    }
+
     // MARK: - Настройки сессии
     
     // Обновляет значения блайндов/анте в сессии, если ввод корректен.
@@ -159,6 +166,29 @@ final class SessionDetailViewModel {
     /// - Parameter session: Сессия для очистки
     func clearRakeAndTips(for session: Session) {
         service.clearRakeAndTips(for: session)
+    }
+
+    // MARK: - Распределение рейкбека
+
+    /// Сохраняет распределение рейкбека между игроками
+    /// - Parameters:
+    ///   - session: Сессия
+    ///   - distributions: Массив кортежей (игрок, сумма) с распределением рейкбека
+    /// - Returns: `true` если успешно, `false` при ошибке
+    func saveRakebackDistribution(
+        for session: Session,
+        distributions: [(player: Player, amount: Int)]
+    ) -> Bool {
+        return performServiceCall {
+            try service.saveRakebackDistribution(for: session, distributions: distributions)
+        }
+    }
+
+    /// Возвращает доступную сумму рейкбека для распределения
+    /// - Parameter session: Сессия
+    /// - Returns: Сумма доступного рейкбека в рублях
+    func availableRakebackAmount(for session: Session) -> Int {
+        return session.bank?.reservedForRake ?? 0
     }
 
     // MARK: - Helpers

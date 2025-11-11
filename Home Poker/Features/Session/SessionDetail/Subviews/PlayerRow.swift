@@ -27,18 +27,18 @@ struct PlayerRow: View {
                     
                     if !player.inGame {
                         HStack {
-                            Text("\(player.profit >= 0 ? "+" : "")\(player.profit)")
+                            Text("\(player.chipProfit >= 0 ? "+" : "")\(player.chipProfit)")
                                 .font(.title3)
                                 .bold()
-                                .foregroundColor(.dynamicColor(value: player.profit))
+                                .foregroundColor(.dynamicColor(value: player.chipProfit))
                                 .fontDesign(.monospaced)
                         }
                     }
                     
                     VStack(alignment: .leading) {
-                        Text("Закуплено фишек: \(player.buyIn)")
+                        Text("Закуплено фишек: \(player.chipBuyIn)")
                         if !player.inGame {
-                            Text("Выведено фишек: \(player.cashOut)")
+                            Text("Выведено фишек: \(player.chipCashOut)")
                         }
                     }
                     .foregroundStyle(.secondary)
@@ -111,15 +111,15 @@ struct PlayerRow: View {
     }
     
     private var displayedProfitColor: Color {
-        if player.profit == 0 {
+        if player.chipProfit == 0 {
             return .secondary
         }
-        return player.profit > 0 ? .green : .red
+        return player.chipProfit > 0 ? .green : .red
     }
     
     private var cashOutLabel: String? {
-        guard !player.inGame, player.cashOut > 0 else { return nil }
-        return "Вышел с: \(player.cashOut.asCurrency())"
+        guard !player.inGame, player.chipCashOut > 0 else { return nil }
+        return "Вышел с: \(player.chipCashOut.asCurrency())"
     }
 }
 

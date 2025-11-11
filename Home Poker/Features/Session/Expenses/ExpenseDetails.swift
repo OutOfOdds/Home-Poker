@@ -14,7 +14,7 @@ struct ExpenseDetails: View {
                     // Секция расходов
                     Section {
                         ForEach(expensesSorted, id: \.id) { expense in
-                            ExpenseRow(expense: expense)
+                            ExpenseRow(expense: expense, session: session)
                         }
                         .onDelete(perform: delete)
                     } header: {
@@ -83,26 +83,53 @@ struct ExpenseDetails: View {
 
 private struct ExpenseRow: View {
     let expense: Expense
-    
+    let session: Session
+
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(expense.note.isEmpty ? "Без описания" : expense.note)
-                    .font(.body)
-                HStack(spacing: 6) {
-                    if let payerName = expense.payer?.name {
-                        Text(payerName)
+        NavigationLink {
+            ExpenseDistributionView(expense: expense, session: session)
+        } label: {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text(expense.note.isEmpty ? "Без описания" : expense.note)
+                            .font(.body)
+                        if expense.isFullyDistributed {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        } else {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
                     }
-                    Text(expense.createdAt, style: .date)
+
+                    HStack(spacing: 6) {
+                        if let payerName = expense.payer?.name {
+                            Text("Оплатил: \(payerName)")
+                        }
+                        Text(expense.createdAt, style: .date)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                    if !expense.distributions.isEmpty {
+                        Text("Распределено: \(expense.totalDistributed.asCurrency()) из \(expense.amount.asCurrency())")
+                            .font(.caption2)
+                            .foregroundStyle(expense.isFullyDistributed ? .green : .orange)
+                    } else {
+                        Text("Не распределено")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Spacer()
+                Text(expense.amount.asCurrency())
+                    .font(.body.weight(.semibold))
             }
-            Spacer()
-            Text(expense.amount.asCurrency())
-                .font(.body.weight(.semibold))
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
     }
 }
 

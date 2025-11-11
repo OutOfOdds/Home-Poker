@@ -16,7 +16,7 @@ struct SettlementView: View {
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(viewModel.balances, id: \.player.id) { balance in
-                            HStack {
+                            HStack(alignment: .top) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(balance.player.name)
                                         .font(.headline)
@@ -26,6 +26,11 @@ struct SettlementView: View {
                                     Text("\(balance.netChips >= 0 ? "+" : "")\(balance.netChips) фишек")
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
+                                    if balance.rakeback > 0 {
+                                        Text("+\(balance.rakeback.asCurrency()) рейкбек")
+                                            .font(.caption2)
+                                            .foregroundStyle(.green)
+                                    }
                                 }
                                 Spacer()
                                 Text(balance.netCash.asCurrency())

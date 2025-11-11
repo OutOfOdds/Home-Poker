@@ -8,9 +8,11 @@ struct SessionBankView: View {
     @State private var showingDepositSheet = false
     @State private var showingWithdrawalSheet = false
     @State private var showSettlementSheet = false
+    @State private var showingRakebackSheet = false
+    @State private var showingAddExpenseSheet = false
     @State private var transactionToDelete: SessionBankTransaction?
     @State private var showingDeleteConfirmation = false
-
+    
     private var sortedPlayers: [Player] {
         session.players.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
@@ -18,30 +20,38 @@ struct SessionBankView: View {
     private var sortedEntries: [SessionBankTransaction] {
         session.bank?.transactions.sorted { $0.createdAt > $1.createdAt } ?? []
     }
-
+    
+    private var sortedExpenses: [Expense] {
+        session.expenses.sorted { $0.createdAt > $1.createdAt }
+    }
+    
     private var allPlayersFinished: Bool {
         !session.players.isEmpty && session.players.allSatisfy { !$0.inGame }
     }
     
     private var canCalculateSettlement: Bool {
         guard session.bank != nil else { return false }
-
+        
         // Можно рассчитаться если все игроки завершили игру
         // Settlement теперь корректно обрабатывает частичные взносы в банк
         return allPlayersFinished
     }
-
+    
     // MARK: - Body
-
+    
     var body: some View {
         List {
             if let bank = session.bank {
                 managerSection(bank: bank)
                 summarySection(bank: bank)
+                if bank.totalReserved > 0 {
+                    reservedSection(bank: bank)
+                }
                 debtorsSection(bank: bank)
                 if !bank.playersOwedByBank.isEmpty {
                     owedByBankSection(bank: bank)
                 }
+                expensesSection
                 entriesSection(entries: sortedEntries)
             } else {
                 ContentUnavailableView("Банк не создан", systemImage: "banknote")
@@ -51,11 +61,13 @@ struct SessionBankView: View {
             }
         }
         .navigationTitle("Банк сессии")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 depositButton
                 withdrawalButton
+                expenseButton
+                rakebackButton
                 settlementButton
             }
         }
@@ -73,6 +85,18 @@ struct SessionBankView: View {
         }
         .sheet(isPresented: $showSettlementSheet) {
             SettlementView(viewModel: settlementVM)
+        }
+        .sheet(isPresented: $showingRakebackSheet) {
+            NavigationStack {
+                RakebackDistributionView(session: session)
+                    .environment(viewModel)
+            }
+        }
+        .sheet(isPresented: $showingAddExpenseSheet) {
+            NavigationStack {
+                AddExpenseSheet(session: session)
+                    .environment(viewModel)
+            }
         }
         .onAppear {
             viewModel.ensureBank(for: session)
@@ -110,66 +134,65 @@ struct SessionBankView: View {
     
     private func summarySection(bank: SessionBank) -> some View {
         Section("Итоги") {
-            if bank.isClosed {
-                HStack {
-                    Text("Банк закрыт")
-                    Image(systemName: "lock.fill")
-                    Spacer()
-                    if let closedAt = bank.closedAt {
-                        Text(closedAt, style: .date)
-                    }
-                }
-            }
             summaryRow(title: "Получено от игроков", value: formatCurrency(bank.totalDeposited), color: .green)
             summaryRow(title: "Выдано игрокам", value: formatCurrency(bank.totalWithdrawn), color: .orange)
             summaryRow(
                 title: "Баланс банка",
                 value: formatCurrency(bank.netBalance),
                 color: .primary)
-            
-            // Показываем резервы если есть рейк или чаевые
-            if bank.totalReserved > 0 {
-                reservesView(bank: bank)
-            }
         }
     }
     
-    private func reservesView(bank: SessionBank) -> some View {
-        VStack(alignment: .leading) {
+    private func reservedSection(bank: SessionBank) -> some View {
+        let distributedRakeback = session.players.filter { $0.getsRakeback }.reduce(0) { $0 + $1.rakeback }
+        
+        return Section {
+            if bank.reservedForRake > 0 {
+                NavigationLink {
+                    RakebackDistributionView(session: session)
+                        .environment(viewModel)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Рейк")
+                                .font(.body)
+                            Spacer()
+                            Text(formatCurrency(bank.reservedForRake))
+                                .fontWeight(.semibold)
+                        }
+                        
+                        if distributedRakeback > 0 {
+                            Text("\(distributedRakeback.asCurrency()) выдано рейкбеком")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            
+            if bank.reservedForTips > 0 {
+                summaryRow(title: "Чаевые", value: formatCurrency(bank.reservedForTips), color: .secondary)
+            }
+        } header: {
             HStack {
-                Text("Зарезервировано всего:")
+                Text("Зарезервировано")
                 Spacer()
                 Text(formatCurrency(bank.totalReserved))
+                    .foregroundStyle(.orange)
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.bottom, 4)
-
-            if bank.reservedForRake > 0 {
-                reserveItemRow(title: "Рейк", amount: bank.reservedForRake)
-            }
-
-            if bank.reservedForTips > 0 {
-                reserveItemRow(title: "Чаевые", amount: bank.reservedForTips)
-            }
-        }
-    }
-
-    private func reserveItemRow(title: String, amount: Int) -> some View {
-        HStack {
-            Text("• \(title)")
-                .font(.caption2)
-            Spacer()
-            Text(formatCurrency(amount))
-                .font(.caption2)
+        } footer: {
+            Text("Вы можете выдать рейкбек игрокам")
+                .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
-
+    
     private func debtorsSection(bank: SessionBank) -> some View {
         let debtors = bank.playersOwingBank
         let totalDebt = debtors.reduce(0) { $0 + bank.amountOwedToBank(for: $1) }
-
+        
         return playerDebtSection(
             title: "Игроки должны:",
             players: debtors,
@@ -179,7 +202,7 @@ struct SessionBankView: View {
             amountProvider: { bank.amountOwedToBank(for: $0) }
         )
     }
-
+    
     private func owedByBankSection(bank: SessionBank) -> some View {
         playerDebtSection(
             title: "Банк должен:",
@@ -191,7 +214,7 @@ struct SessionBankView: View {
             showPlayerDetails: true
         )
     }
-
+    
     private func playerDebtSection(
         title: String,
         players: [Player],
@@ -213,7 +236,7 @@ struct SessionBankView: View {
                         if showPlayerDetails {
                             VStack(alignment: .leading) {
                                 Text(player.name)
-                                if player.profit > 0 {
+                                if player.chipProfit > 0 {
                                     Text("Выплата выигрыша")
                                         .font(.caption2)
                                 } else {
@@ -260,6 +283,57 @@ struct SessionBankView: View {
                 }
             }
         }
+    }
+    
+    private var expensesSection: some View {
+        Section("Расходы (\(sortedExpenses.count))") {
+            if sortedExpenses.isEmpty {
+                Text("Пока нет расходов")
+                    .foregroundStyle(.secondary)
+                    .italic()
+                    .font(.caption)
+            } else {
+                ForEach(sortedExpenses, id: \.id) { expense in
+                    NavigationLink {
+                        ExpenseDistributionView(expense: expense, session: session)
+                            .environment(viewModel)
+                    } label: {
+                        expenseRow(expense)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func expenseRow(_ expense: Expense) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Text(expense.note.isEmpty ? "Расход" : expense.note)
+                        .font(.body)
+                    if expense.isFullyDistributed {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    } else {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                }
+                
+                if let payerName = expense.payer?.name {
+                    Text("Оплатил: \(payerName)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Text(expense.amount.asCurrency())
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+        }
+        .padding(.vertical, 4)
     }
     
     private func entriesSection(entries: [SessionBankTransaction]) -> some View {
@@ -334,7 +408,7 @@ struct SessionBankView: View {
         }
         .disabled(sortedPlayers.isEmpty)
     }
-
+    
     private var withdrawalButton: some View {
         Button {
             showingWithdrawalSheet = true
@@ -343,6 +417,24 @@ struct SessionBankView: View {
                 .foregroundStyle(.orange)
         }
         .disabled(sortedPlayers.isEmpty)
+    }
+    
+    private var expenseButton: some View {
+        Button {
+            showingAddExpenseSheet = true
+        } label: {
+            Image(systemName: "cart")
+        }
+        .disabled(sortedPlayers.isEmpty)
+    }
+    
+    private var rakebackButton: some View {
+        Button {
+            showingRakebackSheet = true
+        } label: {
+            Image(systemName: "percent")
+        }
+        .disabled(viewModel.availableRakebackAmount(for: session) <= 0)
     }
     
     private var settlementButton: some View {
@@ -354,7 +446,7 @@ struct SessionBankView: View {
         }
         .disabled(!canCalculateSettlement)
     }
-
+    
 }
 
 private extension SessionBankTransactionType {
@@ -387,7 +479,7 @@ private func bankPreview(session: Session) -> some View {
             .environment(SessionDetailViewModel())
     }
     .modelContainer(
-        for: [Session.self, Player.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
+        for: [Session.self, Player.self, PlayerChipTransaction.self, Expense.self, ExpenseDistribution.self, SessionBank.self, SessionBankTransaction.self],
         inMemory: true
     )
 }

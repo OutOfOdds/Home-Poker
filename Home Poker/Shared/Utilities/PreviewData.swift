@@ -143,6 +143,268 @@ enum PreviewData {
         return session
     }
 
+    /// Эталонная сессия для проверки всех расчетов
+    /// Включает: банк, рейк, чаевые, расходы, рейкбек, должников, кредиторов
+    /// Все игроки завершили игру - готово к settlement
+    static func referenceSessionForCalculations() -> Session {
+        let session = Session(
+            startTime: Date().addingTimeInterval(-5 * 60 * 60),
+            location: "Тестовый клуб",
+            gameType: .NLHoldem,
+            status: .awaitingForSettlements,
+            sessionTitle: "Эталонная сессия"
+        )
+        session.smallBlind = 50
+        session.bigBlind = 100
+        session.ante = 10
+        session.chipsToCashRatio = 1
+
+        // Устанавливаем рейк и чаевые
+        session.rakeAmount = 1000  // 1000₽ рейка
+        session.tipsAmount = 500   // 500₽ чаевых
+
+        // Создаем игроков с разными сценариями:
+
+        // 1. Большой победитель с рейкбеком
+        let bigWinner = createPlayer(
+            name: "Алексей",
+            inGame: false,
+            buyIn: 10000,
+            addOns: [5000],
+            cashOut: 22000,
+            getsRakeback: true
+        )
+
+        // 2. Средний победитель без рейкбека
+        let mediumWinner = createPlayer(
+            name: "Борис",
+            inGame: false,
+            buyIn: 8000,
+            addOns: [2000],
+            cashOut: 13000,
+            getsRakeback: false
+        )
+
+        // 3. Маленький победитель с рейкбеком
+        let smallWinner = createPlayer(
+            name: "Виктор",
+            inGame: false,
+            buyIn: 5000,
+            cashOut: 6500,
+            getsRakeback: true
+        )
+
+        // 4. Большой проигравший
+        let bigLoser = createPlayer(
+            name: "Григорий",
+            inGame: false,
+            buyIn: 12000,
+            addOns: [3000],
+            cashOut: 5000,
+            getsRakeback: false
+        )
+
+        // 5. Средний проигравший
+        let mediumLoser = createPlayer(
+            name: "Дмитрий",
+            inGame: false,
+            buyIn: 7000,
+            addOns: [3000],
+            cashOut: 6000,
+            getsRakeback: false
+        )
+
+        // 6. В ноль (break even)
+        let breakEven = createPlayer(
+            name: "Евгений",
+            inGame: false,
+            buyIn: 6000,
+            cashOut: 6000,
+            getsRakeback: false
+        )
+
+        session.players = [bigWinner, mediumWinner, smallWinner, bigLoser, mediumLoser, breakEven]
+
+        // Создаем банк с реалистичными транзакциями
+        let bank = SessionBank(session: session, expectedTotal: 48000)
+        bank.manager = bigWinner
+
+        var bankTransactions: [SessionBankTransaction] = []
+
+        // Начало игры - игроки вносят начальные buy-in
+        bankTransactions.append(SessionBankTransaction(
+            amount: 10000,
+            type: .deposit,
+            player: bigWinner,
+            bank: bank,
+            note: "Начальный взнос",
+            createdAt: Date().addingTimeInterval(-5 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 8000,
+            type: .deposit,
+            player: mediumWinner,
+            bank: bank,
+            note: "Начальный взнос",
+            createdAt: Date().addingTimeInterval(-5 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 5000,
+            type: .deposit,
+            player: smallWinner,
+            bank: bank,
+            note: "Начальный взнос",
+            createdAt: Date().addingTimeInterval(-5 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 12000,
+            type: .deposit,
+            player: bigLoser,
+            bank: bank,
+            note: "Начальный взнос",
+            createdAt: Date().addingTimeInterval(-5 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 7000,
+            type: .deposit,
+            player: mediumLoser,
+            bank: bank,
+            note: "Начальный взнос",
+            createdAt: Date().addingTimeInterval(-5 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 6000,
+            type: .deposit,
+            player: breakEven,
+            bank: bank,
+            note: "Начальный взнос",
+            createdAt: Date().addingTimeInterval(-5 * 60 * 60)
+        ))
+
+        // Середина игры - add-on
+        bankTransactions.append(SessionBankTransaction(
+            amount: 5000,
+            type: .deposit,
+            player: bigWinner,
+            bank: bank,
+            note: "Add-on",
+            createdAt: Date().addingTimeInterval(-3 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 2000,
+            type: .deposit,
+            player: mediumWinner,
+            bank: bank,
+            note: "Add-on",
+            createdAt: Date().addingTimeInterval(-3 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 3000,
+            type: .deposit,
+            player: bigLoser,
+            bank: bank,
+            note: "Add-on",
+            createdAt: Date().addingTimeInterval(-2.5 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 3000,
+            type: .deposit,
+            player: mediumLoser,
+            bank: bank,
+            note: "Add-on",
+            createdAt: Date().addingTimeInterval(-2 * 60 * 60)
+        ))
+
+        // Конец игры - cash-out победителей (частичные выплаты)
+        bankTransactions.append(SessionBankTransaction(
+            amount: 10000,
+            type: .withdrawal,
+            player: bigWinner,
+            bank: bank,
+            note: "Частичный cash-out",
+            createdAt: Date().addingTimeInterval(-1 * 60 * 60)
+        ))
+
+        bankTransactions.append(SessionBankTransaction(
+            amount: 5000,
+            type: .withdrawal,
+            player: mediumWinner,
+            bank: bank,
+            note: "Частичный cash-out",
+            createdAt: Date().addingTimeInterval(-45 * 60)
+        ))
+
+        bank.transactions = bankTransactions
+        session.bank = bank
+
+        // Создаем расходы с различными сценариями
+
+        // 1. Еда - полностью распределена между всеми поровну
+        let foodExpense = Expense(
+            amount: 3000,
+            note: "Пицца и суши",
+            createdAt: Date().addingTimeInterval(-3 * 60 * 60),
+            payer: bigWinner
+        )
+        foodExpense.distributions = [
+            ExpenseDistribution(amount: 500, player: bigWinner, expense: foodExpense),
+            ExpenseDistribution(amount: 500, player: mediumWinner, expense: foodExpense),
+            ExpenseDistribution(amount: 500, player: smallWinner, expense: foodExpense),
+            ExpenseDistribution(amount: 500, player: bigLoser, expense: foodExpense),
+            ExpenseDistribution(amount: 500, player: mediumLoser, expense: foodExpense),
+            ExpenseDistribution(amount: 500, player: breakEven, expense: foodExpense)
+        ]
+
+        // 2. Аренда стола - распределена неравномерно (пропорционально времени игры)
+        let rentalExpense = Expense(
+            amount: 2000,
+            note: "Аренда стола",
+            createdAt: Date().addingTimeInterval(-4 * 60 * 60),
+            payer: mediumWinner
+        )
+        rentalExpense.distributions = [
+            ExpenseDistribution(amount: 400, player: bigWinner, expense: rentalExpense),
+            ExpenseDistribution(amount: 350, player: mediumWinner, expense: rentalExpense),
+            ExpenseDistribution(amount: 300, player: smallWinner, expense: rentalExpense),
+            ExpenseDistribution(amount: 350, player: bigLoser, expense: rentalExpense),
+            ExpenseDistribution(amount: 300, player: mediumLoser, expense: rentalExpense),
+            ExpenseDistribution(amount: 300, player: breakEven, expense: rentalExpense)
+        ]
+
+        // 3. Напитки - частично распределена (только 3 игрока участвуют)
+        let drinksExpense = Expense(
+            amount: 900,
+            note: "Напитки",
+            createdAt: Date().addingTimeInterval(-2 * 60 * 60),
+            payer: smallWinner
+        )
+        drinksExpense.distributions = [
+            ExpenseDistribution(amount: 300, player: bigWinner, expense: drinksExpense),
+            ExpenseDistribution(amount: 300, player: mediumWinner, expense: drinksExpense),
+            ExpenseDistribution(amount: 300, player: smallWinner, expense: drinksExpense)
+        ]
+
+        // 4. Чаевые дилеру - НЕ распределена (пример незавершенного расхода)
+        let tipsExpense = Expense(
+            amount: 600,
+            note: "Чаевые дилеру",
+            createdAt: Date().addingTimeInterval(-30 * 60),
+            payer: nil
+        )
+
+        session.expenses = [foodExpense, rentalExpense, drinksExpense, tipsExpense]
+
+        return session
+    }
+
     /// Сессия с банком, включающая все возможные секции: чаевые, рейк, должников и кредиторов
     static func sessionWithFullBank() -> Session {
         let session = Session(
@@ -158,12 +420,12 @@ enum PreviewData {
         session.chipsToCashRatio = 1
 
         // Устанавливаем рейк и чаевые для отображения в секции резервов
-        session.rakeAmount = 500  // 500₽ рейка
+        session.rakeAmount = 401000  // 500₽ рейка
         session.tipsAmount = 300  // 300₽ чаевых
 
         // Создаем игроков с разными балансами
-        let winner = createPlayer(name: "Александр", inGame: false, buyIn: 5000, addOns: [2000], cashOut: 10000)
-        let smallWinner = createPlayer(name: "Дмитрий", inGame: false, buyIn: 3000, cashOut: 4500)
+        let winner = createPlayer(name: "Александр", inGame: false, buyIn: 5000, addOns: [2000], cashOut: 10000, getsRakeback: true)
+        let smallWinner = createPlayer(name: "Дмитрий", inGame: false, buyIn: 3000, cashOut: 4500, getsRakeback: true)
         let loser1 = createPlayer(name: "Сергей", inGame: false, buyIn: 4000, addOns: [1000], cashOut: 2000)
         let loser2 = createPlayer(name: "Иван", inGame: false, buyIn: 3000, cashOut: 1500)
         let breakEven = createPlayer(name: "Максим", inGame: false, buyIn: 2000, cashOut: 2000)
@@ -171,7 +433,7 @@ enum PreviewData {
         session.players = [winner, smallWinner, loser1, loser2, breakEven]
 
         // Создаем банк
-        let bank = SessionBank(session: session, isClosed: true, closedAt: Date().addingTimeInterval(-30 * 60), expectedTotal: 15000)
+        let bank = SessionBank(session: session, expectedTotal: 15000)
         bank.manager = winner
 
         // Добавляем транзакции в банк
@@ -227,6 +489,31 @@ enum PreviewData {
 
         bank.transactions = bankTransactions
         session.bank = bank
+
+        // Добавляем расходы с распределением
+        let expense1 = Expense(amount: 1200, note: "Пицца и напитки", payer: winner)
+        let expense2 = Expense(amount: 500, note: "Чаевые дилеру", payer: smallWinner)
+        let expense3 = Expense(amount: 300, note: "Кофе", payer: nil)
+
+        // Распределяем первый расход между всеми игроками
+        expense1.distributions = [
+            ExpenseDistribution(amount: 240, player: winner, expense: expense1),
+            ExpenseDistribution(amount: 240, player: smallWinner, expense: expense1),
+            ExpenseDistribution(amount: 240, player: loser1, expense: expense1),
+            ExpenseDistribution(amount: 240, player: loser2, expense: expense1),
+            ExpenseDistribution(amount: 240, player: breakEven, expense: expense1)
+        ]
+
+        // Второй расход полностью распределен между тремя игроками
+        expense2.distributions = [
+            ExpenseDistribution(amount: 167, player: winner, expense: expense2),
+            ExpenseDistribution(amount: 167, player: smallWinner, expense: expense2),
+            ExpenseDistribution(amount: 166, player: loser1, expense: expense2)
+        ]
+
+        // Третий расход не распределен (пример незавершенного)
+
+        session.expenses = [expense1, expense2, expense3]
 
         return session
     }
@@ -329,7 +616,7 @@ enum PreviewData {
         let player = Player(name: name, inGame: inGame)
         player.getsRakeback = getsRakeback
         if getsRakeback {
-            player.rakeback = 100 // Пример рейкбека
+            player.rakeback = 150 // Пример рейкбека
         }
 
         var transactions: [PlayerChipTransaction] = []

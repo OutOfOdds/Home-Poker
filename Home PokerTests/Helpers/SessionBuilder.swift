@@ -15,6 +15,8 @@ final class SessionBuilder {
     private var players: [PlayerData] = []
     private var hasBank: Bool = false
     private var bankTransactions: [BankTransactionData] = []
+    private var rakebackDistributions: [RakebackData] = []
+    private var expenses: [ExpenseData] = []
 
     private struct PlayerData {
         let name: String
@@ -27,6 +29,18 @@ final class SessionBuilder {
         let playerName: String
         let type: SessionBankTransactionType
         let amount: Int
+    }
+
+    private struct RakebackData {
+        let playerName: String
+        let amount: Int
+    }
+
+    private struct ExpenseData {
+        let amount: Int
+        let note: String
+        let payerName: String?
+        let distributions: [(String, Int)]  // (playerName, amount)
     }
 
     /// Устанавливает коэффициент конвертации фишки → рубли
@@ -86,6 +100,40 @@ final class SessionBuilder {
         return self
     }
 
+    /// Добавляет распределение рейкбека игроку
+    /// - Parameters:
+    ///   - player: Имя игрока
+    ///   - amount: Сумма рейкбека в рублях
+    func addRakebackDistribution(player: String, amount: Int) -> SessionBuilder {
+        rakebackDistributions.append(
+            RakebackData(playerName: player, amount: amount)
+        )
+        return self
+    }
+
+    /// Добавляет расход с распределением
+    /// - Parameters:
+    ///   - amount: Общая сумма расхода
+    ///   - note: Описание расхода
+    ///   - payer: Имя плательщика (кто оплатил расход), может быть nil
+    ///   - distributions: Массив кортежей (имя игрока, его доля в расходе)
+    func addExpense(
+        amount: Int,
+        note: String,
+        payer: String?,
+        distributions: [(String, Int)]
+    ) -> SessionBuilder {
+        expenses.append(
+            ExpenseData(
+                amount: amount,
+                note: note,
+                payerName: payer,
+                distributions: distributions
+            )
+        )
+        return self
+    }
+
     /// Создаёт сконфигурированную сессию
     func build() -> Session {
         let session = Session(
@@ -133,6 +181,15 @@ final class SessionBuilder {
             playerDict[playerData.name] = player
         }
 
+        // Применяем распределение рейкбека
+        for rakebackData in rakebackDistributions {
+            guard let player = playerDict[rakebackData.playerName] else {
+                fatalError("Player '\(rakebackData.playerName)' not found. Add player before adding rakeback.")
+            }
+            player.getsRakeback = true
+            player.rakeback = rakebackData.amount
+        }
+
         // Создаём банк если нужно
         if hasBank {
             let bank = SessionBank(
@@ -156,6 +213,36 @@ final class SessionBuilder {
                 )
                 bank.transactions.append(transaction)
             }
+        }
+
+        // Создаём расходы
+        for expenseData in expenses {
+            // Находим плательщика если указан
+            let payer = expenseData.payerName != nil ? playerDict[expenseData.payerName!] : nil
+
+            // Создаём расход
+            let expense = Expense(
+                amount: expenseData.amount,
+                note: expenseData.note,
+                createdAt: Date(),
+                payer: payer
+            )
+
+            // Добавляем распределения
+            for (playerName, distributionAmount) in expenseData.distributions {
+                guard let player = playerDict[playerName] else {
+                    fatalError("Player '\(playerName)' not found in expense distribution. Add player before adding expense.")
+                }
+
+                let distribution = ExpenseDistribution(
+                    amount: distributionAmount,
+                    player: player,
+                    expense: expense
+                )
+                expense.distributions.append(distribution)
+            }
+
+            session.expenses.append(expense)
         }
 
         return session
