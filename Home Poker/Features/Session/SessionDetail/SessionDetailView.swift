@@ -21,7 +21,7 @@ struct SessionDetailView: View {
         var id: Self { self }
     }
     private var navigationTitle: String {
-        session.status == .active ? "Активная сессия" : "Завершенная сессия"
+        session.status.rawValue
     }
     
     // MARK: - Body
