@@ -3,11 +3,12 @@ import SwiftData
 
 struct AddExpenseSheet: View {
     let session: Session
-    
+
     @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @State private var expenseDescription = ""
     @State private var expenseAmount: Int? = nil
+    @State private var selectedPayer: Player? = nil
 
     var body: some View {
         FormSheetView(
@@ -28,8 +29,20 @@ struct AddExpenseSheet: View {
                 } header: {
                     Text("Информация о расходе")
                         .font(.caption)
+                }
+
+                Section {
+                    Picker("Плательщик", selection: $selectedPayer) {
+                        Text("Нет плательщика").tag(nil as Player?)
+                        ForEach(session.players) { player in
+                            Text(player.name).tag(player as Player?)
+                        }
+                    }
+                } header: {
+                    Text("Кто оплатил?")
+                        .font(.caption)
                 } footer: {
-                    Text("Расход будет добавлен в общий котел без указания плательщика. Распределение можно будет выполнить позже.")
+                    Text("Если указан плательщик, ему будут возвращены деньги при расчетах. Распределение между участниками можно будет выполнить позже.")
                         .foregroundColor(.secondary)
                         .font(.footnote)
                 }
@@ -45,7 +58,7 @@ struct AddExpenseSheet: View {
 
     private func addExpense() {
         guard let note = expenseDescription.nonEmptyTrimmed else { return }
-        if viewModel.addExpense(to: session, note: note, amount: expenseAmount) {
+        if viewModel.addExpense(to: session, note: note, amount: expenseAmount, payer: selectedPayer) {
             dismiss()
         }
     }

@@ -20,10 +20,14 @@ protocol SessionServiceProtocol {
     // Управление расходами
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws
     func removeExpenses(_ expenses: [Expense], from session: Session)
+    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)]) throws
 
     // Рейк и чаевые
     func recordRakeAndTips(for session: Session, rake: Int, tips: Int) throws
     func clearRakeAndTips(for session: Session)
+
+    // Распределение рейкбека
+    func saveRakebackDistribution(for session: Session, distributions: [(player: Player, amount: Int)]) throws
 
     // Настройки сессии
     func updateBlinds(for session: Session, small: Int, big: Int, ante: Int) throws
@@ -173,6 +177,29 @@ struct SessionService: SessionServiceProtocol {
         session.expenses.removeAll { ids.contains($0.id) }
     }
 
+    // Сохраняет распределение расхода между игроками
+    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)]) throws {
+        // Валидация: сумма распределения должна равняться сумме расхода
+        let totalDistributed = distributions.reduce(0) { $0 + $1.1 }
+        guard totalDistributed == expense.amount else {
+            throw SessionServiceError.invalidAmount
+        }
+
+        // Валидация: все суммы должны быть положительными
+        for (_, amount) in distributions {
+            try validatePositiveAmount(amount)
+        }
+
+        // Удаляем старые распределения
+        expense.distributions.removeAll()
+
+        // Создаем новые распределения
+        for (player, amount) in distributions {
+            let distribution = ExpenseDistribution(amount: amount, player: player, expense: expense)
+            expense.distributions.append(distribution)
+        }
+    }
+
     // MARK: - Рейк и чаевые
 
     /// Записывает рейк и чаевые из остатка фишек на столе
@@ -208,6 +235,51 @@ struct SessionService: SessionServiceProtocol {
     func clearRakeAndTips(for session: Session) {
         session.rakeAmount = 0
         session.tipsAmount = 0
+    }
+
+    // MARK: - Распределение рейкбека
+
+    /// Сохраняет распределение рейкбека между игроками
+    /// Устанавливает флаг getsRakeback и сумму rakeback для каждого игрока
+    /// - Parameters:
+    ///   - session: Сессия
+    ///   - distributions: Массив кортежей (игрок, сумма) с распределением рейкбека
+    /// - Throws: SessionServiceError если валидация не прошла
+    func saveRakebackDistribution(
+        for session: Session,
+        distributions: [(player: Player, amount: Int)]
+    ) throws {
+        // Валидация: все суммы должны быть неотрицательными
+        for (_, amount) in distributions {
+            try validateNonNegativeAmount(amount)
+        }
+
+        // Валидация: все игроки должны быть в сессии
+        let sessionPlayerIds = Set(session.players.map { $0.id })
+        for (player, _) in distributions {
+            guard sessionPlayerIds.contains(player.id) else {
+                throw SessionServiceError.playerNotInSession
+            }
+        }
+
+        // Валидация: сумма распределения не должна превышать доступный рейкбек
+        let totalDistributed = distributions.reduce(0) { $0 + $1.amount }
+        let availableRakeback = (session.bank?.reservedForRake ?? 0)
+        guard totalDistributed <= availableRakeback else {
+            throw SessionServiceError.rakebackExceedsAvailable
+        }
+
+        // Обнуляем рейкбек у всех игроков
+        for player in session.players {
+            player.getsRakeback = false
+            player.rakeback = 0
+        }
+
+        // Устанавливаем новое распределение
+        for (player, amount) in distributions where amount > 0 {
+            player.getsRakeback = true
+            player.rakeback = amount
+        }
     }
 
     // MARK: - Настройки сессии
@@ -249,7 +321,7 @@ struct SessionService: SessionServiceProtocol {
         session.players
             .filter { !$0.inGame }
             .reduce(0) { partial, player in
-                let chipBalance = max(player.buyIn - player.cashOut, 0)
+                let chipBalance = max(player.chipBuyIn - player.chipCashOut, 0)
                 let cashBalance = chipBalance * session.chipsToCashRatio
                 return partial + cashBalance    
             }
@@ -265,6 +337,7 @@ enum SessionServiceError: LocalizedError {
     case playerNotInSession
     case playerAlreadyInGame
     case rakeExceedsRemaining
+    case rakebackExceedsAvailable
 
     var errorDescription: String? {
         switch self {
@@ -284,6 +357,8 @@ enum SessionServiceError: LocalizedError {
             return "Игрок уже в игре."
         case .rakeExceedsRemaining:
             return "Сумма рейка и чаевых превышает остаток фишек на столе."
+        case .rakebackExceedsAvailable:
+            return "Сумма распределения рейкбека превышает доступную сумму."
         }
     }
 }

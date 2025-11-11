@@ -17,7 +17,7 @@ import Testing
 ///   - playerName: Имя игрока
 ///   - expectedNetCash: Ожидаемый результат в рублях (положительный = выигрыш, отрицательный = проигрыш)
 func assertBalance(
-    _ result: EnhancedSettlementResult,
+    _ result: SettlementResult,
     player playerName: String,
     netCash expectedNetCash: Int,
     sourceLocation: SourceLocation = #_sourceLocation
@@ -38,7 +38,7 @@ func assertBalance(
 ///   - to: Имя игрока, который должен получить деньги
 ///   - amount: Ожидаемая сумма перевода в рублях
 func assertPlayerTransfer(
-    _ result: EnhancedSettlementResult,
+    _ result: SettlementResult,
     from fromName: String,
     to toName: String,
     amount expectedAmount: Int,
@@ -64,7 +64,7 @@ func assertPlayerTransfer(
 ///   - to: Имя игрока, который должен получить деньги из банка
 ///   - amount: Ожидаемая сумма перевода в рублях
 func assertBankTransfer(
-    _ result: EnhancedSettlementResult,
+    _ result: SettlementResult,
     to toName: String,
     amount expectedAmount: Int,
     sourceLocation: SourceLocation = #_sourceLocation
@@ -85,7 +85,7 @@ func assertBankTransfer(
 
 /// Проверяет, что нет никаких прямых переводов между игроками
 func assertNoPlayerTransfers(
-    _ result: EnhancedSettlementResult,
+    _ result: SettlementResult,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     #expect(result.playerTransfers.isEmpty, "Не должно быть прямых переводов, найдено \(result.playerTransfers.count)", sourceLocation: sourceLocation)
@@ -93,7 +93,7 @@ func assertNoPlayerTransfers(
 
 /// Проверяет, что нет никаких переводов из банка
 func assertNoBankTransfers(
-    _ result: EnhancedSettlementResult,
+    _ result: SettlementResult,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     #expect(result.bankTransfers.isEmpty, "Не должно быть переводов из банка, найдено \(result.bankTransfers.count)", sourceLocation: sourceLocation)
@@ -103,7 +103,7 @@ func assertNoBankTransfers(
 
 /// Проверяет общее количество прямых переводов
 func assertPlayerTransferCount(
-    _ result: EnhancedSettlementResult,
+    _ result: SettlementResult,
     count expectedCount: Int,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
@@ -112,9 +112,67 @@ func assertPlayerTransferCount(
 
 /// Проверяет общее количество переводов из банка
 func assertBankTransferCount(
-    _ result: EnhancedSettlementResult,
+    _ result: SettlementResult,
     count expectedCount: Int,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     #expect(result.bankTransfers.count == expectedCount, "Ожидалось \(expectedCount) переводов из банка, получено \(result.bankTransfers.count)", sourceLocation: sourceLocation)
+}
+
+// MARK: - Проверки рейкбека
+
+/// Проверяет сумму рейкбека у игрока в балансе
+/// - Parameters:
+///   - result: Результат расчёта settlement
+///   - playerName: Имя игрока
+///   - expectedRakeback: Ожидаемая сумма рейкбека в рублях
+func assertRakeback(
+    _ result: SettlementResult,
+    player playerName: String,
+    amount expectedRakeback: Int,
+    sourceLocation: SourceLocation = #_sourceLocation
+) {
+    guard let balance = result.balances.first(where: { $0.player.name == playerName }) else {
+        Issue.record("Игрок '\(playerName)' не найден в балансах", sourceLocation: sourceLocation)
+        return
+    }
+    #expect(balance.rakeback == expectedRakeback, "Ожидался рейкбек \(expectedRakeback)₽ для игрока \(playerName), получен \(balance.rakeback)₽", sourceLocation: sourceLocation)
+}
+
+// MARK: - Проверки расходов
+
+/// Проверяет сумму оплаченных расходов игроком (как плательщиком)
+/// - Parameters:
+///   - result: Результат расчёта settlement
+///   - playerName: Имя игрока
+///   - expectedAmount: Ожидаемая сумма оплаченных расходов в рублях
+func assertExpensePaid(
+    _ result: SettlementResult,
+    player playerName: String,
+    amount expectedAmount: Int,
+    sourceLocation: SourceLocation = #_sourceLocation
+) {
+    guard let balance = result.balances.first(where: { $0.player.name == playerName }) else {
+        Issue.record("Игрок '\(playerName)' не найден в балансах", sourceLocation: sourceLocation)
+        return
+    }
+    #expect(balance.expensePaid == expectedAmount, "Ожидалась оплата расходов \(expectedAmount)₽ для игрока \(playerName), получено \(balance.expensePaid)₽", sourceLocation: sourceLocation)
+}
+
+/// Проверяет долю игрока в расходах
+/// - Parameters:
+///   - result: Результат расчёта settlement
+///   - playerName: Имя игрока
+///   - expectedAmount: Ожидаемая доля игрока в расходах в рублях
+func assertExpenseShare(
+    _ result: SettlementResult,
+    player playerName: String,
+    amount expectedAmount: Int,
+    sourceLocation: SourceLocation = #_sourceLocation
+) {
+    guard let balance = result.balances.first(where: { $0.player.name == playerName }) else {
+        Issue.record("Игрок '\(playerName)' не найден в балансах", sourceLocation: sourceLocation)
+        return
+    }
+    #expect(balance.expenseShare == expectedAmount, "Ожидалась доля в расходах \(expectedAmount)₽ для игрока \(playerName), получено \(balance.expenseShare)₽", sourceLocation: sourceLocation)
 }

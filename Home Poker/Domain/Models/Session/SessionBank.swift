@@ -98,13 +98,14 @@ extension SessionBank {
         let bankOwes = amountOwedByBank(for: player)
         if bankOwes > 0 { return 0 }
 
-        let profit = player.cashOut - player.buyIn
-        let profitInCash = profit * session.chipsToCashRatio
+        let profit = player.chipCashOut - player.chipBuyIn
+        let rakebackAdjustment = player.getsRakeback ? player.rakeback : 0
+        let profitInCash = (profit * session.chipsToCashRatio) + rakebackAdjustment
         let (deposited, withdrawn) = contributions(for: player)
         let netContribution = deposited - withdrawn
 
-        // Игрок должен = abs(убыток в деньгах) - уже внесённое
-        // Если игрок проиграл 50₽ и внёс 30₽ → должен 20₽
+        // Игрок должен = abs(убыток в деньгах с учетом рейкбека) - уже внесённое
+        // Если игрок проиграл 50₽, получил 10₽ рейкбека и внёс 30₽ → должен 10₽
         // Если игрок проиграл 50₽ и внёс 100₽ → должен 0₽ (переплата учтена в amountOwedByBank)
         let playerOwes = -profitInCash - netContribution
         return max(playerOwes, 0)
@@ -127,8 +128,9 @@ extension SessionBank {
     func amountOwedByBank(for player: Player) -> Int {
         guard !player.inGame else { return 0 }
 
-        let profit = player.cashOut - player.buyIn  // Может быть положительным или отрицательным
-        let profitInCash = profit * session.chipsToCashRatio
+        let profit = player.chipCashOut - player.chipBuyIn  // Может быть положительным или отрицательным
+        let rakebackAdjustment = player.getsRakeback ? player.rakeback : 0
+        let profitInCash = (profit * session.chipsToCashRatio) + rakebackAdjustment
         let (deposited, withdrawn) = contributions(for: player)
         let netContribution = deposited - withdrawn
 

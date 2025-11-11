@@ -36,17 +36,17 @@ final class Player {
     }
 
     /// Суммарная закупка игрока (buy-in + все add-on).
-    var buyIn: Int {
+    var chipBuyIn: Int {
         calculateFinancials().buyIn
     }
 
     /// Суммарная сумма выводов игрока.
-    var cashOut: Int {
+    var chipCashOut: Int {
         calculateFinancials().cashOut
     }
 
     /// Итоговая прибыль (или убыток) игрока.
-    var profit: Int {
+    var chipProfit: Int {
         let fin = calculateFinancials()
         return fin.cashOut - fin.buyIn
     }
@@ -59,7 +59,7 @@ final class Player {
     }
 
     /// Прибыль с учётом рейкбека.
-    var profitAfterRakeback: Int { profit - rakeback }
+    var profitAfterRakeback: Int { chipProfit - rakeback }
 
     /// Начальный buy-in игрока (первая транзакция типа .buyIn).
     var initialBuyIn: Int {

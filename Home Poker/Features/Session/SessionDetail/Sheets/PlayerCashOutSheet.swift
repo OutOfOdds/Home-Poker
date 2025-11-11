@@ -26,8 +26,8 @@ struct PlayerCashOutSheet: View {
     /// Сколько игрок должен внести в банк после учёта введённого cash-out.
     private var projectedDebt: Int {
         let additionalCashOut = max(chipsCashoutAmount ?? 0, 0)
-        let projectedTotalCashOut = player.cashOut + additionalCashOut
-        let expectedDebtChips = max(player.buyIn - projectedTotalCashOut, 0)
+        let projectedTotalCashOut = player.chipCashOut + additionalCashOut
+        let expectedDebtChips = max(player.chipBuyIn - projectedTotalCashOut, 0)
         let expectedDebtCash = cashAmount(for: expectedDebtChips)
         guard let bank else { return expectedDebtCash }
         

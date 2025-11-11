@@ -116,7 +116,7 @@ struct SessionBankTransactionSheet: View {
                         let playerOwes = bank.amountOwedToBank(for: player)
 
                         if bankOwes > 0 {
-                            if player.profit > 0 {
+                            if player.chipProfit > 0 {
                                 Text("Игрок выиграл: \(bankOwes.asCurrency())")
                                     .foregroundStyle(.green)
                             } else {

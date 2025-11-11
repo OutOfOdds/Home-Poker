@@ -53,7 +53,7 @@ final class Session {
     /// - Петя закупился на 3000 фишек, докупил 2000
     /// - totalChips = 5000 + 3000 + 2000 = 10000 фишек
     var totalChips: Int {
-        players.reduce(0) { $0 + $1.buyIn }
+        players.reduce(0) { $0 + $1.chipBuyIn }
     }
 
     /// Количество фишек физически находящихся на столе
@@ -78,7 +78,7 @@ final class Session {
     /// - Петя вывел 4500 фишек (полностью завершил игру)
     /// - totalCashOut = 1000 + 4500 = 5500 фишек
     var totalCashOut: Int {
-        players.reduce(0) { $0 + $1.cashOut }
+        players.reduce(0) { $0 + $1.chipCashOut }
     }
 
     /// Список активных игроков (находящихся в игре)
