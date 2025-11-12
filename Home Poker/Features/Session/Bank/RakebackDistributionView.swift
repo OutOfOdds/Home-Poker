@@ -47,7 +47,7 @@ struct RakebackDistributionView: View {
         if totalPercentage > 100 {
             return "Превышено:"
         } else if totalPercentage < 100 {
-            return "Дом оставит себе:"
+            return "Организационный сбор:"
         } else {
             return "Распределено полностью:"
         }
@@ -69,9 +69,8 @@ struct RakebackDistributionView: View {
     }
 
     private var isDistributionInvalid: Bool {
-        if totalDistributed == 0 {
-            return true
-        }
+        // Если распределено 0 - это валидно (весь рейкбек остается дому)
+        // Проверяем только превышение лимитов
         if remaining < 0 {
             return true
         }
@@ -85,7 +84,9 @@ struct RakebackDistributionView: View {
 
     var body: some View {
         Form {
-            availableSection
+            if totalAvailable > 0 {
+                availableSection
+            }
             distributionModeSection
             playerSelectionSection
             summarySection
@@ -125,8 +126,10 @@ struct RakebackDistributionView: View {
         } message: {
             if distributionMode == .percentage {
                 Text("Осталось распределить: \(percentageRemaining)%")
+                    .monospaced()
             } else {
                 Text("Осталось: \(remaining.asCurrency())")
+                    .monospaced()
             }
         }
     }
@@ -142,6 +145,7 @@ struct RakebackDistributionView: View {
                 Text(totalAvailable.asCurrency())
                     .font(.title)
                     .fontWeight(.bold)
+                    .monospaced()
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
@@ -198,8 +202,10 @@ struct RakebackDistributionView: View {
                     HStack(spacing: 4) {
                         if distributionMode == .percentage {
                             Text("\(selection.percentage)%")
+                                .monospaced()
                         } else {
                             Text(selection.amount.asCurrency())
+                                .monospaced()
                         }
                         Image(systemName: "pencil")
                             .font(.caption)
@@ -211,11 +217,13 @@ struct RakebackDistributionView: View {
                     .foregroundStyle(.secondary)
                     .font(.caption)
                     .italic()
+                    .monospaced()
             }
         } else {
             Text(selection.amount.asCurrency())
                 .foregroundStyle(.primary)
                 .fontWeight(.semibold)
+                .monospaced()
         }
     }
 
@@ -237,6 +245,7 @@ struct RakebackDistributionView: View {
             Text("\(totalPercentage)%")
                 .foregroundStyle(percentageRowColor)
                 .fontWeight(.semibold)
+                .monospaced()
         }
     }
 
@@ -257,6 +266,7 @@ struct RakebackDistributionView: View {
             Text("\(abs(percentageRemaining))%")
                 .foregroundStyle(percentageRemainingColor)
                 .fontWeight(.semibold)
+                .monospaced()
         }
     }
 
@@ -266,16 +276,18 @@ struct RakebackDistributionView: View {
             Spacer()
             Text(totalDistributed.asCurrency())
                 .fontWeight(.semibold)
+                .monospaced()
         }
     }
 
     private var remainingRow: some View {
         HStack {
-            Text("Осталось:")
+            Text(remaining > 0 ? "Организационный сбор:" : "Осталось:")
             Spacer()
             Text(remaining.asCurrency())
-                .foregroundStyle(remaining < 0 ? .red : .secondary)
+                .foregroundStyle(remaining < 0 ? .red : (remaining > 0 ? .orange : .secondary))
                 .fontWeight(.semibold)
+                .monospaced()
         }
     }
 

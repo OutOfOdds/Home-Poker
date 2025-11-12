@@ -72,7 +72,7 @@ struct SessionDetailView: View {
         .toolbar {
             ToolbarItem {
                 NavigationLink {
-                    SessionBankView(session: session)
+                    SessionBankDashboardView(session: session)
                         .environment(viewModel)
                 } label: {
                     HStack {

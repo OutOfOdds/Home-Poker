@@ -21,6 +21,7 @@ protocol SessionServiceProtocol {
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws
     func removeExpenses(_ expenses: [Expense], from session: Session)
     func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)]) throws
+    func payExpenseFromRake(expense: Expense, in session: Session) throws
 
     // Рейк и чаевые
     func recordRakeAndTips(for session: Session, rake: Int, tips: Int) throws
@@ -200,6 +201,37 @@ struct SessionService: SessionServiceProtocol {
         }
     }
 
+    // Оплачивает расход из зарезервированного рейка
+    func payExpenseFromRake(expense: Expense, in session: Session) throws {
+        // Валидация: расход должен быть полностью распределен
+        guard expense.isFullyDistributed else {
+            throw SessionServiceError.expenseNotDistributed
+        }
+
+        // Валидация: рейк должен быть зафиксирован
+        guard session.rakeAmount > 0 else {
+            throw SessionServiceError.rakeNotRecorded
+        }
+
+        // Валидация: расход еще не оплачен из рейка
+        guard expense.paidFromRake == 0 else {
+            throw SessionServiceError.expenseAlreadyPaid
+        }
+
+        // Валидация: достаточно доступного рейка
+        guard let bank = session.bank else {
+            throw SessionServiceError.bankUnavailable
+        }
+
+        let amountToPay = expense.amount
+        guard bank.availableRakeForExpenses >= amountToPay else {
+            throw SessionServiceError.insufficientRakeForExpense
+        }
+
+        // Оплачиваем расход из рейка
+        expense.paidFromRake = amountToPay
+    }
+
     // MARK: - Рейк и чаевые
 
     /// Записывает рейк и чаевые из остатка фишек на столе
@@ -338,6 +370,10 @@ enum SessionServiceError: LocalizedError {
     case playerAlreadyInGame
     case rakeExceedsRemaining
     case rakebackExceedsAvailable
+    case expenseNotDistributed
+    case rakeNotRecorded
+    case expenseAlreadyPaid
+    case insufficientRakeForExpense
 
     var errorDescription: String? {
         switch self {
@@ -359,6 +395,14 @@ enum SessionServiceError: LocalizedError {
             return "Сумма рейка и чаевых превышает остаток фишек на столе."
         case .rakebackExceedsAvailable:
             return "Сумма распределения рейкбека превышает доступную сумму."
+        case .expenseNotDistributed:
+            return "Расход должен быть полностью распределен перед оплатой из рейка."
+        case .rakeNotRecorded:
+            return "Рейк еще не зафиксирован. Завершите сессию и запишите рейк."
+        case .expenseAlreadyPaid:
+            return "Этот расход уже оплачен из рейка."
+        case .insufficientRakeForExpense:
+            return "Недостаточно доступного рейка для оплаты этого расхода."
         }
     }
 }

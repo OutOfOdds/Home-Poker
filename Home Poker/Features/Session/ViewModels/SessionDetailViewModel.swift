@@ -85,6 +85,27 @@ final class SessionDetailViewModel {
         }
     }
 
+    // Оплачивает расход из зарезервированного рейка.
+    func payExpenseFromRake(expense: Expense, session: Session) -> Bool {
+        return performServiceCall {
+            try service.payExpenseFromRake(expense: expense, in: session)
+        }
+    }
+
+    // Возвращает доступную сумму рейка для оплаты расходов.
+    func availableRakeForExpenses(for session: Session) -> Int {
+        return session.bank?.availableRakeForExpenses ?? 0
+    }
+
+    // Проверяет, можно ли оплатить расход из рейка.
+    func canPayExpenseFromRake(expense: Expense, session: Session) -> Bool {
+        guard expense.isFullyDistributed else { return false }
+        guard session.rakeAmount > 0 else { return false }
+        guard expense.paidFromRake == 0 else { return false }
+        guard let bank = session.bank else { return false }
+        return bank.availableRakeForExpenses >= expense.amount
+    }
+
     // MARK: - Настройки сессии
     
     // Обновляет значения блайндов/анте в сессии, если ввод корректен.

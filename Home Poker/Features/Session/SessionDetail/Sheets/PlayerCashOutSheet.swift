@@ -52,7 +52,7 @@ struct PlayerCashOutSheet: View {
                     Text("Вывод фишек игрока \(player.name)")
                 }
                 
-                Toggle("Рассчитаться с банком сейчас", isOn: $instantSettlement)
+                Toggle("Передать наличные в кассу", isOn: $instantSettlement)
                     .onChange(of: instantSettlement) { _, newValue in
                         guard newValue else {
                             moneyToSessionBank = nil

@@ -30,6 +30,14 @@ struct SessionBankTransactionSheet: View {
     private var isFormValid: Bool {
         guard selectedPlayer != nil else { return false }
         guard let amount, amount > 0 else { return false }
+
+        // Для withdrawal проверяем, что в банке достаточно денег
+        if mode == .withdrawal, let bank {
+            if amount > bank.netBalance {
+                return false
+            }
+        }
+
         return true
     }
     
@@ -108,7 +116,9 @@ struct SessionBankTransactionSheet: View {
                     let deposited = contributions.deposited
                     let withdrawn = contributions.withdrawn
                     Text("Игрок внёс: \(deposited.asCurrency())")
+                        .monospaced()
                     Text("Игроку выдано: \(withdrawn.asCurrency())")
+                        .monospaced()
                     
                     switch mode {
                     case .deposit:
@@ -119,13 +129,16 @@ struct SessionBankTransactionSheet: View {
                             if player.chipProfit > 0 {
                                 Text("Игрок выиграл: \(bankOwes.asCurrency())")
                                     .foregroundStyle(.green)
+                                    .monospaced()
                             } else {
                                 Text("Переплата: \(bankOwes.asCurrency())")
                                     .foregroundStyle(.blue)
+                                    .monospaced()
                             }
                         } else if playerOwes > 0 {
                             Text("Осталось внести: \(playerOwes.asCurrency())")
                                 .foregroundStyle(.secondary)
+                                .monospaced()
                         } else {
                             Text("Расчёты закрыты")
                                 .foregroundStyle(.secondary)
@@ -134,18 +147,23 @@ struct SessionBankTransactionSheet: View {
                         let available = max(deposited - withdrawn, 0)
                         Text("Доступно к выдаче: \(available.asCurrency())")
                             .foregroundStyle(.secondary)
+                            .monospaced()
                     }
                     
                     Divider()
                     Text("Получено: \(bank.totalDeposited.asCurrency())")
+                        .monospaced()
                     Text("Осталось собрать: \(bank.remainingToCollect.asCurrency())")
+                        .monospaced()
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             } else if let bank {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Получено: \(bank.totalDeposited.asCurrency())")
+                        .monospaced()
                     Text("Осталось собрать: \(bank.remainingToCollect.asCurrency())")
+                        .monospaced()
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
