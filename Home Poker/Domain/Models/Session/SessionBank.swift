@@ -150,5 +150,24 @@ extension SessionBank {
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    // MARK: - Расходы из рейка
+
+    /// Общая сумма расходов, оплаченных из рейка
+    var totalExpensesPaidFromRake: Int {
+        session.expenses.reduce(0) { $0 + $1.paidFromRake }
+    }
+
+    /// Доступная сумма рейка для оплаты расходов
+    /// Рассчитывается как: зарезервированный рейк минус распределенный рейкбек минус уже оплаченные расходы
+    var availableRakeForExpenses: Int {
+        let distributed = session.players.filter { $0.getsRakeback }.reduce(0) { $0 + $1.rakeback }
+        return max(reservedForRake - distributed - totalExpensesPaidFromRake, 0)
+    }
+
+    /// Организационный сбор (то что остается дому после рейкбека и оплаты расходов)
+    var organizationalFee: Int {
+        let distributed = session.players.filter { $0.getsRakeback }.reduce(0) { $0 + $1.rakeback }
+        return max(reservedForRake - distributed - totalExpensesPaidFromRake, 0)
+    }
 
 }

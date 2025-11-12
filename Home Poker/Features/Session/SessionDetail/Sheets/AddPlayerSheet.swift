@@ -36,7 +36,7 @@ struct AddPlayerSheet: View {
                 }
 
                 Section {
-                    Toggle("Рассчитаться с банком сейчас", isOn: $settleWithBank)
+                    Toggle("Передать наличные в кассу", isOn: $settleWithBank)
                         .onChange(of: settleWithBank) { _, newValue in
                             guard newValue else {
                                 bankContributionAmount = nil

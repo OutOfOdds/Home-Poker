@@ -23,6 +23,9 @@ struct ExpenseDistributionView: View {
     @State private var showEditAlert = false
     @State private var editValue = ""
 
+    // Для оплаты из рейка
+    @State private var showingPayFromRakeAlert = false
+
     // Computed properties
     private var totalAmount: Int {
         expense.amount
@@ -51,6 +54,14 @@ struct ExpenseDistributionView: View {
         return false
     }
 
+    private var canPayFromRake: Bool {
+        viewModel.canPayExpenseFromRake(expense: expense, session: session)
+    }
+
+    private var availableRake: Int {
+        viewModel.availableRakeForExpenses(for: session)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -75,6 +86,19 @@ struct ExpenseDistributionView: View {
                 }
                 .disabled(isDistributionInvalid)
             }
+
+            if expense.isFullyDistributed && canPayFromRake {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingPayFromRakeAlert = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "banknote.fill")
+                            Text("Оплатить")
+                        }
+                    }
+                }
+            }
         }
         .onAppear {
             initializePlayerSelections()
@@ -95,6 +119,18 @@ struct ExpenseDistributionView: View {
         } message: {
             Text("Осталось: \(remaining.asCurrency())")
         }
+        .alert("Оплатить расход из рейка?", isPresented: $showingPayFromRakeAlert) {
+            Button("Отмена", role: .cancel) {}
+            Button("Оплатить") {
+                payFromRake()
+            }
+        } message: {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Расход: \(expense.amount.asCurrency())")
+                Text("Доступно рейка: \(availableRake.asCurrency())")
+                Text("\nЭто уменьшит организационный сбор.")
+            }
+        }
     }
 
     // MARK: - View Sections
@@ -107,10 +143,20 @@ struct ExpenseDistributionView: View {
                 Text(totalAmount.asCurrency())
                     .font(.title)
                     .fontWeight(.bold)
+                    .monospaced()
                 if let payer = expense.payer {
                     Text("Оплатил: \(payer.name)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                }
+                if expense.paidFromRake > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text("Оплачено из рейка: \(expense.paidFromRake.asCurrency())")
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.green)
+                    .padding(.top, 4)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -343,6 +389,15 @@ struct ExpenseDistributionView: View {
 
         if success {
             dismiss()
+        }
+    }
+
+    // MARK: - Pay from Rake
+
+    private func payFromRake() {
+        let success = viewModel.payExpenseFromRake(expense: expense, session: session)
+        if success {
+            // Обновление произойдет автоматически через @Bindable
         }
     }
 }
