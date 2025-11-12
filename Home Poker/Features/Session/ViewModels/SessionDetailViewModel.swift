@@ -98,8 +98,8 @@ final class SessionDetailViewModel {
     }
 
     // Проверяет, можно ли оплатить расход из рейка.
+    // Расход может быть оплачен из рейка БЕЗ распределения между игроками.
     func canPayExpenseFromRake(expense: Expense, session: Session) -> Bool {
-        guard expense.isFullyDistributed else { return false }
         guard session.rakeAmount > 0 else { return false }
         guard expense.paidFromRake == 0 else { return false }
         guard let bank = session.bank else { return false }
