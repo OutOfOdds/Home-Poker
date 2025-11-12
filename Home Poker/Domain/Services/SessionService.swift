@@ -202,12 +202,8 @@ struct SessionService: SessionServiceProtocol {
     }
 
     // Оплачивает расход из зарезервированного рейка
+    // Расход может быть оплачен из рейка БЕЗ распределения между игроками
     func payExpenseFromRake(expense: Expense, in session: Session) throws {
-        // Валидация: расход должен быть полностью распределен
-        guard expense.isFullyDistributed else {
-            throw SessionServiceError.expenseNotDistributed
-        }
-
         // Валидация: рейк должен быть зафиксирован
         guard session.rakeAmount > 0 else {
             throw SessionServiceError.rakeNotRecorded
@@ -229,6 +225,7 @@ struct SessionService: SessionServiceProtocol {
         }
 
         // Оплачиваем расход из рейка
+        // Распределение между игроками НЕ требуется - расход покрывается полностью из рейка
         expense.paidFromRake = amountToPay
     }
 
@@ -370,7 +367,6 @@ enum SessionServiceError: LocalizedError {
     case playerAlreadyInGame
     case rakeExceedsRemaining
     case rakebackExceedsAvailable
-    case expenseNotDistributed
     case rakeNotRecorded
     case expenseAlreadyPaid
     case insufficientRakeForExpense
@@ -395,8 +391,6 @@ enum SessionServiceError: LocalizedError {
             return "Сумма рейка и чаевых превышает остаток фишек на столе."
         case .rakebackExceedsAvailable:
             return "Сумма распределения рейкбека превышает доступную сумму."
-        case .expenseNotDistributed:
-            return "Расход должен быть полностью распределен перед оплатой из рейка."
         case .rakeNotRecorded:
             return "Рейк еще не зафиксирован. Завершите сессию и запишите рейк."
         case .expenseAlreadyPaid:

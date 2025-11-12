@@ -67,13 +67,14 @@ struct ExpenseDistributionView: View {
     var body: some View {
         Form {
             expenseInfoSection
-            distributionModeSection
-            playerSelectionSection
 
-            if expense.isFullyDistributed && (canPayFromRake || expense.paidFromRake > 0) {
+            // Секция оплаты из рейка доступна БЕЗ распределения между игроками
+            if canPayFromRake || expense.paidFromRake > 0 {
                 payFromRakeSection
             }
 
+            distributionModeSection
+            playerSelectionSection
             summarySection
         }
         .navigationTitle("Распределить расход")
