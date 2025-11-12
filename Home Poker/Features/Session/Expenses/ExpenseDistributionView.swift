@@ -69,6 +69,11 @@ struct ExpenseDistributionView: View {
             expenseInfoSection
             distributionModeSection
             playerSelectionSection
+
+            if expense.isFullyDistributed && (canPayFromRake || expense.paidFromRake > 0) {
+                payFromRakeSection
+            }
+
             summarySection
         }
         .navigationTitle("Распределить расход")
@@ -85,19 +90,6 @@ struct ExpenseDistributionView: View {
                     submitDistribution()
                 }
                 .disabled(isDistributionInvalid)
-            }
-
-            if expense.isFullyDistributed && canPayFromRake {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingPayFromRakeAlert = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "banknote.fill")
-                            Text("Оплатить")
-                        }
-                    }
-                }
             }
         }
         .onAppear {
@@ -206,6 +198,61 @@ struct ExpenseDistributionView: View {
                             .italic()
                     }
                 }
+            }
+        }
+    }
+
+    private var payFromRakeSection: some View {
+        Section {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "banknote.fill")
+                            .foregroundStyle(expense.paidFromRake > 0 ? .green : .orange)
+                            .font(.title3)
+                        Text("Оплатить из рейка")
+                            .font(.headline)
+                    }
+
+                    if expense.paidFromRake > 0 {
+                        Text("Оплачено: \(expense.paidFromRake.asCurrency())")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                            .monospaced()
+                    } else if canPayFromRake {
+                        Text("Доступно: \(availableRake.asCurrency())")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .monospaced()
+                    }
+                }
+
+                Spacer()
+
+                if expense.paidFromRake > 0 {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.title2)
+                } else {
+                    Toggle("", isOn: Binding(
+                        get: { false },
+                        set: { newValue in
+                            if newValue {
+                                showingPayFromRakeAlert = true
+                            }
+                        }
+                    ))
+                    .toggleStyle(CheckboxToggleStyle())
+                    .tint(.green)
+                    .disabled(!canPayFromRake)
+                }
+            }
+            .padding(.vertical, 4)
+        } header: {
+            Text("Источник оплаты")
+        } footer: {
+            if canPayFromRake && expense.paidFromRake == 0 {
+                Text("Оплата из рейка уменьшит организационный сбор")
             }
         }
     }
