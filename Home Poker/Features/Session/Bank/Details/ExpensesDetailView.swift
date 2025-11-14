@@ -13,6 +13,8 @@ struct ExpensesDetailView: View {
     @Bindable var session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
     @State private var showingAddExpenseSheet = false
+    @State private var expenseToDelete: Expense?
+    @State private var showingDeleteConfirmation = false
 
     private var sortedExpenses: [Expense] {
         session.expenses.sorted { $0.createdAt > $1.createdAt }
@@ -62,9 +64,20 @@ struct ExpensesDetailView: View {
                     .environment(viewModel)
             }
         }
+        .alert("Удалить расход?", isPresented: $showingDeleteConfirmation, presenting: expenseToDelete) { expense in
+            Button("Отмена", role: .cancel) {
+                expenseToDelete = nil
+            }
+            Button("Удалить", role: .destructive) {
+                viewModel.removeExpenses([expense], from: session)
+                expenseToDelete = nil
+            }
+        } message: { expense in
+            Text("Расход «\(expense.note.isEmpty ? "Без описания" : expense.note)» на сумму \(expense.amount.asCurrency()) будет удалён.")
+        }
     }
 
-    // MARK: - Sections
+    // MARK: - Секции
 
     private var summarySection: some View {
         Section("Итоги") {
@@ -130,12 +143,20 @@ struct ExpensesDetailView: View {
                     } label: {
                         expenseRow(expense)
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            expenseToDelete = expense
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Label("Удалить", systemImage: "trash")
+                        }
+                    }
                 }
             }
         }
     }
 
-    // MARK: - Row Components
+    // MARK: - Строки
 
     private func expenseRow(_ expense: Expense) -> some View {
         HStack(alignment: .firstTextBaseline) {
@@ -187,7 +208,7 @@ struct ExpensesDetailView: View {
         .padding(.vertical, 4)
     }
 
-    // MARK: - Toolbar Buttons
+    // MARK: - Кнопки тулбара
 
     private var addExpenseButton: some View {
         Button {
@@ -198,8 +219,6 @@ struct ExpensesDetailView: View {
         .disabled(session.players.isEmpty)
     }
 }
-
-// MARK: - Previews
 
 #Preview("With Expenses") {
     NavigationStack {

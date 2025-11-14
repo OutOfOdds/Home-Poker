@@ -1,10 +1,3 @@
-//
-//  BankSummaryCard.swift
-//  Home Poker
-//
-//  Карточка с итогами банка: получено, выдано, баланс
-//
-
 import SwiftUI
 
 struct BankSummaryCard: View {

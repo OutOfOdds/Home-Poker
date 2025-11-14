@@ -37,10 +37,12 @@ graph TD
     PlayerDetails -->|sheet| PlayerRebuy[RebuyPlayerSheet]
     PlayerDetails -->|sheet| PlayerAddOn[PlayerAddOnSheet]
 
-    %% SessionBankView
-    Detail -->|NavigationLink| Bank[SessionBankView]
-    Bank -->|sheet| BankDeposit[SessionBankTransactionSheet - Внесение]
-    Bank -->|sheet| BankWithdraw[SessionBankTransactionSheet - Выдача]
+    %% SessionBankDashboardView
+    Detail -->|NavigationLink| Bank[SessionBankDashboardView]
+    Bank -->|NavigationLink| BankDetails[BankSummaryDetailView]
+    Bank -->|NavigationLink| FinancialResults[FinancialResultsDetailView]
+    Bank -->|NavigationLink| RakeReserves[RakeReservesDetailView]
+    Bank -->|NavigationLink| ExpensesDetail[ExpensesDetailView]
     Bank -->|sheet| Settlement[SettlementView]
 
     %% Timer flow
@@ -139,7 +141,7 @@ graph TB
     subgraph "VIEW LAYER"
         V1[SessionListView]
         V2[SessionDetailView]
-        V3[SessionBankView]
+        V3[SessionBankDashboardView]
         V4[TimerView]
         V5[SettlementView]
     end
@@ -204,8 +206,11 @@ graph TB
 - **Views**:
   - `SessionListView` - список всех сессий
   - `SessionDetailView` - детали сессии с игроками
-  - `SessionBankView` - управление банком
-  - `ExpenseDetails` - детали расходов
+  - `SessionBankDashboardView` - дашборд банка с карточками навигации
+  - `BankSummaryDetailView` - детали состояния банка
+  - `FinancialResultsDetailView` - финансовые результаты игроков
+  - `RakeReservesDetailView` - резервы рейка и чаевых
+  - `ExpensesDetailView` - детали расходов
 - **Subviews**:
   - `SessionInfoSection`, `ChipsStatsSection`, `PlayerList`, `PlayerRow`
   - `PlayerTransactionsView` - детальный экран транзакций игрока
@@ -346,7 +351,7 @@ Session (удаляется)
 
 ```swift
 // 1. VIEW LAYER
-// Пользователь в SessionBankView нажимает кнопку "Рассчитать Settlement"
+// Пользователь в SessionBankDashboardView нажимает кнопку "Рассчитать Settlement"
 // Открывается sheet SettlementView
 
 // 2. VIEWMODEL LAYER
@@ -641,7 +646,7 @@ graph TB
     subgraph Sessions["📋 Session Feature"]
         List[SessionListView]
         Detail[SessionDetailView]
-        Bank[SessionBankView]
+        Bank[SessionBankDashboardView]
 
         List --> DetailVM[SessionDetailViewModel]
         Detail --> DetailVM

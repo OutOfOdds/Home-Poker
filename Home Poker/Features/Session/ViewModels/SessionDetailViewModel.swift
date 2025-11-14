@@ -78,32 +78,25 @@ final class SessionDetailViewModel {
         service.removeExpenses(expenses, from: session)
     }
 
-    // Сохраняет распределение расхода между игроками и показывает alert при ошибке.
-    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)]) -> Bool {
+    // Сохраняет распределение расхода между игроками и суммой из рейка.
+    // Расход может быть оплачен частично/полностью из рейка и/или распределён между игроками.
+    func saveExpenseDistribution(
+        for expense: Expense,
+        distributions: [(Player, Int)],
+        rakeAmount: Int
+    ) -> Bool {
         return performServiceCall {
-            try service.saveExpenseDistribution(for: expense, distributions: distributions)
-        }
-    }
-
-    // Оплачивает расход из зарезервированного рейка.
-    func payExpenseFromRake(expense: Expense, session: Session) -> Bool {
-        return performServiceCall {
-            try service.payExpenseFromRake(expense: expense, in: session)
+            try service.saveExpenseDistribution(
+                for: expense,
+                distributions: distributions,
+                rakeAmount: rakeAmount
+            )
         }
     }
 
     // Возвращает доступную сумму рейка для оплаты расходов.
     func availableRakeForExpenses(for session: Session) -> Int {
         return session.bank?.availableRakeForExpenses ?? 0
-    }
-
-    // Проверяет, можно ли оплатить расход из рейка.
-    // Расход может быть оплачен из рейка БЕЗ распределения между игроками.
-    func canPayExpenseFromRake(expense: Expense, session: Session) -> Bool {
-        guard session.rakeAmount > 0 else { return false }
-        guard expense.paidFromRake == 0 else { return false }
-        guard let bank = session.bank else { return false }
-        return bank.availableRakeForExpenses >= expense.amount
     }
 
     // MARK: - Настройки сессии
@@ -159,7 +152,7 @@ final class SessionDetailViewModel {
         guard validateAmount(amount) else { return false }
         let trimmedNote = note.nonEmptyTrimmed
         return performServiceCall {
-            try service.recordBankTransaction(for: session, player: player, amount: amount!, note: trimmedNote, type: type)
+            try service.recordBankTransaction(for: session, player: player, amount: amount!, note: trimmedNote, type: type, linkedExpense: nil)
         }
     }
 
@@ -167,6 +160,41 @@ final class SessionDetailViewModel {
     func deleteBankTransaction(_ transaction: SessionBankTransaction, from session: Session) -> Bool {
         performServiceCall {
             try service.removeBankTransaction(transaction, from: session)
+        }
+    }
+
+    /// Оплачивает расход из банка (кассы).
+    /// Создаёт expensePayment транзакцию без привязки к игроку.
+    /// - Returns: `true` если успешно, `false` при ошибке (например, недостаточно средств)
+    func payExpenseFromBank(expense: Expense, amount: Int?, from session: Session) -> Bool {
+        guard validateAmount(amount) else { return false }
+        let note = "Расход: \(expense.note)"
+        return performServiceCall {
+            try service.recordBankTransaction(
+                for: session,
+                player: nil,
+                amount: amount!,
+                note: note,
+                type: .expensePayment,
+                linkedExpense: expense
+            )
+        }
+    }
+
+    /// Оплачивает чаевые из банка (кассы).
+    /// Создаёт tipPayment транзакцию без привязки к игроку.
+    /// - Returns: `true` если успешно, `false` при ошибке (например, недостаточно средств)
+    func payTipsFromBank(amount: Int?, for session: Session) -> Bool {
+        guard validateAmount(amount) else { return false }
+        return performServiceCall {
+            try service.recordBankTransaction(
+                for: session,
+                player: nil,
+                amount: amount!,
+                note: "Чаевые дилеру",
+                type: .tipPayment,
+                linkedExpense: nil
+            )
         }
     }
 
@@ -206,10 +234,11 @@ final class SessionDetailViewModel {
     }
 
     /// Возвращает доступную сумму рейкбека для распределения
+    /// Учитывает расходы, уже оплаченные из рейка
     /// - Parameter session: Сессия
     /// - Returns: Сумма доступного рейкбека в рублях
     func availableRakebackAmount(for session: Session) -> Int {
-        return session.bank?.reservedForRake ?? 0
+        return session.bank?.availableRakeForExpenses ?? 0
     }
 
     // MARK: - Helpers

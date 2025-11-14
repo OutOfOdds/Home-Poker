@@ -14,14 +14,13 @@ protocol SessionServiceProtocol {
     @discardableResult
     func ensureBank(for session: Session) -> SessionBank
     func setBankManager(_ player: Player?, for session: Session)
-    func recordBankTransaction(for session: Session, player: Player, amount: Int, note: String?, type: SessionBankTransactionType) throws
+    func recordBankTransaction(for session: Session, player: Player?, amount: Int, note: String?, type: SessionBankTransactionType, linkedExpense: Expense?) throws
     func removeBankTransaction(_ transaction: SessionBankTransaction, from session: Session) throws
 
     // Управление расходами
     func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws
     func removeExpenses(_ expenses: [Expense], from session: Session)
-    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)]) throws
-    func payExpenseFromRake(expense: Expense, in session: Session) throws
+    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)], rakeAmount: Int) throws
 
     // Рейк и чаевые
     func recordRakeAndTips(for session: Session, rake: Int, tips: Int) throws
@@ -130,19 +129,32 @@ struct SessionService: SessionServiceProtocol {
         bank.manager = player
     }
 
-    // Регистрирует операцию с банком сессии (пополнение или выдачу).
+    // Регистрирует операцию с банком сессии (пополнение, выдачу, оплату расходов или чаевых).
     func recordBankTransaction(
         for session: Session,
-        player: Player,
+        player: Player?,
         amount: Int,
         note: String?,
-        type: SessionBankTransactionType
+        type: SessionBankTransactionType,
+        linkedExpense: Expense? = nil
     ) throws {
         try validatePositiveAmount(amount)
         let bank = ensureBank(for: session)
-        guard session.players.contains(where: { $0.id == player.id }) else {
-            throw SessionServiceError.playerNotInSession
+
+        // Проверка игрока только для deposit/withdrawal
+        if let player = player {
+            guard session.players.contains(where: { $0.id == player.id }) else {
+                throw SessionServiceError.playerNotInSession
+            }
         }
+
+        // Проверка достаточности средств для выдач
+        if type == .withdrawal || type == .expensePayment || type == .tipPayment {
+            guard bank.netBalance >= amount else {
+                throw SessionServiceError.insufficientBankBalance
+            }
+        }
+
         let entry = SessionBankTransaction(
             amount: amount,
             type: type,
@@ -150,7 +162,15 @@ struct SessionService: SessionServiceProtocol {
             bank: bank,
             note: trimmedNote(note)
         )
+        entry.linkedExpense = linkedExpense
         bank.transactions.append(entry)
+
+        // Обновление связанных сущностей
+        if let expense = linkedExpense, type == .expensePayment {
+            expense.paidFromBank += amount
+        } else if type == .tipPayment {
+            session.tipsPaidFromBank += amount
+        }
     }
 
     // Удаляет транзакцию банка и обновляет состояние сессии.
@@ -178,11 +198,16 @@ struct SessionService: SessionServiceProtocol {
         session.expenses.removeAll { ids.contains($0.id) }
     }
 
-    // Сохраняет распределение расхода между игроками
-    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)]) throws {
-        // Валидация: сумма распределения должна равняться сумме расхода
+    // Сохраняет распределение расхода между игроками и суммой из рейка
+    // Расход может быть оплачен частично/полностью из рейка и/или распределён между игроками
+    func saveExpenseDistribution(
+        for expense: Expense,
+        distributions: [(Player, Int)],
+        rakeAmount: Int
+    ) throws {
+        // Валидация: сумма распределения + rakeAmount должна равняться сумме расхода
         let totalDistributed = distributions.reduce(0) { $0 + $1.1 }
-        guard totalDistributed == expense.amount else {
+        guard totalDistributed + rakeAmount == expense.amount else {
             throw SessionServiceError.invalidAmount
         }
 
@@ -190,6 +215,9 @@ struct SessionService: SessionServiceProtocol {
         for (_, amount) in distributions {
             try validatePositiveAmount(amount)
         }
+
+        // Валидация: rakeAmount должен быть неотрицательным
+        try validateNonNegativeAmount(rakeAmount)
 
         // Удаляем старые распределения
         expense.distributions.removeAll()
@@ -199,35 +227,11 @@ struct SessionService: SessionServiceProtocol {
             let distribution = ExpenseDistribution(amount: amount, player: player, expense: expense)
             expense.distributions.append(distribution)
         }
+
+        // Устанавливаем сумму, оплаченную из рейка
+        expense.paidFromRake = rakeAmount
     }
 
-    // Оплачивает расход из зарезервированного рейка
-    // Расход может быть оплачен из рейка БЕЗ распределения между игроками
-    func payExpenseFromRake(expense: Expense, in session: Session) throws {
-        // Валидация: рейк должен быть зафиксирован
-        guard session.rakeAmount > 0 else {
-            throw SessionServiceError.rakeNotRecorded
-        }
-
-        // Валидация: расход еще не оплачен из рейка
-        guard expense.paidFromRake == 0 else {
-            throw SessionServiceError.expenseAlreadyPaid
-        }
-
-        // Валидация: достаточно доступного рейка
-        guard let bank = session.bank else {
-            throw SessionServiceError.bankUnavailable
-        }
-
-        let amountToPay = expense.amount
-        guard bank.availableRakeForExpenses >= amountToPay else {
-            throw SessionServiceError.insufficientRakeForExpense
-        }
-
-        // Оплачиваем расход из рейка
-        // Распределение между игроками НЕ требуется - расход покрывается полностью из рейка
-        expense.paidFromRake = amountToPay
-    }
 
     // MARK: - Рейк и чаевые
 
@@ -359,6 +363,7 @@ struct SessionService: SessionServiceProtocol {
 
 enum SessionServiceError: LocalizedError {
     case insufficientBank
+    case insufficientBankBalance
     case invalidAmount
     case emptyPlayerName
     case invalidBlinds
@@ -367,14 +372,13 @@ enum SessionServiceError: LocalizedError {
     case playerAlreadyInGame
     case rakeExceedsRemaining
     case rakebackExceedsAvailable
-    case rakeNotRecorded
-    case expenseAlreadyPaid
-    case insufficientRakeForExpense
 
     var errorDescription: String? {
         switch self {
         case .insufficientBank:
             return "Нельзя вывести больше, чем осталось в банке игры."
+        case .insufficientBankBalance:
+            return "Недостаточно средств в банке для выполнения операции."
         case .invalidAmount:
             return "Сумма должна быть больше нуля."
         case .emptyPlayerName:
@@ -391,12 +395,6 @@ enum SessionServiceError: LocalizedError {
             return "Сумма рейка и чаевых превышает остаток фишек на столе."
         case .rakebackExceedsAvailable:
             return "Сумма распределения рейкбека превышает доступную сумму."
-        case .rakeNotRecorded:
-            return "Рейк еще не зафиксирован. Завершите сессию и запишите рейк."
-        case .expenseAlreadyPaid:
-            return "Этот расход уже оплачен из рейка."
-        case .insufficientRakeForExpense:
-            return "Недостаточно доступного рейка для оплаты этого расхода."
         }
     }
 }

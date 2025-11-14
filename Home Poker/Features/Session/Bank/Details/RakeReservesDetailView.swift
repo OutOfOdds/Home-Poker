@@ -63,7 +63,7 @@ struct RakeReservesDetailView: View {
         }
     }
 
-    // MARK: - Sections
+    // MARK: - Секции
 
     private func reservedSummarySection(bank: SessionBank) -> some View {
         Section {
@@ -199,7 +199,7 @@ struct RakeReservesDetailView: View {
         }
     }
 
-    // MARK: - Toolbar Buttons
+    // MARK: - Кнопки тулбара
 
     private var distributeRakebackButton: some View {
         Button {
@@ -207,14 +207,12 @@ struct RakeReservesDetailView: View {
         } label: {
             HStack {
                 Image(systemName:"arrow.triangle.2.circlepath")
-                Text("Распределить")
+                Text("Рейкбек")
             }
         }
-        .disabled(!canDistributeRakeback)
+//        .disabled(!canDistributeRakeback)
     }
 }
-
-// MARK: - Previews
 
 #Preview("With Rake and Tips") {
     NavigationStack {
