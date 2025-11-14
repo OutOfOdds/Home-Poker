@@ -1058,4 +1058,398 @@ struct SettlementServiceTests {
         // Баланс игроков должен быть положительным из-за рейкбека
         #expect(totalPlayerBalance > 0, "Баланс игроков положительный из-за рейкбека")
     }
+
+    @Test("Реальная сессия: финансовые результаты с банком и рейкбеком")
+    func testRealSessionFinancialResults() {
+        /*
+         РЕАЛЬНАЯ СЕССИЯ С 8 ИГРОКАМИ
+         =============================
+
+         Этот тест проверяет расчёты финансовых результатов на реальных данных сессии.
+
+         РЕАЛЬНАЯ СИТУАЦИЯ:
+         ------------------
+         Игроки сыграли сессию. После игры только Вова Зелик внес свой проигрыш в кассу
+         (275,000₽) и оставил деньги "на столе". Из этих ФИЗИЧЕСКИХ денег сразу оплатили
+         все расходы и чаевые диллеру (214,000₽). В кассе осталось 61,000₽.
+
+         Игроки договорились, что расходы будут покрыты из рейка (виртуально), а остаток
+         рейка распределят как рейкбек между 4 игроками.
+
+         ПАРАМЕТРЫ СЕССИИ:
+         -----------------
+         Курс: 1 фишка = 1 рубль (1:1)
+         Рейк собран: 430,000 фишек → 430,000₽
+         Чаевые собраны: 27,000 фишек → 27,000₽
+         Всего резервов: 457,000₽
+
+         ФИЗИЧЕСКИЕ ОПЕРАЦИИ С КАССОЙ:
+         -----------------------------
+         1. Вова Зелик внес: 275,000₽ (депозит)
+         2. Оплачены расходы из кассы: 187,000₽
+            - Счет: 113,000₽
+            - Комната: 35,000₽
+            - Дилеры: 39,000₽
+         3. Оплачены чаевые диллеру из кассы: 27,000₽
+         4. ОСТАТОК В КАССЕ: 275,000₽ - 214,000₽ = 61,000₽
+
+         ВИРТУАЛЬНЫЙ УЧЕТ РЕЗЕРВОВ:
+         --------------------------
+         Резервы (рейк + чаевые): 457,000₽
+         Минус расходы (покрыты из рейка): 187,000₽
+         Минус чаевые (покрыты из чаевых): 27,000₽
+         ДОСТУПНО НА РЕЙКБЕК: 457,000₽ - 214,000₽ = 243,000₽
+
+         ИГРОКИ И ИХ РЕЗУЛЬТАТЫ:
+         -----------------------
+
+         ПОБЕДИТЕЛИ (кому банк должен):
+
+         1. Шота:
+            - Buy-in: 350,000 фишек
+            - Cash-out: 417,000 фишек
+            - Результат по фишкам: +67,000
+            - Рейкбек: +60,750₽
+            - ИТОГОВЫЙ БАЛАНС: +127,750₽ (банк должен)
+
+         2. Олег:
+            - Buy-in: 50,000 фишек
+            - Cash-out: 130,000 фишек
+            - Результат по фишкам: +80,000
+            - Рейкбек: +60,750₽
+            - ИТОГОВЫЙ БАЛАНС: +140,750₽ (банк должен)
+
+         3. Юлиан:
+            - Buy-in: 50,000 фишек
+            - Cash-out: 75,000 фишек
+            - Результат по фишкам: +25,000
+            - Рейкбек: 0₽
+            - ИТОГОВЫЙ БАЛАНС: +25,000₽ (банк должен)
+
+         4. Вова Мария:
+            - Buy-in: 200,000 фишек
+            - Cash-out: 310,000 фишек
+            - Результат по фишкам: +110,000
+            - Рейкбек: 0₽
+            - ИТОГОВЫЙ БАЛАНС: +110,000₽ (банк должен)
+
+         5. Ян:
+            - Buy-in: 250,000 фишек
+            - Cash-out: 350,000 фишек
+            - Результат по фишкам: +100,000
+            - Рейкбек: 0₽
+            - ИТОГОВЫЙ БАЛАНС: +100,000₽ (банк должен)
+
+         ИТОГО ПОБЕДИТЕЛЕЙ: 503,500₽
+
+         ПРОИГРАВШИЕ (кто должен банку):
+
+         6. Шоха:
+            - Buy-in: 500,000 фишек
+            - Cash-out: 136,000 фишек
+            - Результат по фишкам: -364,000
+            - Рейкбек: +60,750₽
+            - Депозит в банк: 0₽ (НЕ вносил)
+            - ИТОГОВЫЙ БАЛАНС: -303,250₽ (должен банку)
+
+         7. Гриша:
+            - Buy-in: 200,000 фишек
+            - Cash-out: 0 фишек
+            - Результат по фишкам: -200,000
+            - Рейкбек: +60,750₽
+            - Депозит в банк: 0₽ (НЕ вносил)
+            - ИТОГОВЫЙ БАЛАНС: -139,250₽ (должен банку)
+
+         8. Вова Зелик (ОСОБЫЙ СЛУЧАЙ):
+            - Buy-in: 300,000 фишек
+            - Cash-out: 25,000 фишек
+            - Результат по фишкам: -275,000
+            - Рейкбек: 0₽
+            - Депозит в банк: 275,000₽ (внес ПОЛНУЮ сумму долга)
+            - ИТОГОВЫЙ БАЛАНС: 0₽ (РАСЧИТАЛСЯ)
+            - ❗️ НЕ ДОЛЖЕН отображаться ни в "Игроки в плюсе", ни в "Игроки в минусе"
+
+         ИТОГО ПРОИГРАВШИХ: -442,500₽
+
+         РАСПРЕДЕЛЕНИЕ РЕЙКБЕКА:
+         -----------------------
+         Доступно для рейкбека: 243,000₽
+
+         Распределение поровну между 4 игроками (Шоха, Шота, Гриша, Олег):
+         - Каждому: 243,000₽ / 4 = 60,750₽
+         - Шоха:  60,750₽
+         - Шота:  60,750₽
+         - Гриша: 60,750₽
+         - Олег:  60,750₽
+
+         ПРОВЕРКА БАЛАНСОВ:
+         ------------------
+         Сумма всех балансов игроков:
+         - Победители (К получению): +503,500₽
+         - Проигравшие (К оплате): -442,500₽
+         - Итого: +61,000₽
+
+         Этот положительный баланс (+61,000₽) = остаток физических денег в кассе.
+
+         ОЖИДАЕМЫЕ ФИНАНСОВЫЕ РЕЗУЛЬТАТЫ:
+         --------------------------------
+
+         1. В ПЛЮСЕ (bank.playersOwedByBank):
+            - Шота: 127,750₽
+            - Олег: 140,750₽
+            - Юлиан: 25,000₽
+            - Вова Мария: 110,000₽
+            - Ян: 100,000₽
+            ИТОГО: 5 игроков
+
+         2. В МИНУСЕ (bank.playersOwingBank):
+            - Шоха: 303,250₽
+            - Гриша: 139,250₽
+            ИТОГО: 2 игрока
+
+         3. НЕ ОТОБРАЖАЕТСЯ:
+            - Вова Зелик: 0₽ (расчитался через банк)
+
+         БАЛАНС БАНКА (ТЕКУЩЕЕ СОСТОЯНИЕ - НЕКОРРЕКТНОЕ):
+         ------------------------------------------------
+         ⚠️ ПРОБЛЕМА: Settlement не учитывает физические траты из кассы!
+
+         Депозиты: 275,000₽ (от Вовы Зелика)
+         Выдано (расходы + чаевые): 214,000₽
+         Net balance (правильный): 61,000₽
+
+         НО! Settlement видит:
+         - contributions(for: Вова) = 275,000₽ - 0₽ = 275,000₽
+         - Потому что транзакции расходов/чаевых имеют player: nil
+         - И не учитываются в netContribution конкретных игроков!
+
+         Результат: Settlement пытается выдать из кассы 275,000₽ вместо 61,000₽
+
+         Зарезервировано (виртуально):
+         - Рейк: 430,000₽
+         - Чаевые: 27,000₽
+         - Итого: 457,000₽
+
+         Использовано из резервов:
+         - Расходы: 187,000₽
+         - Чаевые: 27,000₽
+         - Рейкбек: 243,000₽
+         - Итого: 457,000₽
+
+         Организационный сбор (остаток): 0₽ (весь рейк распределён)
+         */
+
+        // Given: Реальная сессия с 8 игроками
+        let session = SessionBuilder()
+            .withChipRatio(1)  // 1 фишка = 1 рубль
+            .withRake(430_000)  // 431,000 фишек рейка
+            .withTips(27_000)   // 27,000 фишек чаевых
+
+        // Добавляем всех игроков
+            .addPlayer("Шота", buyIn: 350_000, cashOut: 417_000)      // +67,000 + рейкбек
+            .addPlayer("Шоха", buyIn: 500_000, cashOut: 136_000)      // -364,000 + рейкбек
+            .addPlayer("Олег", buyIn: 50_000, cashOut: 130_000)       // +80,000 + рейкбек
+            .addPlayer("Гриша", buyIn: 200_000, cashOut: 0)           // -200,000 + рейкбек
+            .addPlayer("Юлиан", buyIn: 50_000, cashOut: 75_000)       // +25,000
+            .addPlayer("Вова Зелик", buyIn: 300_000, cashOut: 25_000) // -275,000 (внесет в банк)
+            .addPlayer("Вова Мария", buyIn: 200_000, cashOut: 310_000)// +110,000
+            .addPlayer("Ян", buyIn: 250_000, cashOut: 350_000)        // +100,000
+
+        // Создаём банк
+            .withBank()
+
+        // Вова Зелик вносит полную сумму долга в банк
+            .addBankDeposit(player: "Вова Зелик", amount: 275_000)
+
+        // Распределяем рейкбек поровну между 4 игроками
+        // Доступно: 457,000 - 214,000 = 243,000₽
+        // Каждому: 60,750₽
+            .addRakebackDistribution(player: "Шоха", amount: 60_750)
+            .addRakebackDistribution(player: "Шота", amount: 60_750)
+            .addRakebackDistribution(player: "Гриша", amount: 60_750)
+            .addRakebackDistribution(player: "Олег", amount: 60_750)
+
+        // Добавляем расходы и оплачиваем их ФИЗИЧЕСКИ из кассы
+        // но помечаем как "покрытые из рейка" (виртуально)
+            .addExpenseFromRake(amount: 113_000, note: "Счет")
+            .addExpenseFromRake(amount: 35_000, note: "Комната")
+            .addExpenseFromRake(amount: 39_000, note: "Дилеры")
+            .payExpenseFromBank(expenseNote: "Счет", amount: 113_000)      // Физическая оплата
+            .payExpenseFromBank(expenseNote: "Комната", amount: 35_000)   // Физическая оплата
+            .payExpenseFromBank(expenseNote: "Дилеры", amount: 39_000)    // Физическая оплата
+
+        // Оплачиваем чаевые ФИЗИЧЕСКИ из кассы
+            .payTipsFromBank(amount: 27_000)
+
+            .build()
+
+        guard let bank = session.bank else {
+            Issue.record("Банк сессии не найден")
+            return
+        }
+
+        // When: Рассчитываем settlement
+        let result = service.calculate(for: session)
+
+        // Then: Проверяем игроков в плюсе (банк должен им)
+        let playersInProfit = bank.playersOwedByBank
+        let profitAmounts = playersInProfit.map { (player: $0, amount: max(bank.financialResult(for: $0), 0)) }
+
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: ИГРОКИ В ПЛЮСЕ ===")
+        for (player, amount) in profitAmounts {
+            print("\(player.name): +\(amount.asCurrency())")
+        }
+
+        #expect(playersInProfit.count == 5, "Должно быть 5 игроков в плюсе")
+
+        // Проверяем суммы для каждого игрока в плюсе
+        assertPlayerOwedByBank(bank, player: "Шота", expectedAmount: 127_750)
+        assertPlayerOwedByBank(bank, player: "Олег", expectedAmount: 140_750)
+        assertPlayerOwedByBank(bank, player: "Юлиан", expectedAmount: 25_000)
+        assertPlayerOwedByBank(bank, player: "Вова Мария", expectedAmount: 110_000)
+        assertPlayerOwedByBank(bank, player: "Ян", expectedAmount: 100_000)
+
+        // Проверяем игроков в минусе (они должны банку)
+        let playersInLoss = bank.playersOwingBank
+        let lossAmounts = playersInLoss.map { (player: $0, amount: max(-bank.financialResult(for: $0), 0)) }
+
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: ИГРОКИ В МИНУСЕ ===")
+        for (player, amount) in lossAmounts {
+            print("\(player.name): -\(amount.asCurrency())")
+        }
+
+        #expect(playersInLoss.count == 2, "Должно быть 2 игрока в минусе")
+
+        // Проверяем суммы для каждого игрока в минусе
+        assertPlayerOwingBank(bank, player: "Шоха", expectedAmount: 303_250)
+        assertPlayerOwingBank(bank, player: "Гриша", expectedAmount: 139_250)
+
+        // Проверяем, что Вова Зелик НЕ отображается ни в одном списке
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: ПРОВЕРКА РАСЧИТАВШИХСЯ ===")
+        let vovaZelik = session.players.first { $0.name == "Вова Зелик" }!
+        let vovaResult = bank.financialResult(for: vovaZelik)
+        let vovaOwedByBank = max(vovaResult, 0)
+        let vovaOwingBank = max(-vovaResult, 0)
+
+        print("Вова Зелик:")
+        print("  - Банк должен ему: \(vovaOwedByBank)₽")
+        print("  - Он должен банку: \(vovaOwingBank)₽")
+        print("  - В списке 'в плюсе': \(playersInProfit.contains(where: { $0.id == vovaZelik.id }) ? "ДА" : "НЕТ")")
+        print("  - В списке 'в минусе': \(playersInLoss.contains(where: { $0.id == vovaZelik.id }) ? "ДА" : "НЕТ")")
+
+        #expect(vovaOwedByBank == 0, "Банк НЕ должен Вове Зелику (он расчитался)")
+        #expect(vovaOwingBank == 0, "Вова Зелик НЕ должен банку (он внёс полную сумму)")
+        #expect(!playersInProfit.contains(where: { $0.id == vovaZelik.id }), "Вова Зелик НЕ должен быть в списке 'в плюсе'")
+        #expect(!playersInLoss.contains(where: { $0.id == vovaZelik.id }), "Вова Зелик НЕ должен быть в списке 'в минусе'")
+
+        // Проверяем суммы
+        let totalProfit = profitAmounts.reduce(0) { $0 + $1.amount }
+        let totalLoss = lossAmounts.reduce(0) { $0 + $1.amount }
+
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: ИТОГИ ===")
+        print("Всего в плюсе: \(totalProfit.asCurrency())")
+        print("Всего в минусе: \(totalLoss.asCurrency())")
+        print("Разница: \((totalProfit - totalLoss).asCurrency())")
+
+        #expect(totalProfit == 503_500, "Общая сумма в плюсе должна быть 503,500₽")
+        #expect(totalLoss == 442_500, "Общая сумма в минусе должна быть 442,500₽")
+
+        // Проверяем баланс банка
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: БАЛАНС БАНКА ===")
+        print("Депозиты: \(bank.totalDeposited.asCurrency())")
+        print("Withdrawals: \(bank.totalWithdrawn.asCurrency())")
+        print("Net balance: \(bank.netBalance.asCurrency())")
+        print("Зарезервировано (рейк): \(bank.reservedForRake.asCurrency())")
+        print("Зарезервировано (чаевые): \(bank.reservedForTips.asCurrency())")
+        print("Всего зарезервировано: \(bank.totalReserved.asCurrency())")
+        print("Расходы из рейка: \(bank.totalExpensesPaidFromRake.asCurrency())")
+        print("Организационный сбор: \(bank.organizationalFee.asCurrency())")
+
+        // Проверяем баланс кассы
+        #expect(bank.totalDeposited == 275_000, "Депозиты = 275,000₽ (от Вовы Зелика)")
+        #expect(bank.totalWithdrawn == 214_000, "Выдано = 214,000₽ (187k расходы + 27k чаевые)")
+        #expect(bank.netBalance == 61_000, "Net balance = 61,000₽ (275k - 214k)")
+
+        // Проверяем резервы
+        #expect(bank.reservedForRake == 430_000, "Зарезервировано рейка: 430,000₽")
+        #expect(bank.reservedForTips == 27_000, "Зарезервировано чаевых: 27,000₽")
+        #expect(bank.totalReserved == 457_000, "Всего резервов: 457,000₽")
+
+        // Проверяем использование резервов
+        #expect(bank.totalExpensesPaidFromRake == 187_000, "Расходы покрыты из рейка: 187,000₽")
+
+        // Распределенный рейкбек
+        let distributedRakeback = session.players.filter { $0.getsRakeback }.reduce(0) { $0 + $1.rakeback }
+        print("Распределенный рейкбек: \(distributedRakeback.asCurrency())")
+        #expect(distributedRakeback == 243_000, "Распределено рейкбека: 243,000₽")
+
+        // Организационный сбор должен быть 0 (весь рейк ушел на расходы и рейкбек)
+        #expect(bank.organizationalFee == 0, "Организационный сбор = 0₽ (весь рейк распределён)")
+
+        // ПРОВЕРКА SETTLEMENT АЛГОРИТМА
+        // =============================
+
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: SETTLEMENT БАЛАНСЫ ===")
+        for balance in result.balances {
+            let netChips = balance.cashOut - balance.buyIn
+            print("\(balance.player.name): закуп=\(balance.buyIn), вывод=\(balance.cashOut), " +
+                  "фишки=\(netChips >= 0 ? "+" : "")\(netChips), " +
+                  "рейкбек=\(balance.rakeback)₽, " +
+                  "итого=\(balance.netCash >= 0 ? "+" : "")\(balance.netCash)₽")
+        }
+
+        // Проверяем балансы игроков через SettlementResult
+        assertBalance(result, player: "Шота", netCash: 127_750)     // +67,000 + 60,750 рейкбек
+        assertBalance(result, player: "Олег", netCash: 140_750)     // +80,000 + 60,750 рейкбек
+        assertBalance(result, player: "Юлиан", netCash: 25_000)     // +25,000
+        assertBalance(result, player: "Вова Мария", netCash: 110_000) // +110,000
+        assertBalance(result, player: "Ян", netCash: 100_000)       // +100,000
+        assertBalance(result, player: "Шоха", netCash: -303_250)    // -364,000 + 60,750 рейкбек
+        assertBalance(result, player: "Гриша", netCash: -139_250)   // -200,000 + 60,750 рейкбек
+        assertBalance(result, player: "Вова Зелик", netCash: -275_000) // -275,000
+
+        // Проверяем рейкбек у игроков
+        assertRakeback(result, player: "Шоха", amount: 60_750)
+        assertRakeback(result, player: "Шота", amount: 60_750)
+        assertRakeback(result, player: "Гриша", amount: 60_750)
+        assertRakeback(result, player: "Олег", amount: 60_750)
+        assertRakeback(result, player: "Юлиан", amount: 0)
+        assertRakeback(result, player: "Вова Зелик", amount: 0)
+        assertRakeback(result, player: "Вова Мария", amount: 0)
+        assertRakeback(result, player: "Ян", amount: 0)
+
+        // Проверяем переводы
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: ПЕРЕВОДЫ ИЗ БАНКА (\(result.bankTransfers.count)) ===")
+        for transfer in result.bankTransfers {
+            print("Банк → \(transfer.to.name): \(transfer.amount)₽")
+        }
+
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: ПРЯМЫЕ ПЕРЕВОДЫ (\(result.playerTransfers.count)) ===")
+        for transfer in result.playerTransfers {
+            print("\(transfer.from.name) → \(transfer.to.name): \(transfer.amount)₽")
+        }
+
+        // Проверяем, что есть переводы (конкретные проверки зависят от алгоритма settlement)
+        // Минимум проверяем что алгоритм сработал и создал переводы
+        let totalBankTransfers = result.bankTransfers.reduce(0) { $0 + $1.amount }
+        let totalPlayerTransfers = result.playerTransfers.reduce(0) { $0 + $1.amount }
+
+        print("\n=== РЕАЛЬНАЯ СЕССИЯ: ИТОГИ ПЕРЕВОДОВ ===")
+        print("Всего переводов из банка: \(totalBankTransfers.asCurrency())")
+        print("Всего прямых переводов: \(totalPlayerTransfers.asCurrency())")
+        print("Общая сумма переводов: \((totalBankTransfers + totalPlayerTransfers).asCurrency())")
+        print(bank.netBalance)
+        print(bank.totalReserved)
+
+        // Общая сумма переводов должна равняться сумме всех выплат победителям
+        // (банк должен выдать 503,500₽, из них 275,000₽ есть в банке от Вовы Зелика)
+        let expectedTotalTransfers = totalProfit
+        let actualTotalTransfers = totalBankTransfers + totalPlayerTransfers
+
+        print("Ожидаемая сумма переводов: \(expectedTotalTransfers.asCurrency())")
+        print("Фактическая сумма переводов: \(actualTotalTransfers.asCurrency())")
+
+        #expect(actualTotalTransfers == expectedTotalTransfers,
+                "Общая сумма переводов (\(actualTotalTransfers)₽) должна равняться общей сумме в плюсе (\(expectedTotalTransfers)₽)")
+    }
 }

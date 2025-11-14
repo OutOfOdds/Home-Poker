@@ -17,6 +17,8 @@ final class SessionBuilder {
     private var bankTransactions: [BankTransactionData] = []
     private var rakebackDistributions: [RakebackData] = []
     private var expenses: [ExpenseData] = []
+    private var expensePayments: [ExpensePaymentData] = []
+    private var tipPayments: [Int] = []
 
     private struct PlayerData {
         let name: String
@@ -31,6 +33,11 @@ final class SessionBuilder {
         let amount: Int
     }
 
+    private struct ExpensePaymentData {
+        let expenseNote: String
+        let amount: Int
+    }
+
     private struct RakebackData {
         let playerName: String
         let amount: Int
@@ -41,6 +48,7 @@ final class SessionBuilder {
         let note: String
         let payerName: String?
         let distributions: [(String, Int)]  // (playerName, amount)
+        let paidFromRake: Int  // Сумма, оплаченная из рейка
     }
 
     /// Устанавливает коэффициент конвертации фишки → рубли
@@ -128,9 +136,45 @@ final class SessionBuilder {
                 amount: amount,
                 note: note,
                 payerName: payer,
-                distributions: distributions
+                distributions: distributions,
+                paidFromRake: 0
             )
         )
+        return self
+    }
+
+    /// Добавляет расход, полностью оплаченный из рейка (без распределения между игроками)
+    /// - Parameters:
+    ///   - amount: Сумма расхода в рублях
+    ///   - note: Описание расхода
+    func addExpenseFromRake(amount: Int, note: String) -> SessionBuilder {
+        expenses.append(
+            ExpenseData(
+                amount: amount,
+                note: note,
+                payerName: nil,
+                distributions: [],
+                paidFromRake: amount
+            )
+        )
+        return self
+    }
+
+    /// Оплачивает расход физически из банка (создает транзакцию expensePayment)
+    /// - Parameters:
+    ///   - expenseNote: Описание расхода (для поиска expense)
+    ///   - amount: Сумма оплаты в рублях
+    func payExpenseFromBank(expenseNote: String, amount: Int) -> SessionBuilder {
+        expensePayments.append(
+            ExpensePaymentData(expenseNote: expenseNote, amount: amount)
+        )
+        return self
+    }
+
+    /// Оплачивает чаевые физически из банка (создает транзакцию tipPayment)
+    /// - Parameter amount: Сумма чаевых в рублях
+    func payTipsFromBank(amount: Int) -> SessionBuilder {
+        tipPayments.append(amount)
         return self
     }
 
@@ -228,6 +272,9 @@ final class SessionBuilder {
                 payer: payer
             )
 
+            // Устанавливаем сумму, оплаченную из рейка
+            expense.paidFromRake = expenseData.paidFromRake
+
             // Добавляем распределения
             for (playerName, distributionAmount) in expenseData.distributions {
                 guard let player = playerDict[playerName] else {
@@ -243,6 +290,47 @@ final class SessionBuilder {
             }
 
             session.expenses.append(expense)
+        }
+
+        // Создаем транзакции оплаты расходов из банка
+        if let bank = session.bank {
+            for paymentData in expensePayments {
+                // Находим expense по note
+                guard let expense = session.expenses.first(where: { $0.note == paymentData.expenseNote }) else {
+                    fatalError("Expense with note '\(paymentData.expenseNote)' not found. Add expense before paying it from bank.")
+                }
+
+                // Создаем транзакцию expensePayment без привязки к игроку
+                let transaction = SessionBankTransaction(
+                    amount: paymentData.amount,
+                    type: .expensePayment,
+                    player: nil,  // Без привязки к игроку
+                    bank: bank,
+                    note: "Расход: \(expense.note)",
+                    createdAt: Date()
+                )
+                transaction.linkedExpense = expense
+                bank.transactions.append(transaction)
+
+                // Обновляем paidFromBank у расхода
+                expense.paidFromBank += paymentData.amount
+            }
+
+            // Создаем транзакции оплаты чаевых из банка
+            for tipAmount in tipPayments {
+                let transaction = SessionBankTransaction(
+                    amount: tipAmount,
+                    type: .tipPayment,
+                    player: nil,  // Без привязки к игроку
+                    bank: bank,
+                    note: "Чаевые дилеру",
+                    createdAt: Date()
+                )
+                bank.transactions.append(transaction)
+
+                // Обновляем tipsPaidFromBank
+                session.tipsPaidFromBank += tipAmount
+            }
         }
 
         return session
