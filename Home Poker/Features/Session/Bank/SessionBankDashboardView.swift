@@ -63,7 +63,16 @@ struct SessionBankDashboardView: View {
     @ViewBuilder
     private func navigationLinksSection(bank: SessionBank) -> some View {
         VStack(spacing: 12) {
-            // 1. Итоги банка (зелёный) - баланс, транзакции, долги
+            // 2. Финансовый результат (фиолетовый) - игроки в плюсе/минусе
+            NavigationLink {
+                FinancialResultsDetailView(session: session)
+            } label: {
+                financialResultsNavigationCard(bank: bank)
+            }
+            .buttonStyle(.plain)
+            
+            
+            // 1. Итоги банка (зелёный) - баланс, транзакции
             NavigationLink {
                 BankSummaryDetailView(session: session)
                     .environment(viewModel)
@@ -72,7 +81,9 @@ struct SessionBankDashboardView: View {
             }
             .buttonStyle(.plain)
 
-            // 2. Рейк и резервы (оранжевый) - рейк, чаевые, рейкбек
+     
+
+            // 3. Рейк и резервы (оранжевый) - рейк, чаевые, рейкбек
             NavigationLink {
                 RakeReservesDetailView(session: session)
                     .environment(viewModel)
@@ -81,7 +92,7 @@ struct SessionBankDashboardView: View {
             }
             .buttonStyle(.plain)
 
-            // 3. Расходы (синий) - список расходов, добавление
+            // 4. Расходы (синий) - список расходов, добавление
             NavigationLink {
                 ExpensesDetailView(session: session)
                     .environment(viewModel)
@@ -129,24 +140,54 @@ struct SessionBankDashboardView: View {
                     )
                 }
 
-                // Информация о долгах
-                if !bank.playersOwingBank.isEmpty || !bank.playersOwedByBank.isEmpty {
+            }
+        }
+    }
+
+    private func financialResultsNavigationCard(bank: SessionBank) -> some View {
+        let playersInProfit = bank.playersOwedByBank
+        let playersInLoss = bank.playersOwingBank
+        let totalProfit = playersInProfit.reduce(0) { $0 + max(bank.financialResult(for: $1), 0) }
+        let totalLoss = playersInLoss.reduce(0) { $0 + max(-bank.financialResult(for: $1), 0) }
+
+        return DashboardCard(backgroundColor: Color.purple.opacity(0.15)) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "chart.bar.fill")
+                        .foregroundStyle(.purple)
+                        .font(.title2)
+                    Text("Результаты игроков")
+                        .font(.title3.weight(.semibold))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+
+                if !playersInProfit.isEmpty || !playersInLoss.isEmpty {
                     Divider()
 
-                    HStack(spacing: 16) {
-                        if !bank.playersOwingBank.isEmpty {
-                            Label("\(bank.playersOwingBank.count)", systemImage: "exclamationmark.circle.fill")
-                                .foregroundStyle(.red)
-                                .font(.caption)
-                                .monospaced()
+                    VStack(alignment: .leading, spacing: 8) {
+                        if !playersInProfit.isEmpty {
+                            summaryMetricRow(
+                                label: "К получению (\(playersInProfit.count))",
+                                value: totalProfit.asCurrency(),
+                                color: .green
+                            )
                         }
-                        if !bank.playersOwedByBank.isEmpty {
-                            Label("\(bank.playersOwedByBank.count)", systemImage: "checkmark.circle.fill")
-                                .foregroundStyle(.blue)
-                                .font(.caption)
-                                .monospaced()
+
+                        if !playersInLoss.isEmpty {
+                            summaryMetricRow(
+                                label: "К оплате (\(playersInLoss.count))",
+                                value: totalLoss.asCurrency(),
+                                color: .red
+                            )
                         }
                     }
+                } else {
+                    Text("Нет финансовых результатов")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
             }
         }

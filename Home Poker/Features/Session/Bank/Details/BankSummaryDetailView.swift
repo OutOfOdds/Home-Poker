@@ -29,14 +29,6 @@ struct BankSummaryDetailView: View {
             if let bank = session.bank {
                 summarySection(bank: bank)
 
-                if !bank.playersOwingBank.isEmpty {
-                    debtorsSection(bank: bank)
-                }
-
-                if !bank.playersOwedByBank.isEmpty {
-                    owedByBankSection(bank: bank)
-                }
-
                 transactionsSection
             } else {
                 ContentUnavailableView("Банк не создан", systemImage: "banknote")
@@ -89,86 +81,21 @@ struct BankSummaryDetailView: View {
     private func summarySection(bank: SessionBank) -> some View {
         Section("Итоги") {
             summaryRow(
-                title: "Получено от игроков",
+                title: "Получено:",
                 value: bank.totalDeposited.asCurrency(),
                 color: .green
             )
             summaryRow(
-                title: "Выдано игрокам",
+                title: "Выдано:",
                 value: bank.totalWithdrawn.asCurrency(),
                 color: .orange
             )
             summaryRow(
-                title: "Баланс кассы",
+                title: "Баланс кассы:",
                 value: bank.netBalance.asCurrency(),
                 color: bank.netBalance >= 0 ? .primary : .red,
                 isHighlighted: true
             )
-        }
-    }
-
-    private func debtorsSection(bank: SessionBank) -> some View {
-        let debtors = bank.playersOwingBank
-        let totalDebt = debtors.reduce(0) { $0 + bank.amountOwedToBank(for: $1) }
-
-        return Section {
-            ForEach(debtors, id: \.id) { player in
-                HStack {
-                    Text(player.name)
-                    Spacer()
-                    Text(bank.amountOwedToBank(for: player).asCurrency())
-                        .foregroundStyle(.red)
-                        .fontWeight(.semibold)
-                        .monospaced()
-                }
-            }
-        } header: {
-            HStack {
-                Text("Игроки должны банку")
-                Spacer()
-                Text(totalDebt.asCurrency())
-                    .foregroundStyle(.red)
-                    .monospaced()
-            }
-            .font(.caption)
-        }
-    }
-
-    private func owedByBankSection(bank: SessionBank) -> some View {
-        let creditors = bank.playersOwedByBank
-        let totalOwed = bank.totalOwedByBank
-
-        return Section {
-            ForEach(creditors, id: \.id) { player in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(player.name)
-                        if player.chipProfit > 0 {
-                            Text("Выплата выигрыша")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("Возврат переплаты")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Spacer()
-                    Text(bank.amountOwedByBank(for: player).asCurrency())
-                        .foregroundStyle(.blue)
-                        .fontWeight(.semibold)
-                        .monospaced()
-                }
-            }
-        } header: {
-            HStack {
-                Text("Банк должен игрокам")
-                Spacer()
-                Text(totalOwed.asCurrency())
-                    .foregroundStyle(.blue)
-                    .monospaced()
-            }
-            .font(.caption)
         }
     }
 
@@ -194,7 +121,7 @@ struct BankSummaryDetailView: View {
         }
     }
 
-    // MARK: - Row Components
+    // MARK: - Строки статов
 
     private func summaryRow(
         title: String,
@@ -215,23 +142,30 @@ struct BankSummaryDetailView: View {
 
     private func transactionRow(_ transaction: SessionBankTransaction) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(transaction.type.displayName)
-                Image(systemName: transaction.type.systemImage)
-                Spacer()
-                Text(transaction.amount.asCurrency())
-                    .fontWeight(.semibold)
-                    .monospaced()
+            VStack(alignment: .leading) {
+                HStack {
+                    Image(systemName: transaction.type.systemImage)
+                    Text(transaction.type.displayName)
+                }
+
             }
             .foregroundColor(transaction.type == .deposit ? .green : .orange)
 
             HStack {
-                Text(transaction.player?.name ?? "Удалённый игрок")
+                // Для организационных транзакций не показываем имя игрока
+                if transaction.type == .deposit || transaction.type == .withdrawal {
+                    Text(transaction.player?.name ?? "Удалённый игрок")
+                }
                 Spacer()
                 Text(transaction.createdAt, style: .time)
                     .foregroundStyle(.secondary)
                     .font(.caption)
             }
+
+            Text(transaction.amount.asCurrency())
+                .fontWeight(.semibold)
+                .monospaced()
+                .foregroundColor(transaction.type == .deposit ? .green : .orange)
 
             if !transaction.note.isEmpty {
                 Text(transaction.note)
@@ -264,30 +198,6 @@ struct BankSummaryDetailView: View {
         .disabled(sortedPlayers.isEmpty)
     }
 }
-
-// MARK: - Extensions
-
-private extension SessionBankTransactionType {
-    var displayName: String {
-        switch self {
-        case .deposit:
-            return "Игрок передал в банк"
-        case .withdrawal:
-            return "Банк передал игроку"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .deposit:
-            return "arrow.down.circle"
-        case .withdrawal:
-            return "arrow.up.circle"
-        }
-    }
-}
-
-// MARK: - Previews
 
 #Preview("Standard Bank") {
     NavigationStack {

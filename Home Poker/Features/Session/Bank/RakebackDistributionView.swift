@@ -397,7 +397,7 @@ struct RakebackDistributionView: View {
         clearUnselectedPlayers()
     }
 
-    // MARK: - Edit Alert
+    // MARK: - Алерт редактирования
 
     private func openEditAlert(for selection: PlayerSelection) {
         editingPlayerId = selection.id
@@ -429,7 +429,7 @@ struct RakebackDistributionView: View {
         editValue = ""
     }
 
-    // MARK: - Submit
+    // MARK: - Подтверждение
 
     private func submitDistribution() {
         let distributions = playerSelections
@@ -464,8 +464,6 @@ private struct PlayerSelection: Identifiable {
         self.percentage = percentage
     }
 }
-
-// MARK: - Preview
 
 #Preview {
     let session = PreviewData.activeSession()

@@ -10,37 +10,6 @@ struct SettlementView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Балансы") {
-                    if viewModel.balances.isEmpty {
-                        Text("Нет данных по игрокам")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(viewModel.balances, id: \.player.id) { balance in
-                            HStack(alignment: .top) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(balance.player.name)
-                                        .font(.headline)
-                                    Text("Закуп: \(balance.buyIn) • Вывод: \(balance.cashOut)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    Text("\(balance.netChips >= 0 ? "+" : "")\(balance.netChips) фишек")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                    if balance.rakeback > 0 {
-                                        Text("+\(balance.rakeback.asCurrency()) рейкбек")
-                                            .font(.caption2)
-                                            .foregroundStyle(.green)
-                                    }
-                                }
-                                Spacer()
-                                Text(balance.netCash.asCurrency())
-                                    .font(.body.weight(.semibold))
-                                    .foregroundStyle(balance.netCash >= 0 ? .green : .red)
-                            }
-                        }
-                    }
-                }
-
                 if !viewModel.bankTransfers.isEmpty {
                     Section("Переводы через банк") {
                         ForEach(Array(viewModel.bankTransfers.enumerated()), id: \.offset) { _, bt in

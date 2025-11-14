@@ -24,6 +24,9 @@ final class Session {
     /// Пример: 200 фишек чаевых → 200₽ будет записано как withdrawal в банк
     var tipsAmount: Int = 0
 
+    /// Сумма чаевых, оплаченных из банка (в рублях)
+    var tipsPaidFromBank: Int = 0
+
     /// Список всех игроков в сессии
     /// При удалении сессии все игроки удаляются автоматически (cascade)
     @Relationship(deleteRule: .cascade) var players: [Player] = []

@@ -176,3 +176,45 @@ func assertExpenseShare(
     }
     #expect(balance.expenseShare == expectedAmount, "Ожидалась доля в расходах \(expectedAmount)₽ для игрока \(playerName), получено \(balance.expenseShare)₽", sourceLocation: sourceLocation)
 }
+
+// MARK: - Проверки финансовых результатов через SessionBank
+
+/// Проверяет сумму, которую банк должен игроку (игрок в плюсе)
+/// - Parameters:
+///   - bank: Банк сессии
+///   - playerName: Имя игрока
+///   - expectedAmount: Ожидаемая сумма, которую банк должен игроку
+func assertPlayerOwedByBank(
+    _ bank: SessionBank,
+    player playerName: String,
+    expectedAmount: Int,
+    sourceLocation: SourceLocation = #_sourceLocation
+) {
+    guard let player = bank.session.players.first(where: { $0.name == playerName }) else {
+        Issue.record("Игрок '\(playerName)' не найден в сессии", sourceLocation: sourceLocation)
+        return
+    }
+
+    let actualAmount = max(bank.financialResult(for: player), 0)
+    #expect(actualAmount == expectedAmount, "Банк должен игроку '\(playerName)' \(expectedAmount)₽, но рассчитано \(actualAmount)₽", sourceLocation: sourceLocation)
+}
+
+/// Проверяет сумму, которую игрок должен банку (игрок в минусе)
+/// - Parameters:
+///   - bank: Банк сессии
+///   - playerName: Имя игрока
+///   - expectedAmount: Ожидаемая сумма, которую игрок должен банку
+func assertPlayerOwingBank(
+    _ bank: SessionBank,
+    player playerName: String,
+    expectedAmount: Int,
+    sourceLocation: SourceLocation = #_sourceLocation
+) {
+    guard let player = bank.session.players.first(where: { $0.name == playerName }) else {
+        Issue.record("Игрок '\(playerName)' не найден в сессии", sourceLocation: sourceLocation)
+        return
+    }
+
+    let actualAmount = max(-bank.financialResult(for: player), 0)
+    #expect(actualAmount == expectedAmount, "Игрок '\(playerName)' должен банку \(expectedAmount)₽, но рассчитано \(actualAmount)₽", sourceLocation: sourceLocation)
+}

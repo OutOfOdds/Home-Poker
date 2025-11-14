@@ -62,7 +62,7 @@ extension SessionBank {
             switch entry.type {
             case .deposit:
                 return (result.deposited + entry.amount, result.withdrawn)
-            case .withdrawal:
+            case .withdrawal, .expensePayment, .tipPayment:
                 return (result.deposited, result.withdrawn + entry.amount)
             }
         }
@@ -76,6 +76,13 @@ extension SessionBank {
         calculateTotals().withdrawn
     }
 
+    /// Общая сумма организационных расходов (оплата расходов и чаевых)
+    var totalOrganizationalWithdrawals: Int {
+        transactions
+            .filter { $0.type == .expensePayment || $0.type == .tipPayment }
+            .reduce(0) { $0 + $1.amount }
+    }
+
     func contributions(for player: Player) -> (deposited: Int, withdrawn: Int) {
         transactions
             .filter { $0.player?.id == player.id }
@@ -83,70 +90,54 @@ extension SessionBank {
                 switch entry.type {
                 case .deposit:
                     return (result.deposited + entry.amount, result.withdrawn)
-                case .withdrawal:
+                case .withdrawal, .expensePayment, .tipPayment:
                     return (result.deposited, result.withdrawn + entry.amount)
                 }
             }
     }
 
-    /// Вычисляет сумму, которую игрок должен банку.
-    /// Возвращает положительное значение только для проигравших игроков, которые ещё не внесли полную сумму.
-    func amountOwedToBank(for player: Player) -> Int {
+    /// Вычисляет финансовый результат игрока с учетом покера, рейкбека, банковских операций и расходов.
+    /// - Returns: Положительное значение = игрок в плюсе (банк должен), отрицательное = игрок в минусе (игрок должен)
+    /// - Note: Формула: (cashOut - buyIn) × ratio + rakeback + deposits - withdrawals + expensesPaid - expensesShare
+    func financialResult(for player: Player) -> Int {
         guard !player.inGame else { return 0 }
 
-        // Если банк что-то должен игроку, то игрок ничего не должен банку
-        let bankOwes = amountOwedByBank(for: player)
-        if bankOwes > 0 { return 0 }
-
+        // Покерный результат с рейкбеком
         let profit = player.chipCashOut - player.chipBuyIn
         let rakebackAdjustment = player.getsRakeback ? player.rakeback : 0
         let profitInCash = (profit * session.chipsToCashRatio) + rakebackAdjustment
+
+        // Банковские операции
         let (deposited, withdrawn) = contributions(for: player)
         let netContribution = deposited - withdrawn
 
-        // Игрок должен = abs(убыток в деньгах с учетом рейкбека) - уже внесённое
-        // Если игрок проиграл 50₽, получил 10₽ рейкбека и внёс 30₽ → должен 10₽
-        // Если игрок проиграл 50₽ и внёс 100₽ → должен 0₽ (переплата учтена в amountOwedByBank)
-        let playerOwes = -profitInCash - netContribution
-        return max(playerOwes, 0)
+        // Расходы: если игрок заплатил больше своей доли, ему должны вернуть разницу
+        let expensePaid = session.expenses
+            .filter { $0.payer?.id == player.id }
+            .reduce(0) { $0 + $1.amount }
+
+        let expenseShare = session.expenses
+            .flatMap { $0.distributions }
+            .filter { $0.player.id == player.id }
+            .reduce(0) { $0 + $1.amount }
+
+        let expenseAdjustment = expensePaid - expenseShare
+
+        // Финальный результат
+        return profitInCash + netContribution + expenseAdjustment
     }
 
-    /// Игроки, которые должны банку
+    /// Игроки, которые должны банку (отрицательный финансовый результат)
     var playersOwingBank: [Player] {
         session.players
-            .filter { amountOwedToBank(for: $0) > 0 }
+            .filter { financialResult(for: $0) < 0 }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
-    /// Общая сумма, которую банк должен всем игрокам (выигравшие + переплатившие)
-    var totalOwedByBank: Int {
-        session.players.reduce(0) { $0 + amountOwedByBank(for: $1) }
-    }
-
-    /// Вычисляет сумму, которую банк должен игроку.
-    /// Включает выигрыш игрока (profit > 0) И переплаты (deposited > expected debt).
-    func amountOwedByBank(for player: Player) -> Int {
-        guard !player.inGame else { return 0 }
-
-        let profit = player.chipCashOut - player.chipBuyIn  // Может быть положительным или отрицательным
-        let rakebackAdjustment = player.getsRakeback ? player.rakeback : 0
-        let profitInCash = (profit * session.chipsToCashRatio) + rakebackAdjustment
-        let (deposited, withdrawn) = contributions(for: player)
-        let netContribution = deposited - withdrawn
-
-        // Банк должен = профит в деньгах + внесённое игроком - выданное
-        // Если игрок выиграл 100₽ и ничего не внёс → банк должен 100₽
-        // Если игрок выиграл 100₽ и внёс 5₽ → банк должен 105₽ (выигрыш + депозит)
-        // Если игрок проиграл 50₽ но внёс 100₽ → банк должен 50₽ (переплата)
-        // Если игрок проиграл 50₽ и внёс 30₽ → банк должен 0₽ (ещё не расплатился)
-        let bankOwes = profitInCash + netContribution
-        return max(bankOwes, 0)
-    }
-
-    /// Список игроков, кому банк должен деньги (выигравшие + переплатившие)
+    /// Список игроков, кому банк должен деньги (положительный финансовый результат)
     var playersOwedByBank: [Player] {
         session.players
-            .filter { amountOwedByBank(for: $0) > 0 }
+            .filter { financialResult(for: $0) > 0 }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 

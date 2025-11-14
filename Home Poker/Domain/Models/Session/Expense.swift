@@ -17,6 +17,9 @@ final class Expense {
     /// Сумма, оплаченная из рейка (в рублях)
     var paidFromRake: Int
 
+    /// Сумма, оплаченная из банка (в рублях)
+    var paidFromBank: Int
+
     /// Плательщик расхода (опционально)
     /// Если указан - этому игроку должны вернуться деньги при settlement
     @Relationship(deleteRule: .nullify) var payer: Player?
@@ -25,12 +28,13 @@ final class Expense {
     /// Каждый ExpenseDistribution указывает, сколько должен заплатить конкретный игрок
     @Relationship(deleteRule: .cascade) var distributions: [ExpenseDistribution] = []
 
-    init(amount: Int, note: String, createdAt: Date = Date(), payer: Player? = nil, paidFromRake: Int = 0) {
+    init(amount: Int, note: String, createdAt: Date = Date(), payer: Player? = nil, paidFromRake: Int = 0, paidFromBank: Int = 0) {
         self.amount = amount
         self.note = note
         self.createdAt = createdAt
         self.payer = payer
         self.paidFromRake = paidFromRake
+        self.paidFromBank = paidFromBank
     }
 
     /// Общая сумма распределенного расхода
