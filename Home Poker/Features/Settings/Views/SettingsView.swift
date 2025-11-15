@@ -33,7 +33,7 @@ struct SettingsView: View {
                     Label("Импортировать сессию", systemImage: "square.and.arrow.down")
                 }
             } header: {
-                Text("Импорт/Экспорт")
+                Text("Импорт")
             } footer: {
                 Text("Импортируйте сессию из файла .pokersession, полученного от другого пользователя.")
                     .font(.footnote)
