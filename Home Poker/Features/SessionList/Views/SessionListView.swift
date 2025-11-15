@@ -2,12 +2,20 @@ import SwiftUI
 import SwiftData
 
 struct SessionListView: View {
-    
+
     @Environment(\.modelContext) private var context
     @Query private var sessions: [Session]
     @State private var showingNewSession = false
     @AppStorage("sessionListShowDetails") private var showSessionDetails = true
     @State private var sessionToDelete: Session?
+
+    // Import
+    @State private var showImportPicker = false
+    @State private var showImportSuccess = false
+    @State private var showImportError = false
+    @State private var importError: Error?
+    @State private var importedSession: Session?
+    private let transferService: SessionTransferServiceProtocol = SessionTransferService()
     
     var body: some View {
         NavigationStack {
@@ -24,12 +32,23 @@ struct SessionListView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink {
-                        SettingsView()
+                    Menu {
+                        NavigationLink {
+                            SettingsView()
+                        } label: {
+                            Label("Настройки", systemImage: "gearshape")
+                        }
+
+                        Button {
+                            showImportPicker = true
+                        } label: {
+                            Label("Импорт сессии", systemImage: "square.and.arrow.down")
+                        }
                     } label: {
-                        Image(systemName: "gearshape")
+                        Image(systemName: "ellipsis.circle")
                     }
                 }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingNewSession = true
@@ -58,6 +77,25 @@ struct SessionListView: View {
                 if let session = sessionToDelete {
                     Text("Вы уверены, что хотите удалить сессию «\(session.sessionTitle)»? Это действие нельзя отменить.")
                 }
+            }
+            .fileImporter(
+                isPresented: $showImportPicker,
+                allowedContentTypes: [.pokerSession],
+                allowsMultipleSelection: false
+            ) { result in
+                handleImport(result: result)
+            }
+            .alert("Сессия импортирована", isPresented: $showImportSuccess) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                if let session = importedSession {
+                    Text("Сессия «\(session.sessionTitle)» успешно импортирована")
+                }
+            }
+            .alert("Ошибка импорта", isPresented: $showImportError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(importError?.localizedDescription ?? "Не удалось импортировать сессию")
             }
             .navigationTitle("Сессии")
         }
@@ -158,6 +196,35 @@ private extension SessionListView {
             try repository.deleteSessions(sessions)
         } catch {
             assertionFailure("Failed to delete sessions: \\(error)")
+        }
+    }
+
+    func handleImport(result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let fileURL = urls.first else { return }
+            importSession(from: fileURL)
+        case .failure(let error):
+            importError = error
+            showImportError = true
+        }
+    }
+
+    func importSession(from url: URL) {
+        do {
+            guard url.startAccessingSecurityScopedResource() else {
+                throw TransferError.fileAccessDenied
+            }
+            defer { url.stopAccessingSecurityScopedResource() }
+
+            let data = try Data(contentsOf: url)
+            let session = try transferService.importSession(from: data, into: context)
+
+            importedSession = session
+            showImportSuccess = true
+        } catch {
+            importError = error
+            showImportError = true
         }
     }
 }

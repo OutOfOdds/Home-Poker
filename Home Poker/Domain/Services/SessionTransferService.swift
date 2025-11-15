@@ -134,7 +134,7 @@ final class SessionTransferService: SessionTransferServiceProtocol {
             // Создаем транзакции фишек
             for txDTO in playerDTO.transactions {
                 let tx = PlayerChipTransaction(
-                    type: PlayerChipTransactionType(rawValue: txDTO.type) ?? .chipBuyIn,
+                    type: TransactionType(rawValue: txDTO.type) ?? .chipBuyIn,
                     amount: txDTO.chipAmount,
                     player: player,
                     timestamp: txDTO.timestamp
@@ -206,17 +206,18 @@ final class SessionTransferService: SessionTransferServiceProtocol {
 
             // Создаем распределения расходов
             for distDTO in expenseDTO.distributions {
-                if let playerOldID = distDTO.playerID,
-                   let playerNewID = idMapping[playerOldID],
-                   let player = session.players.first(where: { $0.id == playerNewID }) {
-
-                    let dist = ExpenseDistribution(
-                        amount: distDTO.amount,
-                        player: player,
-                        expense: expense
-                    )
-                    expense.distributions.append(dist)
+                let playerOldID = distDTO.playerID
+                guard let playerNewID = idMapping[playerOldID],
+                      let player = session.players.first(where: { $0.id == playerNewID }) else {
+                    continue
                 }
+
+                let dist = ExpenseDistribution(
+                    amount: distDTO.amount,
+                    player: player,
+                    expense: expense
+                )
+                expense.distributions.append(dist)
             }
 
             session.expenses.append(expense)
