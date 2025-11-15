@@ -1,5 +1,5 @@
 //
-//  PokerSessionFileType.swift
+//  SessionTransferFileType.swift
 //  Home Poker
 //
 //  Defines custom file type for poker session transfer files
