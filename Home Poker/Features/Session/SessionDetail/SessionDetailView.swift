@@ -9,12 +9,6 @@ struct SessionDetailView: View {
     @State private var selectedInfoTab: Int = 1
     @Environment(SessionDetailViewModel.self) var viewModel
 
-    // Export/Share
-    @State private var sessionTransferFile: SessionTransferFile?
-    @State private var showExportError = false
-    @State private var exportError: Error?
-    private let transferService: SessionTransferServiceProtocol = SessionTransferService()
-
     private let addPlayerTip = AddPlayerTip()
     private let bankTip = SessionBankTip()
     enum SheetType: Identifiable {
@@ -76,26 +70,6 @@ struct SessionDetailView: View {
         // MARK: - Toolbar
 
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                if let transferFile = sessionTransferFile {
-                    ShareLink(
-                        item: transferFile.url,
-                        preview: SharePreview(
-                            session.sessionTitle,
-                            image: Image(systemName: "suit.spade.fill")
-                        )
-                    ) {
-                        Label("Поделиться", systemImage: "square.and.arrow.up")
-                    }
-                } else {
-                    Button {
-                        exportSession()
-                    } label: {
-                        Label("Поделиться", systemImage: "square.and.arrow.up")
-                    }
-                }
-            }
-
             ToolbarItem {
                 NavigationLink {
                     SessionBankDashboardView(session: session)
@@ -132,46 +106,6 @@ struct SessionDetailView: View {
                 SessionBankTip.hasAddedFirstPlayer = true
             }
         }
-        .alert("Ошибка экспорта", isPresented: $showExportError) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(exportError?.localizedDescription ?? "Не удалось экспортировать сессию")
-        }
-    }
-
-    // MARK: - Export Methods
-
-    private func exportSession() {
-        do {
-            let data = try transferService.exportSession(session)
-            let filename = generateFilename(for: session)
-            let url = try saveToTemporaryFile(data: data, filename: filename)
-            sessionTransferFile = SessionTransferFile(url: url, filename: filename)
-        } catch {
-            exportError = error
-            showExportError = true
-        }
-    }
-
-    private func generateFilename(for session: Session) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let dateString = dateFormatter.string(from: session.startTime)
-
-        let sanitizedTitle = session.sessionTitle
-            .replacingOccurrences(of: " ", with: "_")
-            .replacingOccurrences(of: "/", with: "-")
-            .replacingOccurrences(of: "\\", with: "-")
-            .replacingOccurrences(of: ":", with: "-")
-
-        return "\(sanitizedTitle)_\(dateString).pokersession"
-    }
-
-    private func saveToTemporaryFile(data: Data, filename: String) throws -> URL {
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(filename)
-        try data.write(to: fileURL)
-        return fileURL
     }
 
     // MARK: - Sheet Content
@@ -191,15 +125,6 @@ struct SessionDetailView: View {
             RakeAndTipsSheet(session: session)
         }
     }
-}
-
-// MARK: - Supporting Types
-
-/// Структура для хранения информации об экспортированном файле сессии
-struct SessionTransferFile: Identifiable {
-    let id = UUID()
-    let url: URL
-    let filename: String
 }
 
 // MARK: - Preview

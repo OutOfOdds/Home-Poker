@@ -9,12 +9,11 @@ struct SessionListView: View {
     @AppStorage("sessionListShowDetails") private var showSessionDetails = true
     @State private var sessionToDelete: Session?
 
-    // Import
-    @State private var showImportPicker = false
-    @State private var showImportSuccess = false
-    @State private var showImportError = false
-    @State private var importError: Error?
-    @State private var importedSession: Session?
+    // Export
+    @State private var sessionToExport: Session?
+    @State private var sessionTransferFile: SessionTransferFile?
+    @State private var showExportError = false
+    @State private var exportError: Error?
     private let transferService: SessionTransferServiceProtocol = SessionTransferService()
     
     var body: some View {
@@ -32,20 +31,10 @@ struct SessionListView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Menu {
-                        NavigationLink {
-                            SettingsView()
-                        } label: {
-                            Label("Настройки", systemImage: "gearshape")
-                        }
-
-                        Button {
-                            showImportPicker = true
-                        } label: {
-                            Label("Импорт сессии", systemImage: "square.and.arrow.down")
-                        }
+                    NavigationLink {
+                        SettingsView()
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        Image(systemName: "gearshape")
                     }
                 }
 
@@ -78,26 +67,23 @@ struct SessionListView: View {
                     Text("Вы уверены, что хотите удалить сессию «\(session.sessionTitle)»? Это действие нельзя отменить.")
                 }
             }
-            .fileImporter(
-                isPresented: $showImportPicker,
-                allowedContentTypes: [.pokerSession],
-                allowsMultipleSelection: false
-            ) { result in
-                handleImport(result: result)
-            }
-            .alert("Сессия импортирована", isPresented: $showImportSuccess) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                if let session = importedSession {
-                    Text("Сессия «\(session.sessionTitle)» успешно импортирована")
+            .navigationTitle("Сессии")
+            .sheet(item: $sessionTransferFile) { transferFile in
+                if let session = sessionToExport {
+                    ShareLink(
+                        item: transferFile.url,
+                        preview: SharePreview(
+                            session.sessionTitle,
+                            image: Image(systemName: "suit.spade.fill")
+                        )
+                    )
                 }
             }
-            .alert("Ошибка импорта", isPresented: $showImportError) {
+            .alert("Ошибка экспорта", isPresented: $showExportError) {
                 Button("OK", role: .cancel) { }
             } message: {
-                Text(importError?.localizedDescription ?? "Не удалось импортировать сессию")
+                Text(exportError?.localizedDescription ?? "Не удалось экспортировать сессию")
             }
-            .navigationTitle("Сессии")
         }
 
     }
@@ -109,6 +95,14 @@ struct SessionListView: View {
                     SessionDetailView(session: session)
                 } label: {
                     sessionRow(session)
+                }
+                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                    Button {
+                        exportSession(session)
+                    } label: {
+                        Label("Поделиться", systemImage: "square.and.arrow.up")
+                    }
+                    .tint(.blue)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
@@ -189,6 +183,40 @@ struct SessionListView: View {
 }
 
 private extension SessionListView {
+    func exportSession(_ session: Session) {
+        sessionToExport = session
+        do {
+            let data = try transferService.exportSession(session)
+            let filename = generateFilename(for: session)
+            let url = try saveToTemporaryFile(data: data, filename: filename)
+            sessionTransferFile = SessionTransferFile(url: url, filename: filename)
+        } catch {
+            exportError = error
+            showExportError = true
+        }
+    }
+
+    func generateFilename(for session: Session) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateString = dateFormatter.string(from: session.startTime)
+
+        let sanitizedTitle = session.sessionTitle
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: "\\", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+
+        return "\(sanitizedTitle)_\(dateString).pokersession"
+    }
+
+    func saveToTemporaryFile(data: Data, filename: String) throws -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileURL = tempDir.appendingPathComponent(filename)
+        try data.write(to: fileURL)
+        return fileURL
+    }
+
     func deleteSessions(_ sessions: [Session]) {
         guard !sessions.isEmpty else { return }
         let repository = SwiftDataSessionsRepository(context: context)
@@ -198,35 +226,15 @@ private extension SessionListView {
             assertionFailure("Failed to delete sessions: \\(error)")
         }
     }
+}
 
-    func handleImport(result: Result<[URL], Error>) {
-        switch result {
-        case .success(let urls):
-            guard let fileURL = urls.first else { return }
-            importSession(from: fileURL)
-        case .failure(let error):
-            importError = error
-            showImportError = true
-        }
-    }
+// MARK: - Supporting Types
 
-    func importSession(from url: URL) {
-        do {
-            guard url.startAccessingSecurityScopedResource() else {
-                throw TransferError.fileAccessDenied
-            }
-            defer { url.stopAccessingSecurityScopedResource() }
-
-            let data = try Data(contentsOf: url)
-            let session = try transferService.importSession(from: data, into: context)
-
-            importedSession = session
-            showImportSuccess = true
-        } catch {
-            importError = error
-            showImportError = true
-        }
-    }
+/// Структура для хранения информации об экспортированном файле сессии
+struct SessionTransferFile: Identifiable {
+    let id = UUID()
+    let url: URL
+    let filename: String
 }
 
 #Preview {
