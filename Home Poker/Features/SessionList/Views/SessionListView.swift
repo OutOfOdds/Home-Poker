@@ -11,7 +11,7 @@ struct SessionListView: View {
 
     // Export
     @State private var sessionToExport: Session?
-    @State private var sessionTransferFile: SessionTransferFile?
+    @State private var exportedFileURL: URL?
     @State private var showExportError = false
     @State private var exportError: Error?
     private let transferService: SessionTransferServiceProtocol = SessionTransferService()
@@ -68,15 +68,12 @@ struct SessionListView: View {
                 }
             }
             .navigationTitle("Сессии")
-            .sheet(item: $sessionTransferFile) { transferFile in
-                if let session = sessionToExport {
-                    ShareLink(
-                        item: transferFile.url,
-                        preview: SharePreview(
-                            session.sessionTitle,
-                            image: Image(systemName: "suit.spade.fill")
-                        )
-                    )
+            .sheet(isPresented: .constant(exportedFileURL != nil)) {
+                if let url = exportedFileURL {
+                    ActivityViewController(activityItems: [url]) {
+                        exportedFileURL = nil
+                        sessionToExport = nil
+                    }
                 }
             }
             .alert("Ошибка экспорта", isPresented: $showExportError) {
@@ -189,7 +186,7 @@ private extension SessionListView {
             let data = try transferService.exportSession(session)
             let filename = generateFilename(for: session)
             let url = try saveToTemporaryFile(data: data, filename: filename)
-            sessionTransferFile = SessionTransferFile(url: url, filename: filename)
+            exportedFileURL = url
         } catch {
             exportError = error
             showExportError = true
@@ -198,7 +195,7 @@ private extension SessionListView {
 
     func generateFilename(for session: Session) -> String {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
         let dateString = dateFormatter.string(from: session.startTime)
 
         let sanitizedTitle = session.sessionTitle
@@ -230,11 +227,27 @@ private extension SessionListView {
 
 // MARK: - Supporting Types
 
-/// Структура для хранения информации об экспортированном файле сессии
-struct SessionTransferFile: Identifiable {
-    let id = UUID()
-    let url: URL
-    let filename: String
+/// UIKit Activity View Controller обертка для SwiftUI
+struct ActivityViewController: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    let onDismiss: () -> Void
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: nil
+        )
+
+        controller.completionWithItemsHandler = { _, _, _, _ in
+            onDismiss()
+        }
+
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
+        // No updates needed
+    }
 }
 
 #Preview {
