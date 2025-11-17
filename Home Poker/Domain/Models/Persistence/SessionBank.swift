@@ -96,46 +96,34 @@ extension SessionBank {
                 }
             }
 
-        // Организационные withdrawal (player == nil) нужно распределить между вкладчиками
+        // Организационные withdrawal (player == nil) - расходы, покрытые из резервов
+        // Эти расходы НЕ должны вычитаться из contribution вкладчика,
+        // т.к. они компенсируются из резервов (рейка/чаевых)
+        // НО они физически были оплачены из кассы, поэтому учитываем их,
+        // а потом компенсируем через coveredExpensesShare
         if personal.deposited > 0 {
             let organizationalWithdrawals = totalOrganizationalWithdrawals
-            if organizationalWithdrawals > 0 {
+
+            // Сумма организационных расходов, покрытых из резервов
+            let expensesCoveredFromReserves = session.expenses
+                .reduce(0) { $0 + min($1.paidFromBank, $1.paidFromRake) }
+            let tipsCoveredFromReserves = min(session.tipsPaidFromBank, reservedForTips)
+            let totalCoveredFromReserves = expensesCoveredFromReserves + tipsCoveredFromReserves
+
+            // Организационные расходы, НЕ покрытые резервами (реальные траты из банка)
+            let uncoveredOrgWithdrawals = max(organizationalWithdrawals - totalCoveredFromReserves, 0)
+
+            if uncoveredOrgWithdrawals > 0 {
                 let totalDeposits = totalDeposited
                 if totalDeposits > 0 {
                     let playerShare = Double(personal.deposited) / Double(totalDeposits)
-                    let playerOrgWithdrawal = Int(Double(organizationalWithdrawals) * playerShare)
+                    let playerOrgWithdrawal = Int(Double(uncoveredOrgWithdrawals) * playerShare)
                     return (personal.deposited, personal.withdrawn + playerOrgWithdrawal)
                 }
             }
         }
 
         return personal
-    }
-
-    /// Вычисляет долю игрока в организационных расходах, покрытых из резервов
-    /// Эти расходы были физически оплачены из кассы, но виртуально покрываются резервами
-    private func coveredExpensesShare(for player: Player, personalDeposited: Int) -> Int {
-        // Расходы, покрытые из рейка
-        let expensesCoveredFromReserves = session.expenses
-            .reduce(0) { $0 + min($1.paidFromBank, $1.paidFromRake) }
-
-        // Чаевые, покрытые из резерва чаевых
-        let tipsCoveredFromReserves = min(session.tipsPaidFromBank, reservedForTips)
-
-        let totalCoveredFromReserves = expensesCoveredFromReserves + tipsCoveredFromReserves
-
-        // Если есть покрытые расходы и игрок является вкладчиком
-        if totalCoveredFromReserves > 0 && personalDeposited > 0 {
-            let totalDeposits = totalDeposited
-            if totalDeposits > 0 {
-                // Рассчитываем долю игрока в общих депозитах
-                let playerShare = Double(personalDeposited) / Double(totalDeposits)
-                // Возвращаем пропорциональную долю покрытых расходов
-                return Int(Double(totalCoveredFromReserves) * playerShare)
-            }
-        }
-
-        return 0
     }
 
     /// Вычисляет финансовый результат игрока с учетом покера, рейкбека, банковских операций и расходов.
@@ -165,13 +153,9 @@ extension SessionBank {
 
         let expenseAdjustment = expensePaid - expenseShare
 
-        // Организационные расходы, покрытые из резервов
-        // Эти расходы были физически оплачены из кассы вкладчика,
-        // но виртуально покрываются из резервов - нужно вернуть вкладчику
-        let coveredExpenses = coveredExpensesShare(for: player, personalDeposited: deposited)
-
         // Финальный результат
-        return profitInCash + netContribution + expenseAdjustment + coveredExpenses
+        // Организационные расходы, покрытые из резервов, уже учтены в contributions
+        return profitInCash + netContribution + expenseAdjustment
     }
 
     /// Игроки, которые должны банку (отрицательный финансовый результат)
