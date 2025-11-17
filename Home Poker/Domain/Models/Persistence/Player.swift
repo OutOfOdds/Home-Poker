@@ -24,7 +24,7 @@ final class Player {
 
     /// Вычисляет финансовые показатели игрока за один проход по транзакциям.
     /// - Returns: Кортеж с buy-in (закупка + докупки) и cash-out (выводы).
-    private func calculateFinancials() -> (buyIn: Int, cashOut: Int) {
+    private func calculateChips() -> (buyIn: Int, cashOut: Int) {
         transactions.reduce((buyIn: 0, cashOut: 0)) { result, transaction in
             switch transaction.type {
             case .chipBuyIn, .chipAddOn:
@@ -37,24 +37,24 @@ final class Player {
 
     /// Суммарная закупка игрока (buy-in + все add-on).
     var chipBuyIn: Int {
-        calculateFinancials().buyIn
+        calculateChips().buyIn
     }
 
     /// Суммарная сумма выводов игрока.
     var chipCashOut: Int {
-        calculateFinancials().cashOut
+        calculateChips().cashOut
     }
 
     /// Итоговая прибыль (или убыток) игрока.
     var chipProfit: Int {
-        let fin = calculateFinancials()
+        let fin = calculateChips()
         return fin.cashOut - fin.buyIn
     }
 
     /// Текущий баланс игрока в игре (если inGame = true).
     var balance: Int {
         guard inGame else { return 0 }
-        let fin = calculateFinancials()
+        let fin = calculateChips()
         return fin.buyIn - fin.cashOut
     }
 

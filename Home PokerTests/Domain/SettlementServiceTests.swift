@@ -1363,7 +1363,7 @@ struct SettlementServiceTests {
         print("Зарезервировано (чаевые): \(bank.reservedForTips.asCurrency())")
         print("Всего зарезервировано: \(bank.totalReserved.asCurrency())")
         print("Расходы из рейка: \(bank.totalExpensesPaidFromRake.asCurrency())")
-        print("Организационный сбор: \(bank.organizationalFee.asCurrency())")
+        print("Доступный рейк: \(bank.availableRakeForExpenses.asCurrency())")
 
         // Проверяем баланс кассы
         #expect(bank.totalDeposited == 275_000, "Депозиты = 275,000₽ (от Вовы Зелика)")
@@ -1383,8 +1383,8 @@ struct SettlementServiceTests {
         print("Распределенный рейкбек: \(distributedRakeback.asCurrency())")
         #expect(distributedRakeback == 243_000, "Распределено рейкбека: 243,000₽")
 
-        // Организационный сбор должен быть 0 (весь рейк ушел на расходы и рейкбек)
-        #expect(bank.organizationalFee == 0, "Организационный сбор = 0₽ (весь рейк распределён)")
+        // Доступный рейк должен быть 0 (весь рейк ушел на расходы и рейкбек)
+        #expect(bank.availableRakeForExpenses == 0, "Доступный рейк = 0₽ (весь рейк распределён)")
 
         // ПРОВЕРКА SETTLEMENT АЛГОРИТМА
         // =============================

@@ -26,7 +26,7 @@ struct SessionBankTransactionSheet: View {
 
     private var expenses: [Expense] {
         session.expenses
-            .filter { $0.amount > $0.paidFromBank }  // Только неоплаченные/частично оплаченные
+            .filter { $0.paidFromBank + $0.paidFromRake < $0.amount }  // Только неоплаченные/частично оплаченные
             .sorted { $0.createdAt > $1.createdAt }
     }
 
@@ -44,11 +44,23 @@ struct SessionBankTransactionSheet: View {
         session.bank
     }
 
+    private var hasAvailableRakeForExpenses: Bool {
+        guard let bank = session.bank else { return false }
+        // Показываем опцию только если есть доступный рейк И есть неоплаченные расходы
+        return bank.availableRakeForExpenses > 0 && !expenses.isEmpty
+    }
+
+    private var hasUnpaidTips: Bool {
+        guard let bank = session.bank else { return false }
+        let unpaidTips = bank.reservedForTips - session.tipsPaidFromBank
+        return unpaidTips > 0
+    }
+
     private var isFormValid: Bool {
         guard let amount, amount > 0 else { return false }
 
-        // Проверка наличия средств в банке
-        if let bank, amount > bank.netBalance {
+        // Проверка наличия средств в банке ТОЛЬКО для выдачи денег
+        if mode == .withdrawal, let bank, amount > bank.netBalance {
             return false
         }
 
@@ -82,8 +94,16 @@ struct SessionBankTransactionSheet: View {
                     Section("Цель выдачи") {
                         Picker("Тип", selection: $withdrawalPurpose) {
                             Text("Игроку").tag(WithdrawalPurpose.toPlayer)
-                            Text("Оплата расхода").tag(WithdrawalPurpose.forExpense)
-                            Text("Чаевые дилеру").tag(WithdrawalPurpose.forTips)
+
+                            // Показываем только если есть доступный рейк для покрытия расходов
+                            if hasAvailableRakeForExpenses {
+                                Text("Оплата расхода").tag(WithdrawalPurpose.forExpense)
+                            }
+
+                            // Показываем только если есть неоплаченные чаевые
+                            if hasUnpaidTips {
+                                Text("Чаевые дилеру").tag(WithdrawalPurpose.forTips)
+                            }
                         }
                         .pickerStyle(.segmented)
                     }
@@ -175,6 +195,12 @@ struct SessionBankTransactionSheet: View {
             if selectedExpenseID == nil {
                 selectedExpenseID = expenses.first?.id
             }
+
+            // Сбрасываем выбранную цель withdrawal, если она стала недоступной
+            if mode == .withdrawal {
+                resetWithdrawalPurposeIfNeeded()
+            }
+
             updateSuggestedAmountIfNeeded(force: true)
         }
         .onChange(of: withdrawalPurpose) { _, _ in
@@ -316,6 +342,22 @@ struct SessionBankTransactionSheet: View {
         }
     }
 
+    private func resetWithdrawalPurposeIfNeeded() {
+        // Если выбранная цель withdrawal стала недоступной, сбрасываем на .toPlayer
+        switch withdrawalPurpose {
+        case .forExpense:
+            if !hasAvailableRakeForExpenses {
+                withdrawalPurpose = .toPlayer
+            }
+        case .forTips:
+            if !hasUnpaidTips {
+                withdrawalPurpose = .toPlayer
+            }
+        case .toPlayer:
+            break  // Всегда доступно
+        }
+    }
+
     private func updateSuggestedAmountIfNeeded(force: Bool) {
         // Обновляем сумму если:
         // - force = true (при первом открытии)
@@ -342,7 +384,11 @@ struct SessionBankTransactionSheet: View {
                     amount = expenseRemainingAmount(expense)
                 }
             case .forTips:
-                amount = nil  // Пользователь сам введет сумму чаевых
+                // Автозаполняем суммой зарезервированных чаевых минус уже выплаченные
+                let tipsReserved = bank.reservedForTips
+                let tipsPaid = session.tipsPaidFromBank
+                let tipsRemaining = max(tipsReserved - tipsPaid, 0)
+                amount = tipsRemaining > 0 ? tipsRemaining : nil
             }
         }
 

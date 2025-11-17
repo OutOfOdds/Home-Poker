@@ -148,15 +148,15 @@ struct RakeReservesDetailView: View {
                             .frame(height: 1)
                     }
 
-                    // Организационный сбор = рейк минус распределенный рейкбек минус оплаченные расходы
-                    let organizationalFee = bank.organizationalFee
-                    if organizationalFee > 0 {
+                    // Доступный рейк = рейк минус распределенный рейкбек минус оплаченные расходы
+                    let availableRake = bank.availableRakeForExpenses
+                    if availableRake > 0 {
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Организационный сбор")
+                            Text("Доступно")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            Text(organizationalFee.asCurrency())
+                            Text(availableRake.asCurrency())
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(.blue)
                                 .monospaced()
