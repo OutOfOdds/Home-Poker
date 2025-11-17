@@ -43,9 +43,11 @@ final class Expense {
     }
 
     /// Проверка, полностью ли распределен расход
-    /// Расход считается полностью распределенным, если сумма distributions равна amount
+    /// Расход считается полностью распределенным, если:
+    /// - Сумма distributions (доли игроков) + paidFromRake (покрыто из рейка) равна amount
+    /// Это учитывает случаи, когда расход полностью или частично оплачен из рейка
     var isFullyDistributed: Bool {
-        totalDistributed == amount
+        totalDistributed + paidFromRake == amount
     }
 }
 
