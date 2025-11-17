@@ -163,16 +163,20 @@ struct ExpensesDetailView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
 
-                    if expense.isFullyDistributed {
+                    if expense.isFullyPaid {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
                             .foregroundStyle(.green)
+                    } else if expense.isFullyDistributed {
+                        Image(systemName: "checkmark.circle")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
                     } else {
                         Image(systemName: "exclamationmark.circle.fill")
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
-                    
+
                     Text(expense.note.isEmpty ? "Расход" : expense.note)
                         .font(.body)
                 }
@@ -183,14 +187,24 @@ struct ExpensesDetailView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if expense.paidFromRake > 0 {
+                if expense.paidFromBank > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "banknote.fill")
                             .font(.caption2)
-                        Text("Оплачено из рейка: \(expense.paidFromRake.asCurrency())")
+                        Text("Оплачено из кассы: \(expense.paidFromBank.asCurrency())")
                     }
                     .font(.caption)
                     .foregroundStyle(.green)
+                }
+
+                if expense.paidFromRake > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "dollarsign.circle.fill")
+                            .font(.caption2)
+                        Text("Взято на организаторов: \(expense.paidFromRake.asCurrency())")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.orange)
                 }
 
                 Text(expense.createdAt, style: .date)

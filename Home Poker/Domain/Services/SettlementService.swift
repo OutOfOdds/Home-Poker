@@ -128,73 +128,49 @@ struct SettlementService: SettlementProtocol {
             playerNetContributions[player.id] = netContribution
         }
 
-        let balancesByPlayerId = Dictionary(uniqueKeysWithValues: balances.map { ($0.player.id, $0) })
-
         // ============================================================
-        // ШАГ 4: СБОР НАЧАЛЬНЫХ ПОБЕДИТЕЛЕЙ И ДЕПОЗИТОВ
+        // ШАГ 3.5: ПРИМЕНЕНИЕ БАНКОВСКИХ ОПЕРАЦИЙ К netCash
         // ============================================================
-        // Победители: игроки с netCash > 0 (должны получить деньги)
-        // Депозиты: игроки с netContribution > 0 (внесли деньги в банк)
-        //
-        // НА ЭТОМ ЭТАПЕ мы собираем НАЧАЛЬНЫЕ суммы, но НЕ формируем окончательных creditors/debtors!
-        var initialWinners: [(player: Player, amount: Int)] = balances
-            .filter { $0.netCash > 0 }
-            .map { ($0.player, $0.netCash) }
-            .sorted { $0.amount > $1.amount } // по убыванию
-
-        var playerDeposits: [(player: Player, netDeposit: Int)] = []
-        for player in session.players {
-            let netContribution = playerNetContributions[player.id] ?? 0
-            if netContribution > 0 {
-                playerDeposits.append((player: player, netDeposit: netContribution))
-            }
+        // Добавляем netContribution к netCash, чтобы учесть банковские операции
+        // Это делает расчет идентичным financialResult
+        for i in balances.indices {
+            let netContribution = playerNetContributions[balances[i].player.id] ?? 0
+            balances[i].netCash += netContribution
         }
-        playerDeposits.sort { $0.netDeposit > $1.netDeposit } // по убыванию
 
         // ============================================================
-        // ШАГ 5: РАСПРЕДЕЛЕНИЕ ДЕПОЗИТОВ + ОТСЛЕЖИВАНИЕ СУММ
+        // ШАГ 4-5 (УПРОЩЕННЫЙ): РАСПРЕДЕЛЕНИЕ БАЛАНСА БАНКА
         // ============================================================
-        // Применяем жадный алгоритм: депозиты победителям через банк.
-        // ВАЖНО: запоминаем ФАКТИЧЕСКИЕ суммы переведённые через банк!
-        //
-        // amountReceivedFromBank[playerId] = сколько игрок ПОЛУЧИЛ из банка
-        // amountSentViaBank[playerId] = сколько денег игрока УШЛО через банк победителям
+        // Простая логика: берем физический баланс банка и распределяем победителям
+        // Не важно кто вносил деньги — банк это общий пул денег
+
         var bankTransfers: [BankTransfer] = []
         var amountReceivedFromBank: [UUID: Int] = [:]
-        var amountSentViaBank: [UUID: Int] = [:]
 
-        var depositIndex = 0
-        var winnerIndex = 0
+        // Если есть деньги в банке — распределяем победителям
+        if let bank = session.bank, bank.netBalance > 0 {
+            var remainingInBank = bank.netBalance
 
-        while depositIndex < playerDeposits.count && winnerIndex < initialWinners.count {
-            let depositor = playerDeposits[depositIndex].player
-            var depositAmount = playerDeposits[depositIndex].netDeposit
+            // Сортируем победителей по убыванию выигрыша
+            let winners = balances
+                .filter { $0.netCash > 0 }
+                .sorted { $0.netCash > $1.netCash }
 
-            let winner = initialWinners[winnerIndex].player
-            var winnerAmount = initialWinners[winnerIndex].amount
+            for var winner in winners {
+                if remainingInBank == 0 { break }
 
-            let transferAmount = min(depositAmount, winnerAmount)
+                // Платим победителю из банка (минимум из его выигрыша или остатка в банке)
+                let paymentAmount = min(winner.netCash, remainingInBank)
 
-            if transferAmount > 0 {
-                // Создаём перевод из банка победителю
-                bankTransfers.append(BankTransfer(to: winner, amount: transferAmount))
+                if paymentAmount > 0 {
+                    bankTransfers.append(BankTransfer(to: winner.player, amount: paymentAmount))
+                    amountReceivedFromBank[winner.player.id, default: 0] += paymentAmount
 
-                // ЗАПОМИНАЕМ: сколько winner получил из банка
-                amountReceivedFromBank[winner.id, default: 0] += transferAmount
-
-                // ЗАПОМИНАЕМ: сколько денег depositor'а ушло победителям через банк
-                amountSentViaBank[depositor.id, default: 0] += transferAmount
+                    // Уменьшаем его требование (он уже получил из банка)
+                    winner.netCash -= paymentAmount
+                    remainingInBank -= paymentAmount
+                }
             }
-
-            depositAmount -= transferAmount
-            winnerAmount -= transferAmount
-
-            // Обновляем остатки
-            playerDeposits[depositIndex].netDeposit = depositAmount
-            initialWinners[winnerIndex].amount = winnerAmount
-
-            if depositAmount == 0 { depositIndex += 1 }
-            if winnerAmount == 0 { winnerIndex += 1 }
         }
 
         // ============================================================
@@ -220,50 +196,17 @@ struct SettlementService: SettlementProtocol {
         // ============================================================
         // ШАГ 7: ФОРМИРОВАНИЕ ОКОНЧАТЕЛЬНЫХ DEBTORS
         // ============================================================
-        // adjustedDebt = abs(netCash) - amountSentViaBank
-        //
-        // Логика: Если игрок проиграл 40₽ и его 20₽ депозита уже ушли победителям,
-        // то в прямых переводах он должен отдать только 20₽ (остаток).
-        //
-        // Примеры:
-        // - Евгений проиграл 50₽, внёс 70₽ → 50₽ ушли победителям, 20₽ переплата → adjustedDebt = 0₽
-        // - Жанна проиграла 40₽, внесла 20₽ → 20₽ ушли победителям → adjustedDebt = 20₽
-        // - Игорь проиграл 80₽, внёс 50₽ → 50₽ ушли победителям → adjustedDebt = 30₽
-        // - Дмитрий проиграл 20₽, не вносил → adjustedDebt = 20₽
+        // Должники: игроки с netCash < 0 (должны заплатить)
+        // Просто берем их долг как есть — депозиты уже учтены в netCash
         var debtors = balances
             .compactMap { balance -> (Player, Int)? in
                 guard balance.netCash < 0 else { return nil }
-                let sent = amountSentViaBank[balance.player.id] ?? 0
-                let adjustedDebt = abs(balance.netCash) - sent
-                return adjustedDebt > 0 ? (balance.player, adjustedDebt) : nil
+                return (balance.player, abs(balance.netCash))
             }
             .sorted { $0.1 > $1.1 } // по убыванию
 
         // ============================================================
-        // ШАГ 8: ОБРАБОТКА ПЕРЕПЛАТ
-        // ============================================================
-        // Если игрок внёс больше своего оригинального долга (до рейкбека),
-        // возвращаем переплату из банка.
-        //
-        // Пример:
-        // - Евгений проиграл 50₽, внёс 70₽ → переплата 20₽ → банк возвращает 20₽
-        for player in session.players {
-            let netContribution = playerNetContributions[player.id] ?? 0
-            guard netContribution > 0,
-                  let balance = balancesByPlayerId[player.id] else { continue }
-
-            let overpayment = calculateOverpayment(
-                for: player,
-                balance: balance,
-                deposited: netContribution
-            )
-            if overpayment > 0 {
-                bankTransfers.append(BankTransfer(to: player, amount: overpayment))
-            }
-        }
-
-        // ============================================================
-        // ШАГ 9: ПРЯМЫЕ ПЕРЕВОДЫ PLAYER-TO-PLAYER
+        // ШАГ 8: ПРЯМЫЕ ПЕРЕВОДЫ PLAYER-TO-PLAYER
         // ============================================================
         // Для оставшихся сумм (после распределения через банк) применяем
         // жадный алгоритм прямых переводов между игроками.

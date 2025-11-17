@@ -56,13 +56,9 @@ struct ExpenseDistributionView: View {
     }
 
     private var isDistributionInvalid: Bool {
-        if totalDistributed == 0 {
-            return true
-        }
-        if remaining != 0 {
-            return true
-        }
-        return false
+        // Валидно если весь расход распределен (remaining == 0)
+        // Допускается totalDistributed == 0 (весь расход на организаторов)
+        return remaining != 0
     }
 
     private var availableRake: Int {

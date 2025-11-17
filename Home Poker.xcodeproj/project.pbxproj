@@ -21,16 +21,6 @@
 		6BCB94732E8ED0BF007212D5 /* Home Poker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Home Poker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		6B5984522EC88F61005E61AD /* Exceptions for "Home Poker" folder in "Home Poker" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Home-Poker-Info.plist",
-			);
-			target = 6BCB94722E8ED0BF007212D5 /* Home Poker */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6B3A0C4F2EBB747C000FD68C /* Home PokerTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -39,9 +29,6 @@
 		};
 		6B74D0512EA8E74100A85B0E /* Home Poker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				6B5984522EC88F61005E61AD /* Exceptions for "Home Poker" folder in "Home Poker" target */,
-			);
 			path = "Home Poker";
 			sourceTree = "<group>";
 		};

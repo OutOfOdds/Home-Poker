@@ -168,6 +168,9 @@ struct SessionService: SessionServiceProtocol {
         // Обновление связанных сущностей
         if let expense = linkedExpense, type == .expensePayment {
             expense.paidFromBank += amount
+            // Автоматически устанавливаем ответственность на организаторов
+            // Пользователь может изменить распределение позже через ExpenseDistributionView
+            expense.paidFromRake += amount
         } else if type == .tipPayment {
             session.tipsPaidFromBank += amount
         }
@@ -178,6 +181,16 @@ struct SessionService: SessionServiceProtocol {
         guard let bank = session.bank else {
             throw SessionServiceError.bankUnavailable
         }
+
+        // Синхронизация связанных сущностей при удалении
+        if let expense = transaction.linkedExpense, transaction.type == .expensePayment {
+            expense.paidFromBank -= transaction.amount
+            // Также уменьшаем paidFromRake для сохранения синхронизации
+            expense.paidFromRake = max(0, expense.paidFromRake - transaction.amount)
+        } else if transaction.type == .tipPayment {
+            session.tipsPaidFromBank = max(0, session.tipsPaidFromBank - transaction.amount)
+        }
+
         bank.transactions.removeAll { $0.id == transaction.id }
         transaction.modelContext?.delete(transaction)
     }

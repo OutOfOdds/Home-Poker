@@ -185,7 +185,6 @@ struct BankSummaryDetailView: View {
             Image(systemName: "arrow.down.circle.fill")
                 .foregroundStyle(.green)
         }
-        .disabled(sortedPlayers.isEmpty)
     }
 
     private var withdrawalButton: some View {
@@ -195,7 +194,6 @@ struct BankSummaryDetailView: View {
             Image(systemName: "arrow.up.circle.fill")
                 .foregroundStyle(.orange)
         }
-        .disabled(sortedPlayers.isEmpty)
     }
 }
 

@@ -17,7 +17,7 @@ final class SessionBankTransaction {
     init(
         amount: Int,
         type: SessionBankTransactionType,
-        player: Player?,
+        player: Player? = nil,
         bank: SessionBank,
         note: String = "",
         createdAt: Date = Date()

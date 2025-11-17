@@ -49,5 +49,13 @@ final class Expense {
     var isFullyDistributed: Bool {
         totalDistributed + paidFromRake == amount
     }
+
+    /// Проверка, полностью ли оплачен расход
+    /// Расход считается полностью оплаченным (закрытым), если:
+    /// - paidFromBank покрывает весь amount (физическая оплата)
+    /// paidFromRake не учитывается, т.к. это распределение ответственности, а не оплата
+    var isFullyPaid: Bool {
+        paidFromBank >= amount
+    }
 }
 

@@ -84,8 +84,9 @@ extension SessionBank {
     }
 
     func contributions(for player: Player) -> (deposited: Int, withdrawn: Int) {
-        // Личные транзакции игрока
-        let personal = transactions
+        // Возвращаем ТОЛЬКО личные транзакции игрока
+        // Организационные расходы (player: nil) оплачивает организатор из оргсбора
+        transactions
             .filter { $0.player?.id == player.id }
             .reduce((deposited: 0, withdrawn: 0)) { result, entry in
                 switch entry.type {
@@ -95,35 +96,6 @@ extension SessionBank {
                     return (result.deposited, result.withdrawn + entry.amount)
                 }
             }
-
-        // Организационные withdrawal (player == nil) - расходы, покрытые из резервов
-        // Эти расходы НЕ должны вычитаться из contribution вкладчика,
-        // т.к. они компенсируются из резервов (рейка/чаевых)
-        // НО они физически были оплачены из кассы, поэтому учитываем их,
-        // а потом компенсируем через coveredExpensesShare
-        if personal.deposited > 0 {
-            let organizationalWithdrawals = totalOrganizationalWithdrawals
-
-            // Сумма организационных расходов, покрытых из резервов
-            let expensesCoveredFromReserves = session.expenses
-                .reduce(0) { $0 + min($1.paidFromBank, $1.paidFromRake) }
-            let tipsCoveredFromReserves = min(session.tipsPaidFromBank, reservedForTips)
-            let totalCoveredFromReserves = expensesCoveredFromReserves + tipsCoveredFromReserves
-
-            // Организационные расходы, НЕ покрытые резервами (реальные траты из банка)
-            let uncoveredOrgWithdrawals = max(organizationalWithdrawals - totalCoveredFromReserves, 0)
-
-            if uncoveredOrgWithdrawals > 0 {
-                let totalDeposits = totalDeposited
-                if totalDeposits > 0 {
-                    let playerShare = Double(personal.deposited) / Double(totalDeposits)
-                    let playerOrgWithdrawal = Int(Double(uncoveredOrgWithdrawals) * playerShare)
-                    return (personal.deposited, personal.withdrawn + playerOrgWithdrawal)
-                }
-            }
-        }
-
-        return personal
     }
 
     /// Вычисляет финансовый результат игрока с учетом покера, рейкбека, банковских операций и расходов.
@@ -186,10 +158,5 @@ extension SessionBank {
         return max(reservedForRake - distributed - totalExpensesPaidFromRake, 0)
     }
 
-    /// Организационный сбор (то что остается дому после рейкбека и оплаты расходов)
-    var organizationalFee: Int {
-        let distributed = session.players.filter { $0.getsRakeback }.reduce(0) { $0 + $1.rakeback }
-        return max(reservedForRake - distributed - totalExpensesPaidFromRake, 0)
-    }
 
 }
