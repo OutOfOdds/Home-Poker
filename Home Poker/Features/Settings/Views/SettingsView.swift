@@ -15,6 +15,8 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+        
+
             Section {
                 Toggle("Показывать подробности", isOn: $showSessionListDetails)
             }
@@ -26,6 +28,17 @@ struct SettingsView: View {
                     .font(.footnote)
             }
 
+            Section {
+                NavigationLink {
+                    KnowledgeBaseView()
+                } label: {
+                    Label("База знаний", systemImage: "book.fill")
+                }
+            } header: {
+                Text("Помощь")
+            }
+            
+            
             Section {
                 Button {
                     showImportPicker = true

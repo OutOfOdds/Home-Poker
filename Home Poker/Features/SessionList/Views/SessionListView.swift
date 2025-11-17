@@ -119,9 +119,11 @@ struct SessionListView: View {
     
     private func sessionRow(_ session: Session) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(session.sessionTitle)
-                .font(.title3)
-                .bold()
+            if !session.sessionTitle.isEmpty {
+                Text(session.sessionTitle)
+                    .font(.title3)
+                    .bold()
+            }
             if showSessionDetails {
                 HStack(spacing: 8) {
                     Image(systemName: "calendar")
@@ -159,14 +161,6 @@ struct SessionListView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-        }
-    }
-    
-    private func statusIcon(for status: SessionStatus) -> String {
-        switch status {
-        case .active: return "bolt.fill"
-        case .awaitingForSettlements: return "hourglass"
-        case .finished: return "checkmark.seal.fill"
         }
     }
     
