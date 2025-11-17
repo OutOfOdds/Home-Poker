@@ -84,7 +84,8 @@ extension SessionBank {
     }
 
     func contributions(for player: Player) -> (deposited: Int, withdrawn: Int) {
-        transactions
+        // Личные транзакции игрока
+        let personal = transactions
             .filter { $0.player?.id == player.id }
             .reduce((deposited: 0, withdrawn: 0)) { result, entry in
                 switch entry.type {
@@ -94,11 +95,52 @@ extension SessionBank {
                     return (result.deposited, result.withdrawn + entry.amount)
                 }
             }
+
+        // Организационные withdrawal (player == nil) нужно распределить между вкладчиками
+        if personal.deposited > 0 {
+            let organizationalWithdrawals = totalOrganizationalWithdrawals
+            if organizationalWithdrawals > 0 {
+                let totalDeposits = totalDeposited
+                if totalDeposits > 0 {
+                    let playerShare = Double(personal.deposited) / Double(totalDeposits)
+                    let playerOrgWithdrawal = Int(Double(organizationalWithdrawals) * playerShare)
+                    return (personal.deposited, personal.withdrawn + playerOrgWithdrawal)
+                }
+            }
+        }
+
+        return personal
+    }
+
+    /// Вычисляет долю игрока в организационных расходах, покрытых из резервов
+    /// Эти расходы были физически оплачены из кассы, но виртуально покрываются резервами
+    private func coveredExpensesShare(for player: Player, personalDeposited: Int) -> Int {
+        // Расходы, покрытые из рейка
+        let expensesCoveredFromReserves = session.expenses
+            .reduce(0) { $0 + min($1.paidFromBank, $1.paidFromRake) }
+
+        // Чаевые, покрытые из резерва чаевых
+        let tipsCoveredFromReserves = min(session.tipsPaidFromBank, reservedForTips)
+
+        let totalCoveredFromReserves = expensesCoveredFromReserves + tipsCoveredFromReserves
+
+        // Если есть покрытые расходы и игрок является вкладчиком
+        if totalCoveredFromReserves > 0 && personalDeposited > 0 {
+            let totalDeposits = totalDeposited
+            if totalDeposits > 0 {
+                // Рассчитываем долю игрока в общих депозитах
+                let playerShare = Double(personalDeposited) / Double(totalDeposits)
+                // Возвращаем пропорциональную долю покрытых расходов
+                return Int(Double(totalCoveredFromReserves) * playerShare)
+            }
+        }
+
+        return 0
     }
 
     /// Вычисляет финансовый результат игрока с учетом покера, рейкбека, банковских операций и расходов.
     /// - Returns: Положительное значение = игрок в плюсе (банк должен), отрицательное = игрок в минусе (игрок должен)
-    /// - Note: Формула: (cashOut - buyIn) × ratio + rakeback + deposits - withdrawals + expensesPaid - expensesShare
+    /// - Note: Формула: (cashOut - buyIn) × ratio + rakeback + deposits - withdrawals + expensesPaid - expensesShare + coveredExpenses
     func financialResult(for player: Player) -> Int {
         guard !player.inGame else { return 0 }
 
@@ -123,8 +165,13 @@ extension SessionBank {
 
         let expenseAdjustment = expensePaid - expenseShare
 
+        // Организационные расходы, покрытые из резервов
+        // Эти расходы были физически оплачены из кассы вкладчика,
+        // но виртуально покрываются из резервов - нужно вернуть вкладчику
+        let coveredExpenses = coveredExpensesShare(for: player, personalDeposited: deposited)
+
         // Финальный результат
-        return profitInCash + netContribution + expenseAdjustment
+        return profitInCash + netContribution + expenseAdjustment + coveredExpenses
     }
 
     /// Игроки, которые должны банку (отрицательный финансовый результат)
