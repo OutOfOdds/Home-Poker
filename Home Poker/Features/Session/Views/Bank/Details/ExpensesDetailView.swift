@@ -246,12 +246,12 @@ struct ExpensesDetailView: View {
 }
 
 #Preview("All Use Cases") {
-    let container = try! ModelContainer(
+    @Previewable @State var container = try! ModelContainer(
         for: Session.self, Player.self, Expense.self, ExpenseDistribution.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
 
-    let session = Session(startTime: Date(), location: "Test", gameType: .NLHoldem, status: .active, sessionTitle: "Test Session")
+    let session = Session(startTime: Date(), location: "Test", gameType: .NLHoldem, sessionType: .cash, status: .active, sessionTitle: "Test Session")
     let player1 = Player(name: "Игрок 1")
     let player2 = Player(name: "Игрок 2")
 

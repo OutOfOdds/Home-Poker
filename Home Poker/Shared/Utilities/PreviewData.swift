@@ -13,6 +13,7 @@ enum PreviewData {
             startTime: Date().addingTimeInterval(-3 * 60 * 60), // 3 часа назад
             location: "Покер Клуб Москва",
             gameType: .NLHoldem,
+            sessionType: .cash,
             status: .active,
             sessionTitle: "Вечерняя игра"
         )
@@ -59,6 +60,7 @@ enum PreviewData {
             startTime: Date().addingTimeInterval(-6 * 60 * 60), // 6 часов назад
             location: "Royal Flush Club",
             gameType: .PLO4,
+            sessionType: .cash,
             status: .finished,
             sessionTitle: "Дневная игра"
         )
@@ -87,6 +89,7 @@ enum PreviewData {
             startTime: Date().addingTimeInterval(-4 * 60 * 60),
             location: "Покерный дом",
             gameType: .NLHoldem,
+            sessionType: .cash,
             status: .awaitingForSettlements,
             sessionTitle: "Кайфушки у Грикушки"
         )
@@ -151,6 +154,7 @@ enum PreviewData {
             startTime: Date().addingTimeInterval(-5 * 60 * 60),
             location: "Тестовый клуб",
             gameType: .NLHoldem,
+            sessionType: .cash,
             status: .awaitingForSettlements,
             sessionTitle: "Эталонная сессия"
         )
@@ -411,6 +415,7 @@ enum PreviewData {
             startTime: Date().addingTimeInterval(-4 * 60 * 60),
             location: "Покер Клуб Премиум",
             gameType: .NLHoldem,
+            sessionType: .cash,
             status: .awaitingForSettlements,
             sessionTitle: "Вечерняя игра с банком"
         )
@@ -524,6 +529,7 @@ enum PreviewData {
             startTime: Date(),
             location: "",
             gameType: .NLHoldem,
+            sessionType: .cash,
             status: .active,
             sessionTitle: "Новая игра"
         )

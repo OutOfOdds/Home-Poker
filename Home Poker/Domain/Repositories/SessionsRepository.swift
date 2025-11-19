@@ -28,14 +28,26 @@ final class SwiftDataSessionsRepository: SessionsRepository {
             startTime: input.startTime,
             location: input.location.trimmed,
             gameType: input.gameType,
+            sessionType: input.sessionType,
             status: .active,
             sessionTitle: input.title.trimmed
         )
 
-        if let ratio = input.cashToChipsRatio, ratio > 0 {
-            session.chipsToCashRatio = ratio
+        // Кеш-игра поля
+        if input.sessionType == .cash {
+            if let ratio = input.cashToChipsRatio, ratio > 0 {
+                session.chipsToCashRatio = ratio
+            }
         }
 
+        // Турнир поля
+        if input.sessionType == .tournament {
+            session.entryFee = input.entryFee
+            session.startingStack = input.startingStack
+            session.allowReEntry = input.allowReEntry ?? false
+        }
+
+        // Блайнды (общие)
         if let sb = input.smallBlind, sb > 0 {
             session.smallBlind = sb
         }
@@ -62,7 +74,16 @@ struct NewSessionInput {
     var title: String
     var location: String
     var gameType: GameType
+    var sessionType: SessionType
+
+    // Кеш-игра поля
     var cashToChipsRatio: Int?
+
+    // Турнир поля
+    var entryFee: Int?
+    var startingStack: Int?
+    var allowReEntry: Bool?
+
     var smallBlind: Int?
     var bigBlind: Int?
     var ante: Int?

@@ -3,7 +3,7 @@ import SwiftData
 import Observation
 import TipKit
 
-struct SessionDetailView: View {
+struct CashSessionDetailView: View {
     @Bindable var session: Session
     @State private var activeSheet: SheetType?
     @State private var selectedInfoTab: Int = 1
@@ -17,7 +17,7 @@ struct SessionDetailView: View {
         case editSessionInfo
         case editBlinds
         case editRake
-        
+
         var id: Self { self }
     }
     private var navigationTitle: String {
@@ -25,10 +25,10 @@ struct SessionDetailView: View {
     }
 
     // MARK: - Body
-    
+
     var body: some View {
         @Bindable var bindableViewModel = viewModel
-        
+
         List {
             Section {
                 Picker("", selection: $selectedInfoTab) {
@@ -40,15 +40,15 @@ struct SessionDetailView: View {
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
             .listSectionSpacing(5)
-            
-            
+
+
             // Условное отображение секций
             if selectedInfoTab == 0 {
                 SessionInfoSummary(session: session) {
                     activeSheet = .editSessionInfo
                 }
             } else {
-                ChipsStatsSection(
+                ChipsStatsView(
                     session: session,
                     showingRakeSheet: Binding(
                         get: { activeSheet == .editRake },
@@ -56,7 +56,7 @@ struct SessionDetailView: View {
                     )
                 )
             }
-            
+
             if !session.players.isEmpty {
                 PlayerList(session: session)
             }
@@ -66,7 +66,7 @@ struct SessionDetailView: View {
         .sheet(item: $activeSheet) { sheetType in
             sheetContent(for: sheetType)
         }
-        
+
         // MARK: - Toolbar
 
         .toolbar {
@@ -109,7 +109,7 @@ struct SessionDetailView: View {
     }
 
     // MARK: - Sheet Content
-    
+
     @ViewBuilder
     private func sheetContent(for type: SheetType) -> some View {
         switch type {
@@ -129,9 +129,9 @@ struct SessionDetailView: View {
 
 // MARK: - Preview
 
-private func sessionDetailPreview(session: Session) -> some View {
+private func cashSessionDetailPreview(session: Session) -> some View {
     NavigationStack {
-        SessionDetailView(session: session)
+        CashSessionDetailView(session: session)
             .environment(SessionDetailViewModel())
     }
     .modelContainer(
@@ -146,13 +146,13 @@ private func sessionDetailPreview(session: Session) -> some View {
 }
 
 #Preview("Активная сессия") {
-    sessionDetailPreview(session: PreviewData.activeSession())
+    cashSessionDetailPreview(session: PreviewData.activeSession())
 }
 
 #Preview("Пустая сессия с TipKit") {
-    sessionDetailPreview(session: PreviewData.emptySession())
+    cashSessionDetailPreview(session: PreviewData.emptySession())
 }
 
 #Preview("Завершенная сессия") {
-    sessionDetailPreview(session: PreviewData.finishedSession())
+    cashSessionDetailPreview(session: PreviewData.finishedSession())
 }

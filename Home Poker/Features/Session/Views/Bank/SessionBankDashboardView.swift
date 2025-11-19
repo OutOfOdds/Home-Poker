@@ -34,7 +34,6 @@ struct SessionBankDashboardView: View {
             if let bank = session.bank {
                 ScrollView {
                     VStack(spacing: 16) {
-                        // 3 больших навигационных линка
                         navigationLinksSection(bank: bank)
                     }
                     .padding()
@@ -58,12 +57,12 @@ struct SessionBankDashboardView: View {
         }
     }
 
-    // MARK: - Components
+    // MARK: - Компоненты
 
     @ViewBuilder
     private func navigationLinksSection(bank: SessionBank) -> some View {
         VStack(spacing: 12) {
-            // 2. Финансовый результат (фиолетовый) - игроки в плюсе/минусе
+            // 1. Финансовый результат (фиолетовый) - игроки в плюсе/минусе
             NavigationLink {
                 FinancialResultsDetailView(session: session)
             } label: {
@@ -72,12 +71,12 @@ struct SessionBankDashboardView: View {
             .buttonStyle(.plain)
             
             
-            // 1. Итоги банка (зелёный) - баланс, транзакции
+            // 2. Касса - баланс, транзакции
             NavigationLink {
-                BankSummaryDetailView(session: session)
+                CashBoxDetailView(session: session)
                     .environment(viewModel)
             } label: {
-                bankSummaryNavigationCard(bank: bank)
+                cashBoxNavigationCard(bank: bank)
             }
             .buttonStyle(.plain)
 
@@ -105,7 +104,7 @@ struct SessionBankDashboardView: View {
 
     // MARK: - Navigation Cards
 
-    private func bankSummaryNavigationCard(bank: SessionBank) -> some View {
+    private func cashBoxNavigationCard(bank: SessionBank) -> some View {
         DashboardCard(backgroundColor: Color.green.opacity(0.1)) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
@@ -362,7 +361,7 @@ struct SessionBankDashboardView: View {
     private func sheetContent(for sheet: BankSheet) -> some View {
         switch sheet {
         case .settlement:
-            SettlementView(viewModel: settlementVM)
+            SettlementView(viewModel: settlementVM, session: session)
         case .deposit:
             NavigationStack {
                 SessionBankTransactionSheet(session: session, mode: .deposit)

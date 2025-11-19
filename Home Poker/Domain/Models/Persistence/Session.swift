@@ -8,11 +8,19 @@ final class Session {
     var sessionTitle: String
     var location: String
     var gameType: GameType
+    var sessionType: SessionType
     var chipsToCashRatio: Int = 1
     var status: SessionStatus
     var smallBlind: Int = 0
     var bigBlind: Int = 0
     var ante: Int = 0
+
+    // Турнирные поля (используются только если sessionType == .tournament)
+    var entryFee: Int? = nil
+    var startingStack: Int? = nil
+    var prizePoolTotal: Int? = nil
+    var allowReEntry: Bool = false
+    var reEntryDeadlineLevel: Int? = nil
 
     /// Рейк собранный с игры (в фишках)
     /// Это информационное поле, реальные деньги учитываются в SessionBank
@@ -39,11 +47,17 @@ final class Session {
     /// Опциональный - создаётся при необходимости
     @Relationship(deleteRule: .cascade) var bank: SessionBank?
 
+    /// Список переводов для отслеживания выполнения расчетов
+    /// При удалении сессии все переводы удаляются автоматически (cascade)
+    @Relationship(deleteRule: .cascade) var settlementTransfers: [SettlementTransfer] = []
 
-    init(startTime: Date, location: String, gameType: GameType, status: SessionStatus, sessionTitle: String) {
+
+    
+    init(startTime: Date, location: String, gameType: GameType, sessionType: SessionType, status: SessionStatus, sessionTitle: String) {
         self.startTime = startTime
         self.location = location
         self.gameType = gameType
+        self.sessionType = sessionType
         self.status = status
         self.sessionTitle = sessionTitle
     }
@@ -107,4 +121,26 @@ enum SessionStatus: String, Codable {
     case active = "Активная"
     case awaitingForSettlements = "Ожидание расчетов"
     case finished = "Завершенная"
+}
+
+enum SessionType: String, Codable {
+    case cash = "Кеш-игра"
+    case tournament = "Турнир"
+}
+
+// MARK: - Session Extensions
+extension Session {
+    /// Проверка типа сессии
+    var isCash: Bool { sessionType == .cash }
+    var isTournament: Bool { sessionType == .tournament }
+
+    /// Computed properties с учетом типа
+    var effectiveChipsRatio: Int {
+        switch sessionType {
+        case .cash:
+            return chipsToCashRatio
+        case .tournament:
+            return 0 // турнирные фишки не конвертируются
+        }
+    }
 }

@@ -9,7 +9,7 @@
 import SwiftUI
 import SwiftData
 
-struct BankSummaryDetailView: View {
+struct CashBoxDetailView: View {
     @Bindable var session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
     @State private var showingDepositSheet = false
@@ -200,7 +200,7 @@ struct BankSummaryDetailView: View {
 
 #Preview("Standard Bank") {
     NavigationStack {
-        BankSummaryDetailView(session: PreviewData.sessionWithBank())
+        CashBoxDetailView(session: PreviewData.sessionWithBank())
             .environment(SessionDetailViewModel())
     }
     .modelContainer(
@@ -211,7 +211,7 @@ struct BankSummaryDetailView: View {
 
 #Preview("Full Bank") {
     NavigationStack {
-        BankSummaryDetailView(session: PreviewData.sessionWithFullBank())
+        CashBoxDetailView(session: PreviewData.sessionWithFullBank())
             .environment(SessionDetailViewModel())
     }
     .modelContainer(
