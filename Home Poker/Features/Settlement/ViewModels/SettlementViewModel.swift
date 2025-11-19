@@ -6,6 +6,7 @@ final class SettlementViewModel {
     @ObservationIgnored private let service: SettlementProtocol
     var balances: [PlayerBalance]
     var bankTransfers: [BankTransfer]
+    var returnTransfers: [ReturnToBankTransfer]
     var transfers: [TransferProposal]
 
     // Базовый инициализатор (может пригодиться в тестах/превью)
@@ -13,11 +14,13 @@ final class SettlementViewModel {
         service: SettlementProtocol = SettlementService(),
         balances: [PlayerBalance] = [],
         bankTransfers: [BankTransfer] = [],
+        returnTransfers: [ReturnToBankTransfer] = [],
         transfers: [TransferProposal] = []
     ) {
         self.service = service
         self.balances = balances
         self.bankTransfers = bankTransfers
+        self.returnTransfers = returnTransfers
         self.transfers = transfers
     }
 
@@ -33,5 +36,6 @@ final class SettlementViewModel {
         self.balances = result.balances
         self.bankTransfers = result.bankTransfers
         self.transfers = result.playerTransfers
+        self.returnTransfers = result.returnToBankTransfers
     }
 }

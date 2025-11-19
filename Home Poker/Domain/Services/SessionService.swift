@@ -169,8 +169,8 @@ struct SessionService: SessionServiceProtocol {
         if let expense = linkedExpense, type == .expensePayment {
             expense.paidFromBank += amount
             // Автоматически устанавливаем ответственность на организаторов
-            // Пользователь может изменить распределение позже через ExpenseDistributionView
-            expense.paidFromRake += amount
+            // Используем max() чтобы не дублировать если уже установлено вручную
+            expense.paidFromRake = max(expense.paidFromRake, expense.paidFromBank)
         } else if type == .tipPayment {
             session.tipsPaidFromBank += amount
         }
@@ -219,8 +219,10 @@ struct SessionService: SessionServiceProtocol {
         rakeAmount: Int
     ) throws {
         // Валидация: сумма распределения + rakeAmount должна равняться сумме расхода
+        // ИЛИ быть равной 0 (расход полностью на организаторов, без распределения)
         let totalDistributed = distributions.reduce(0) { $0 + $1.1 }
-        guard totalDistributed + rakeAmount == expense.amount else {
+        let total = totalDistributed + rakeAmount
+        guard total == expense.amount || total == 0 else {
             throw SessionServiceError.invalidAmount
         }
 

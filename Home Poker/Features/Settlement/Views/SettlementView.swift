@@ -11,10 +11,10 @@ struct SettlementView: View {
         NavigationStack {
             List {
                 if !viewModel.bankTransfers.isEmpty {
-                    Section("Переводы через банк") {
+                    Section("Выдачи из кассы") {
                         ForEach(Array(viewModel.bankTransfers.enumerated()), id: \.offset) { _, bt in
                             HStack {
-                                Text("Из банка")
+                                Text("Из кассы")
                                     .foregroundStyle(.secondary)
                                 Image(systemName: "arrow.right")
                                     .foregroundStyle(.secondary)
@@ -23,6 +23,29 @@ struct SettlementView: View {
                                 Text(bt.amount.asCurrency())
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.green)
+                            }
+                        }
+                    }
+                }
+
+                if !viewModel.returnTransfers.isEmpty {
+                    Section("Возврат в кассу") {
+                        ForEach(Array(viewModel.returnTransfers.enumerated()), id: \.offset) { _, rt in
+                            HStack {
+                                Text(rt.from.name)
+                                Image(systemName: "arrow.right")
+                                    .foregroundStyle(.secondary)
+                                Text("В кассу")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text(rt.amount.asCurrency())
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.orange)
+                                    Text(rt.expenseNote)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }

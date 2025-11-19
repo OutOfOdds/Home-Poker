@@ -40,7 +40,11 @@ enum MoneyFormatter {
 }
 
 extension Int {
-    func asCurrency(locale: Locale = .current, spacing: MoneyFormatter.Spacing = .condensed) -> String {
-        MoneyFormatter.format(self, locale: locale, spacing: spacing)
+    func asCurrency(locale: Locale = .current, spacing: MoneyFormatter.Spacing = .condensed, showSign: Bool = false) -> String {
+        let formatted = MoneyFormatter.format(self, locale: locale, spacing: spacing)
+        if showSign && self > 0 {
+            return "+\(formatted)"
+        }
+        return formatted
     }
 }

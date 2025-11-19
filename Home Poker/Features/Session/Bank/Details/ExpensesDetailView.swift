@@ -163,17 +163,15 @@ struct ExpensesDetailView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
 
-                    if expense.isFullyPaid {
+                    if expense.isFullyDistributed {
+                        // Зеленый: распределение завершено
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundStyle(.green)
-                    } else if expense.isFullyDistributed {
-                        Image(systemName: "checkmark.circle")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
                     } else {
+                        // Оранжевый: требует распределения
                         Image(systemName: "exclamationmark.circle.fill")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundStyle(.orange)
                     }
 
@@ -183,7 +181,7 @@ struct ExpensesDetailView: View {
 
                 if let payerName = expense.payer?.name {
                     Text("Оплатил: \(payerName)")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
 
@@ -193,7 +191,7 @@ struct ExpensesDetailView: View {
                             .font(.caption2)
                         Text("Оплачено из кассы: \(expense.paidFromBank.asCurrency())")
                     }
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.green)
                 }
 
@@ -203,8 +201,21 @@ struct ExpensesDetailView: View {
                             .font(.caption2)
                         Text("Взято на организаторов: \(expense.paidFromRake.asCurrency())")
                     }
-                    .font(.caption)
-                    .foregroundStyle(.orange)
+                    .font(.caption2)
+                    .foregroundStyle(.blue)
+                }
+
+                // Дополнительные подсказки о статусе
+                if !expense.isFullyDistributed {
+                    // Оранжевый флаг - не распределено
+                    Text("Требует распределения")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                } else if expense.paidFromRake > 0 && expense.paidFromBank == 0 {
+                    // Зеленый флаг, но не оплачено из кассы (взято на организаторов)
+                    Text("Ожидает выдачи из кассы")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
 
                 Text(expense.createdAt, style: .date)
@@ -234,24 +245,49 @@ struct ExpensesDetailView: View {
     }
 }
 
-#Preview("With Expenses") {
-    NavigationStack {
-        ExpensesDetailView(session: PreviewData.sessionWithFullBank())
-            .environment(SessionDetailViewModel())
-    }
-    .modelContainer(
-        for: [Session.self, Player.self, Expense.self, ExpenseDistribution.self],
-        inMemory: true
+#Preview("All Use Cases") {
+    let container = try! ModelContainer(
+        for: Session.self, Player.self, Expense.self, ExpenseDistribution.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-}
 
-#Preview("No Expenses") {
-    NavigationStack {
-        ExpensesDetailView(session: PreviewData.sessionWithBank())
+    let session = Session(startTime: Date(), location: "Test", gameType: .NLHoldem, status: .active, sessionTitle: "Test Session")
+    let player1 = Player(name: "Игрок 1")
+    let player2 = Player(name: "Игрок 2")
+
+    session.players = [player1, player2]
+
+    // 1. Не распределен (оранжевый флаг)
+    let expense1 = Expense(amount: 3000, note: "Не распределен", payer: nil, paidFromRake: 0, paidFromBank: 0)
+
+    // 2. Взято на организаторов (зеленый флаг, синий текст)
+    let expense2 = Expense(amount: 2000, note: "Взято на организаторов", payer: nil, paidFromRake: 2000, paidFromBank: 0)
+
+    // 3. Распределен между игроками (зеленый флаг)
+    let expense3 = Expense(amount: 4000, note: "Распределен", payer: nil, paidFromRake: 0, paidFromBank: 0)
+    let dist3_1 = ExpenseDistribution(amount: 2000, player: player1, expense: expense3)
+    let dist3_2 = ExpenseDistribution(amount: 2000, player: player2, expense: expense3)
+    expense3.distributions = [dist3_1, dist3_2]
+
+    // 4. Оплачен из кассы и распределен (зеленый флаг, зеленая иконка)
+    let expense4 = Expense(amount: 5000, note: "Оплачен из кассы", payer: nil, paidFromRake: 0, paidFromBank: 5000)
+    let dist4_1 = ExpenseDistribution(amount: 2500, player: player1, expense: expense4)
+    let dist4_2 = ExpenseDistribution(amount: 2500, player: player2, expense: expense4)
+    expense4.distributions = [dist4_1, dist4_2]
+
+    // 5. С плательщиком (зеленый флаг, показывает плательщика)
+    let expense5 = Expense(amount: 1500, note: "С плательщиком", payer: player1, paidFromRake: 0, paidFromBank: 0)
+    let dist5_1 = ExpenseDistribution(amount: 750, player: player1, expense: expense5)
+    let dist5_2 = ExpenseDistribution(amount: 750, player: player2, expense: expense5)
+    expense5.distributions = [dist5_1, dist5_2]
+
+    session.expenses = [expense1, expense2, expense3, expense4, expense5]
+
+    container.mainContext.insert(session)
+
+    return NavigationStack {
+        ExpensesDetailView(session: session)
             .environment(SessionDetailViewModel())
     }
-    .modelContainer(
-        for: [Session.self, Player.self, Expense.self],
-        inMemory: true
-    )
+    .modelContainer(container)
 }

@@ -144,6 +144,7 @@ struct BankSummaryDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             VStack(alignment: .leading) {
                 HStack {
+                    Image(systemName: "banknote")
                     Image(systemName: transaction.type.systemImage)
                     Text(transaction.type.displayName)
                 }

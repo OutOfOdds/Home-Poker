@@ -108,6 +108,7 @@ struct SettlementService: SettlementProtocol {
             return SettlementResult(
                 balances: balances,
                 bankTransfers: [],
+                returnToBankTransfers: [],
                 playerTransfers: transfers
             )
         }
@@ -146,6 +147,24 @@ struct SettlementService: SettlementProtocol {
 
         var bankTransfers: [BankTransfer] = []
         var amountReceivedFromBank: [UUID: Int] = [:]
+        var returnToBankTransfers: [ReturnToBankTransfer] = []
+
+        // ============================================================
+        // ШАГ 4: СБОР ВОЗВРАТОВ В КАССУ ЗА РАСХОДЫ
+        // ============================================================
+        // Если расход был оплачен из банка (paidFromBank > 0), то игроки,
+        // у которых есть доля в этом расходе, должны вернуть деньги в кассу.
+        for expense in session.expenses where expense.paidFromBank > 0 {
+            for distribution in expense.distributions {
+                returnToBankTransfers.append(
+                    ReturnToBankTransfer(
+                        from: distribution.player,
+                        amount: distribution.amount,
+                        expenseNote: expense.note
+                    )
+                )
+            }
+        }
 
         // Если есть деньги в банке — распределяем победителям
         if let bank = session.bank, bank.netBalance > 0 {
@@ -233,6 +252,7 @@ struct SettlementService: SettlementProtocol {
         return SettlementResult(
             balances: balances,
             bankTransfers: bankTransfers,
+            returnToBankTransfers: returnToBankTransfers,
             playerTransfers: playerTransfers
         )
     }
@@ -329,9 +349,17 @@ struct BankTransfer {
     let amount: Int  // В рублях (cash)
 }
 
+/// Возврат игрока в кассу (для расходов, оплаченных из банка).
+struct ReturnToBankTransfer {
+    let from: Player
+    let amount: Int  // В рублях (cash)
+    let expenseNote: String  // Название расхода для справки
+}
+
 /// Результат работы калькулятора расчётов: балансы игроков, банковские переводы и прямые переводы.
 struct SettlementResult {
     let balances: [PlayerBalance]
     let bankTransfers: [BankTransfer]
+    let returnToBankTransfers: [ReturnToBankTransfer]
     let playerTransfers: [TransferProposal]
 }
