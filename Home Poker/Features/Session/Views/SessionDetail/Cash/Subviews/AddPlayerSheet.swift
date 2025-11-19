@@ -9,11 +9,19 @@ struct AddPlayerSheet: View {
     @State private var buyInAmount: Int? = nil
     @State private var settleWithBank = false
     @State private var bankContributionAmount: Int? = nil
+    @State private var nameError: String? = nil
     
     private var cashRatio: Int {
         max(session.chipsToCashRatio, 1)
     }
-    
+
+    private var isNameTaken: Bool {
+        guard let trimmed = playerName.nonEmptyTrimmed else { return false }
+        return session.players.contains {
+            $0.name.lowercased() == trimmed.lowercased()
+        }
+    }
+
     private func cashAmount(for chips: Int) -> Int {
         chips * cashRatio
     }
@@ -28,8 +36,16 @@ struct AddPlayerSheet: View {
         ) {
             Form {
                 Section("Информация об игроке") {
-                    TextField("Имя игрока", text: $playerName)
-                        .textInputAutocapitalization(.words)
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Имя игрока", text: $playerName)
+                            .textInputAutocapitalization(.words)
+
+                        if let error = nameError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
 
                     TextField("Сумма закупа", value: $buyInAmount, format: .number)
                         .keyboardType(.numberPad)
@@ -60,6 +76,13 @@ struct AddPlayerSheet: View {
                 }
             }
         }
+        .onChange(of: playerName) { _, _ in
+            if isNameTaken {
+                nameError = "Игрок с таким именем уже существует"
+            } else {
+                nameError = nil
+            }
+        }
         .onChange(of: buyInAmount) { _, newValue in
             guard settleWithBank else { return }
             guard let amount = newValue, amount > 0 else {
@@ -73,6 +96,7 @@ struct AddPlayerSheet: View {
     
     private var canSubmit: Bool {
         guard playerName.nonEmptyTrimmed != nil else { return false }
+        guard !isNameTaken else { return false }
         guard let amount = buyInAmount, amount > 0 else { return false }
         if settleWithBank {
             guard let bankAmount = bankContributionAmount, bankAmount > 0 else { return false }

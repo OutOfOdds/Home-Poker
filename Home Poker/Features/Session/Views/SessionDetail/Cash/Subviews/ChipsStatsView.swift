@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct ChipsStatsSection: View {
+struct ChipsStatsView: View {
     @Bindable var session: Session
     @Binding var showingRakeSheet: Bool
     @Environment(SessionDetailViewModel.self) private var viewModel
@@ -197,6 +197,7 @@ struct Line:Shape{
         startTime: Date(),
         location: "High Stakes",
         gameType: .NLHoldem,
+        sessionType: .cash,
         status: .active,
         sessionTitle: "Миллиардные стеки"
     )
@@ -228,16 +229,16 @@ struct Line:Shape{
     return NavigationStack {
         List {
             Section("Есть рейк/чаевые — блок управления") {
-                ChipsStatsSection(session: sessionWithRake, showingRakeSheet: .constant(false))
+                ChipsStatsView(session: sessionWithRake, showingRakeSheet: .constant(false))
             }
             Section("Без рейка/чаевых, все завершили — кнопка распределения") {
-                ChipsStatsSection(session: sessionAwaiting, showingRakeSheet: .constant(false))
+                ChipsStatsView(session: sessionAwaiting, showingRakeSheet: .constant(false))
             }
             Section("С банком") {
-                ChipsStatsSection(session: sessionWithBank, showingRakeSheet: .constant(false))
+                ChipsStatsView(session: sessionWithBank, showingRakeSheet: .constant(false))
             }
             Section("Экстремально большие значения") {
-                ChipsStatsSection(session: huge, showingRakeSheet: .constant(false))
+                ChipsStatsView(session: huge, showingRakeSheet: .constant(false))
             }
         }
         .navigationTitle("Превью статистики банка")

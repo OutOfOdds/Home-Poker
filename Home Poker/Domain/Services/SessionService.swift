@@ -40,12 +40,13 @@ struct SessionService: SessionServiceProtocol {
     func addPlayer(name: String, buyIn: Int, to session: Session) throws {
         let trimmedName = try normalizePlayerName(name)
         try validatePositiveAmount(buyIn)
-        
+
         let player = Player(name: trimmedName, inGame: true)
         let transaction = PlayerChipTransaction(type: .chipBuyIn, amount: buyIn, player: player)
         player.transactions.append(transaction)
         session.players.append(player)
         refreshBankExpectation(for: session)
+        updateSessionStatusIfNeeded(session: session)
     }
     
     // Регистрирует докупку (add-on) для игрока в рамках сессии.
@@ -67,6 +68,7 @@ struct SessionService: SessionServiceProtocol {
         player.transactions.append(transaction)
         player.inGame = false
         refreshBankExpectation(for: session)
+        updateSessionStatusIfNeeded(session: session)
     }
 
     // Возвращает игрока в игру с новой закупкой.
@@ -82,6 +84,7 @@ struct SessionService: SessionServiceProtocol {
         player.transactions.append(transaction)
         player.inGame = true
         refreshBankExpectation(for: session)
+        updateSessionStatusIfNeeded(session: session)
     }
     
     // Удаляет игрока из сессии вместе со всеми связанными транзакциями.
@@ -93,6 +96,7 @@ struct SessionService: SessionServiceProtocol {
         session.players.removeAll { $0.id == player.id }
         player.modelContext?.delete(player)
         refreshBankExpectation(for: session)
+        updateSessionStatusIfNeeded(session: session)
     }
 
     // Удаляет транзакцию игрока и обновляет состояние сессии.
@@ -106,6 +110,7 @@ struct SessionService: SessionServiceProtocol {
         }
         transaction.modelContext?.delete(transaction)
         refreshBankExpectation(for: session)
+        updateSessionStatusIfNeeded(session: session)
     }
     
     // MARK: - Банк сессии
@@ -371,8 +376,39 @@ struct SessionService: SessionServiceProtocol {
             .reduce(0) { partial, player in
                 let chipBalance = max(player.chipBuyIn - player.chipCashOut, 0)
                 let cashBalance = chipBalance * session.chipsToCashRatio
-                return partial + cashBalance    
+                return partial + cashBalance
             }
+    }
+
+    // MARK: - Session Status Management
+
+    /// Автоматически управляет статусом сессии в зависимости от состояния игроков.
+    ///
+    /// **Логика переходов:**
+    /// - `active` → `awaitingForSettlements`: когда все игроки завершили игру
+    /// - `awaitingForSettlements` → `active`: когда хотя бы один игрок вернулся в игру
+    /// - `finished`: не изменяется (ручное завершение сессии)
+    ///
+    /// **Примеры:**
+    /// - Все игроки сделали cash-out → статус автоматически меняется на `awaitingForSettlements`
+    /// - Один игрок вернулся (rebuy) → статус автоматически возвращается в `active`
+    /// - Добавлен новый игрок → если был статус `awaitingForSettlements`, меняется на `active`
+    private func updateSessionStatusIfNeeded(session: Session) {
+        // Не трогаем статус "Завершенная" - это ручное действие пользователя
+        guard session.status != .finished else { return }
+
+        let hasActivePlayers = session.players.contains { $0.inGame }
+        let allPlayersFinished = !session.players.isEmpty &&
+                                session.players.allSatisfy { !$0.inGame }
+
+        // Active → Awaiting: все игроки завершили
+        if allPlayersFinished && session.status == .active {
+            session.status = .awaitingForSettlements
+        }
+        // Awaiting → Active: хотя бы один игрок активен
+        else if hasActivePlayers && session.status == .awaitingForSettlements {
+            session.status = .active
+        }
     }
 }
 

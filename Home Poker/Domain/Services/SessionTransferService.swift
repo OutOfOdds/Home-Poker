@@ -107,6 +107,7 @@ final class SessionTransferService: SessionTransferServiceProtocol {
             startTime: dto.startTime,
             location: dto.location,
             gameType: GameType(rawValue: dto.gameType) ?? .NLHoldem,
+            sessionType: .cash,
             status: SessionStatus(rawValue: dto.status) ?? .active,
             sessionTitle: dto.sessionTitle
         )

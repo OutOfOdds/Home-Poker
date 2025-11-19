@@ -23,6 +23,15 @@ struct Home_PokerApp: App {
                     print(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!)
                 }
         }
-        .modelContainer(for: [Player.self, Session.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self])
+        .modelContainer(for: [
+            Player.self,
+            Session.self,
+            PlayerChipTransaction.self,
+            Expense.self,
+            ExpenseDistribution.self,
+            SessionBank.self,
+            SessionBankTransaction.self,
+            SettlementTransfer.self
+        ])
     }
 }

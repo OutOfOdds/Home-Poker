@@ -5,7 +5,8 @@ struct SessionListView: View {
 
     @Environment(\.modelContext) private var context
     @Query private var sessions: [Session]
-    @State private var showingNewSession = false
+    @State private var showingNewCashSession = false
+    @State private var showingNewTournamentSession = false
     @AppStorage("sessionListShowDetails") private var showSessionDetails = true
     @State private var sessionToDelete: Session?
 
@@ -39,8 +40,18 @@ struct SessionListView: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingNewSession = true
+                    Menu {
+                        Button {
+                            showingNewCashSession = true
+                        } label: {
+                            Label("Кеш-игра", systemImage: "dollarsign.circle")
+                        }
+
+                        Button {
+                            showingNewTournamentSession = true
+                        } label: {
+                            Label("Турнир", systemImage: "trophy")
+                        }
                     } label: {
                         HStack {
                             Image(systemName: "plus")
@@ -49,8 +60,11 @@ struct SessionListView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingNewSession) {
-                NewSessionSheet()
+            .sheet(isPresented: $showingNewCashSession) {
+                NewSessionSheet(sessionType: .cash)
+            }
+            .sheet(isPresented: $showingNewTournamentSession) {
+                NewSessionSheet(sessionType: .tournament)
             }
             .alert("Удалить сессию?", isPresented: .constant(sessionToDelete != nil)) {
                 Button("Отмена", role: .cancel) {
