@@ -53,9 +53,9 @@ enum SessionBankTransactionType: String, Codable, CaseIterable {
     var systemImage: String {
         switch self {
         case .deposit:
-            return "arrow.down.circle"
+            return "arrow.down"
         case .withdrawal:
-            return "arrow.up.circle"
+            return "arrow.up"
         case .expensePayment:
             return "cart"
         case .tipPayment:

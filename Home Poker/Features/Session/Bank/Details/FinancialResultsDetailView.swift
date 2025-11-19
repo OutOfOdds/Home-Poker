@@ -44,6 +44,7 @@ struct FinancialResultsDetailView: View {
         List {
             if bank != nil {
 
+                
                 // Игроки в плюсе
                 if !playersInProfit.isEmpty {
                     playersInProfitSection
@@ -103,58 +104,137 @@ struct FinancialResultsDetailView: View {
     private var playersInProfitSection: some View {
         Section {
             ForEach(playersInProfit, id: \.id) { player in
-                HStack {
-                    Text(player.name)
-                        .font(.body)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(player.name)
+                            .font(.body)
 
-                    Spacer()
+                        Spacer()
 
-                    Text(max(bank?.financialResult(for: player) ?? 0, 0).asCurrency())
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.green)
-                        .monospaced()
+                        Text(max(bank?.financialResult(for: player) ?? 0, 0).asCurrency())
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.green)
+                            .monospaced()
+                    }
+
+                    // Breakdown компонентов
+                    if let bank = bank {
+                        breakdownView(for: player, bank: bank)
+                    }
                 }
                 .padding(.vertical, 4)
             }
         } header: {
             Text("Суммы к получению")
         }
-        
+
         footer: {
             HStack {
+                Text("Итого к получению:")
                 Spacer()
                 Text(totalProfit.asCurrency())
-                    .monospaced()
             }
+            .font(.caption2)
+            .monospaced()
         }
     }
 
     private var playersInLossSection: some View {
         Section {
             ForEach(playersInLoss, id: \.id) { player in
-                HStack {
-                    Text(player.name)
-                        .font(.body)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(player.name)
+                            .font(.body)
 
-                    Spacer()
+                        Spacer()
 
-                    Text(max(-(bank?.financialResult(for: player) ?? 0), 0).asCurrency())
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.red)
-                        .monospaced()
+                        Text(max(-(bank?.financialResult(for: player) ?? 0), 0).asCurrency())
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.red)
+                            .monospaced()
+                        
+                    }
+
+                    // Breakdown компонентов
+                    if let bank = bank {
+                        breakdownView(for: player, bank: bank)
+                    }
                 }
                 .padding(.vertical, 4)
             }
         } header: {
             Text("Суммы к оплате")
         }
-        
+
         footer: {
             HStack {
+                Text("Итого к оплате:")
                 Spacer()
                 Text(totalLoss.asCurrency())
-                    .monospaced()
             }
+            .font(.caption2)
+            .monospaced()
+        }
+    }
+
+    // MARK: - Breakdown View
+
+    @ViewBuilder
+    private func breakdownView(for player: Player, bank: SessionBank) -> some View {
+        VStack(alignment: .trailing) {
+            // Покер (без рейкбека)
+            let profit = player.chipCashOut - player.chipBuyIn
+            let profitInCash = profit * session.chipsToCashRatio
+
+            if profitInCash != 0 {
+                breakdownRow(label: "Покер", amount: profitInCash)
+            }
+
+            // Рейкбек (если есть)
+            let rakebackAdjustment = player.getsRakeback ? player.rakeback : 0
+            if rakebackAdjustment > 0 {
+                breakdownRow(label: "Рейкбек", amount: rakebackAdjustment)
+            }
+
+            // Банк
+            let (deposited, withdrawn) = bank.contributions(for: player)
+            let netContribution = deposited - withdrawn
+
+            if netContribution != 0 {
+                breakdownRow(label: "Банк", amount: netContribution)
+            }
+
+            // Расходы
+            let expensePaid = session.expenses
+                .filter { $0.payer?.id == player.id }
+                .reduce(0) { $0 + $1.amount }
+
+            let expenseShare = session.expenses
+                .flatMap { $0.distributions }
+                .filter { $0.player.id == player.id }
+                .reduce(0) { $0 + $1.amount }
+
+            let expenseAdjustment = expensePaid - expenseShare
+
+            if expenseAdjustment != 0 {
+                breakdownRow(label: "Расходы", amount: expenseAdjustment)
+            }
+        }
+
+    }
+
+    @ViewBuilder
+    private func breakdownRow(label: String, amount: Int) -> some View {
+        HStack {
+            Text(label + ":")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(amount.asCurrency(showSign: true))
+                .font(.caption2)
+                .monospaced()
+                .foregroundStyle(.secondary)
         }
     }
 }

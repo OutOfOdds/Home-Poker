@@ -23,7 +23,7 @@ struct SessionDetailView: View {
     private var navigationTitle: String {
         session.status.rawValue
     }
-    
+
     // MARK: - Body
     
     var body: some View {

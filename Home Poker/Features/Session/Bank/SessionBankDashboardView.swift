@@ -140,6 +140,37 @@ struct SessionBankDashboardView: View {
                     )
                 }
 
+                Divider()
+
+                HStack(spacing: 12) {
+                    Button {
+                        activeSheet = .deposit
+                    } label: {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Принять")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.green)
+                    Spacer()
+                    Button {
+                        activeSheet = .withdrawal
+                    } label: {
+                        HStack {
+                            Image(systemName: "minus.circle.fill")
+                            Text("Выдать")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.orange)
+                }
             }
         }
     }
@@ -248,6 +279,7 @@ struct SessionBankDashboardView: View {
     private func expensesNavigationCard() -> some View {
         let totalExpenses = session.expenses.reduce(0) { $0 + $1.amount }
         let expenseCount = session.expenses.count
+        let needsAttentionCount = session.expenses.filter { !$0.isFullyDistributed }.count
 
         return DashboardCard(backgroundColor: Color.blue.opacity(0.2)) {
             VStack(alignment: .leading, spacing: 12) {
@@ -258,6 +290,11 @@ struct SessionBankDashboardView: View {
                     Text("Расходы")
                         .font(.title3.weight(.semibold))
                     Spacer()
+                    if needsAttentionCount > 0 {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundStyle(.orange)
+                            .font(.title3)
+                    }
                     Image(systemName: "chevron.right")
                         .foregroundStyle(.secondary)
                         .font(.caption)
@@ -277,6 +314,13 @@ struct SessionBankDashboardView: View {
                             value: "\(expenseCount)",
                             color: .secondary
                         )
+                        if needsAttentionCount > 0 {
+                            summaryMetricRow(
+                                label: "Требуют внимания",
+                                value: "\(needsAttentionCount)",
+                                color: .orange
+                            )
+                        }
                     }
                 } else {
                     Text("Нет расходов")
@@ -319,6 +363,16 @@ struct SessionBankDashboardView: View {
         switch sheet {
         case .settlement:
             SettlementView(viewModel: settlementVM)
+        case .deposit:
+            NavigationStack {
+                SessionBankTransactionSheet(session: session, mode: .deposit)
+                    .environment(viewModel)
+            }
+        case .withdrawal:
+            NavigationStack {
+                SessionBankTransactionSheet(session: session, mode: .withdrawal)
+                    .environment(viewModel)
+            }
         }
     }
 }
@@ -327,8 +381,16 @@ struct SessionBankDashboardView: View {
 
 enum BankSheet: Identifiable {
     case settlement
+    case deposit
+    case withdrawal
 
-    var id: Self { self }
+    var id: String {
+        switch self {
+        case .settlement: return "settlement"
+        case .deposit: return "deposit"
+        case .withdrawal: return "withdrawal"
+        }
+    }
 }
 
 // MARK: - Previews

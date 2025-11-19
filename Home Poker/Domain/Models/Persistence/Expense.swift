@@ -57,5 +57,11 @@ final class Expense {
     var isFullyPaid: Bool {
         paidFromBank >= amount
     }
+
+    /// Проверка, требует ли расход распределения
+    /// Возвращает true если расход оплачен из кассы, но еще не распределен между игроками
+    var needsDistribution: Bool {
+        paidFromBank > 0 && !isFullyDistributed
+    }
 }
 

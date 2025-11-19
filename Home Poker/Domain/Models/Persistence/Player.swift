@@ -7,7 +7,6 @@ final class Player {
     var name: String
     var inGame: Bool = true
 
-    // Финансовые операции теперь через транзакции
     @Relationship(deleteRule: .cascade)
     var transactions: [PlayerChipTransaction] = []
 
@@ -51,17 +50,7 @@ final class Player {
         return fin.cashOut - fin.buyIn
     }
 
-    /// Текущий баланс игрока в игре (если inGame = true).
-    var balance: Int {
-        guard inGame else { return 0 }
-        let fin = calculateChips()
-        return fin.buyIn - fin.cashOut
-    }
-
-    /// Прибыль с учётом рейкбека.
-    var profitAfterRakeback: Int { chipProfit - rakeback }
-
-    /// Начальный buy-in игрока (первая транзакция типа .buyIn).
+    /// Начальный buy-in игрока (для того что бы предлагать шаблоны докупки).
     var initialBuyIn: Int {
         transactions.first(where: { $0.type == .chipBuyIn })?.chipAmount ?? 0
     }

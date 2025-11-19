@@ -31,10 +31,12 @@ struct FormSheetView<Content: View>: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Отмена", action: cancelAction)
+                        Button("Отмена",systemImage: "xmark", action: cancelAction)
+                            .tint(.red)
                     }
+
                     ToolbarItem(placement: .confirmationAction) {
-                        Button(confirmTitle, action: confirmTapped)
+                        Button(confirmTitle, systemImage: "checkmark",action: confirmTapped)
                             .disabled(isConfirmDisabled)
                     }
                 }
@@ -45,4 +47,16 @@ struct FormSheetView<Content: View>: View {
         guard !isConfirmDisabled else { return }
         confirmAction()
     }
+}
+
+
+#Preview {
+    FormSheetView(title: "Титул", confirmTitle: "Привет", isConfirmDisabled: false) {
+        //
+    } cancelAction: {
+        //
+    } content: {
+        Text("Привет")
+    }
+
 }

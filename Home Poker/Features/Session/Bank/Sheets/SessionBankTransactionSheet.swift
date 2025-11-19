@@ -8,10 +8,10 @@ struct SessionBankTransactionSheet: View {
     @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
 
-    // Для deposit/withdrawal игроку
+    /// Для deposit/withdrawal игроку
     @State private var selectedPlayerID: UUID?
 
-    // Для withdrawal: выбор цели
+    /// Для withdrawal: выбор цели
     @State private var withdrawalPurpose: WithdrawalPurpose = .toPlayer
     @State private var selectedExpenseID: UUID?
 
@@ -20,42 +20,49 @@ struct SessionBankTransactionSheet: View {
     @State private var amountManuallyEdited = false
     @State private var isUpdatingAmount = false
 
+
+    /// Список игроков отсортированный по имени
     private var players: [Player] {
         session.players.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    /// Список неоплаченных или частично оплаченных расходов
     private var expenses: [Expense] {
         session.expenses
-            .filter { $0.paidFromBank + $0.paidFromRake < $0.amount }  // Только неоплаченные/частично оплаченные
+            .filter { $0.paidFromBank < $0.amount }
             .sorted { $0.createdAt > $1.createdAt }
     }
 
+    /// Выбранный игрок
     private var selectedPlayer: Player? {
         guard let id = selectedPlayerID else { return nil }
         return players.first(where: { $0.id == id })
     }
 
+    /// Выбранный расход
     private var selectedExpense: Expense? {
         guard let id = selectedExpenseID else { return nil }
         return expenses.first(where: { $0.id == id })
     }
 
+    /// Банк сессии
     private var bank: SessionBank? {
         session.bank
     }
 
-    private var hasAvailableRakeForExpenses: Bool {
-        guard let bank = session.bank else { return false }
-        // Показываем опцию только если есть доступный рейк И есть неоплаченные расходы
-        return bank.availableRakeForExpenses > 0 && !expenses.isEmpty
+    /// Проверка наличия неоплаченных расходов
+    private var hasUnpaidExpenses: Bool {
+        !expenses.isEmpty
     }
 
+    /// Проверка наличия неоплаченных чаевых
     private var hasUnpaidTips: Bool {
         guard let bank = session.bank else { return false }
         let unpaidTips = bank.reservedForTips - session.tipsPaidFromBank
         return unpaidTips > 0
     }
 
+    /// Валидация формы
     private var isFormValid: Bool {
         guard let amount, amount > 0 else { return false }
 
@@ -80,6 +87,8 @@ struct SessionBankTransactionSheet: View {
         }
     }
 
+    // MARK: - Основной интерфейс
+
     var body: some View {
         FormSheetView(
             title: mode.title,
@@ -89,130 +98,246 @@ struct SessionBankTransactionSheet: View {
             cancelAction: dismiss.callAsFunction
         ) {
             Form {
-                // Для withdrawal добавляем выбор цели
                 if mode == .withdrawal {
-                    Section("Цель выдачи") {
-                        Picker("Тип", selection: $withdrawalPurpose) {
-                            Text("Игроку").tag(WithdrawalPurpose.toPlayer)
-
-                            // Показываем только если есть доступный рейк для покрытия расходов
-                            if hasAvailableRakeForExpenses {
-                                Text("Оплата расхода").tag(WithdrawalPurpose.forExpense)
-                            }
-
-                            // Показываем только если есть неоплаченные чаевые
-                            if hasUnpaidTips {
-                                Text("Чаевые дилеру").tag(WithdrawalPurpose.forTips)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                    }
+                    withdrawalPurposeSection
                 }
 
-                // Детали операции
-                Section {
-                    if mode == .deposit || withdrawalPurpose == .toPlayer {
-                        // Выбор игрока
-                        Picker("Игрок", selection: playerBinding) {
-                            ForEach(players, id: \.id) { player in
-                                Text(player.name).tag(Optional(player.id))
-                            }
-                        }
-                    } else if withdrawalPurpose == .forExpense {
-                        // Выбор расхода
-                        if expenses.isEmpty {
-                            Text("Нет неоплаченных расходов")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Picker("Расход", selection: expenseBinding) {
-                                ForEach(expenses, id: \.id) { expense in
-                                    HStack {
-                                        Text(expense.note.isEmpty ? "Расход" : expense.note)
-                                        Spacer()
-                                        Text(expenseRemainingAmount(expense).asCurrency())
-                                    }
-                                    .tag(Optional(expense.id))
-                                }
-                            }
-
-                            // Показать информацию о выбранном расходе
-                            if let expense = selectedExpense {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text("Сумма расхода")
-                                        Spacer()
-                                        Text(expense.amount.asCurrency())
-                                            .monospaced()
-                                    }
-                                    HStack {
-                                        Text("Уже оплачено")
-                                        Spacer()
-                                        Text(expense.paidFromBank.asCurrency())
-                                            .monospaced()
-                                            .foregroundStyle(.green)
-                                    }
-                                    HStack {
-                                        Text("Осталось")
-                                        Spacer()
-                                        Text(expenseRemainingAmount(expense).asCurrency())
-                                            .monospaced()
-                                            .foregroundStyle(.orange)
-                                    }
-                                }
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            }
-                        }
-                    } else if withdrawalPurpose == .forTips {
-                        // Для чаевых просто показываем информацию
-                        Text("Выдача денег на чаевые дилеру")
-                            .foregroundStyle(.secondary)
-                            .font(.callout)
-                    }
-
-                    // Сумма
-                    TextField("Сумма", value: $amount, format: .number)
-                        .keyboardType(.numberPad)
-                        .onChange(of: amount) { _, _ in
-                            guard !isUpdatingAmount else { return }
-                            amountManuallyEdited = true
-                        }
-
-                    // Примечание
-                    TextField("Заметка (опционально)", text: $note, axis: .vertical)
-                } footer: {
-                    footerContent
-                }
+                transactionDetailsSection
             }
         }
         .onAppear {
-            viewModel.ensureBank(for: session)
-            if selectedPlayerID == nil {
-                selectedPlayerID = mode == .deposit
-                ? session.bank?.manager?.id ?? players.first?.id
-                : players.first?.id
-            }
-            if selectedExpenseID == nil {
-                selectedExpenseID = expenses.first?.id
-            }
-
-            // Сбрасываем выбранную цель withdrawal, если она стала недоступной
-            if mode == .withdrawal {
-                resetWithdrawalPurposeIfNeeded()
-            }
-
-            updateSuggestedAmountIfNeeded(force: true)
+            initializeForm()
         }
         .onChange(of: withdrawalPurpose) { _, _ in
-            updateNoteForPurpose()
-            updateSuggestedAmountIfNeeded(force: true)
+            handleWithdrawalPurposeChange()
         }
         .onChange(of: selectedExpenseID) { _, _ in
-            updateNoteForPurpose()
-            updateSuggestedAmountIfNeeded(force: true)
+            handleExpenseSelectionChange()
         }
     }
 
+    // MARK: - Компоненты интерфейса
+
+    /// Секция выбора цели выдачи денег
+    @ViewBuilder
+    private var withdrawalPurposeSection: some View {
+        Section("Цель выдачи") {
+            Picker("Тип", selection: $withdrawalPurpose) {
+                Text("Игроку").tag(WithdrawalPurpose.toPlayer)
+
+                if hasUnpaidExpenses {
+                    Text("Оплата расхода").tag(WithdrawalPurpose.forExpense)
+                }
+
+                if hasUnpaidTips {
+                    Text("Чаевые дилеру").tag(WithdrawalPurpose.forTips)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    /// Основная секция с деталями транзакции
+    @ViewBuilder
+    private var transactionDetailsSection: some View {
+        Section {
+            targetSelectionView
+            amountField
+            noteField
+        } footer: {
+            footerContent
+        }
+    }
+
+    /// Выбор цели транзакции (игрок/расход/чаевые)
+    @ViewBuilder
+    private var targetSelectionView: some View {
+        if mode == .deposit || withdrawalPurpose == .toPlayer {
+            playerPickerView
+        } else if withdrawalPurpose == .forExpense {
+            expensePickerView
+        } else if withdrawalPurpose == .forTips {
+            tipsInfoView
+        }
+    }
+
+    /// Выбор игрока с информацией
+    @ViewBuilder
+    private var playerPickerView: some View {
+        Picker("Игрок", selection: playerBinding) {
+            ForEach(players, id: \.id) { player in
+                Text(player.name).tag(Optional(player.id))
+            }
+        }
+    }
+
+    /// Выбор расхода с информацией
+    @ViewBuilder
+    private var expensePickerView: some View {
+        if expenses.isEmpty {
+            Text("Нет неоплаченных расходов")
+                .foregroundStyle(.secondary)
+        } else {
+            Picker("Расход", selection: expenseBinding) {
+                ForEach(expenses, id: \.id) { expense in
+                    HStack {
+                        Text(expense.note.isEmpty ? "Расход" : expense.note)
+                        Spacer()
+                        Text(expenseRemainingAmount(expense).asCurrency())
+                    }
+                    .tag(Optional(expense.id))
+                }
+            }
+
+            if let expense = selectedExpense {
+                expenseDetailsView(expense)
+            }
+        }
+    }
+
+    /// Детальная информация о выбранном расходе
+    @ViewBuilder
+    private func expenseDetailsView(_ expense: Expense) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Сумма расхода")
+                Spacer()
+                Text(expense.amount.asCurrency())
+                    .monospaced()
+            }
+            HStack {
+                Text("Уже оплачено")
+                Spacer()
+                Text(expense.paidFromBank.asCurrency())
+                    .monospaced()
+                    .foregroundStyle(.green)
+            }
+            HStack {
+                Text("Осталось")
+                Spacer()
+                Text(expenseRemainingAmount(expense).asCurrency())
+                    .monospaced()
+                    .foregroundStyle(.orange)
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
+    /// Информация о чаевых
+    @ViewBuilder
+    private var tipsInfoView: some View {
+        Text("Выдача денег на чаевые дилеру")
+            .foregroundStyle(.secondary)
+            .font(.callout)
+    }
+
+    /// Поле ввода суммы
+    @ViewBuilder
+    private var amountField: some View {
+        TextField("Сумма", value: $amount, format: .number)
+            .keyboardType(.numberPad)
+            .onChange(of: amount) { _, _ in
+                handleAmountChange()
+            }
+    }
+
+    /// Поле ввода заметки
+    @ViewBuilder
+    private var noteField: some View {
+        TextField("Заметка (опционально)", text: $note, axis: .vertical)
+    }
+
+    /// Футер с дополнительной информацией
+    private var footerContent: some View {
+        Group {
+            if let bank {
+                VStack(alignment: .leading, spacing: 4) {
+                    // Информация об игроке
+                    if let player = selectedPlayer, (mode == .deposit || withdrawalPurpose == .toPlayer) {
+                        playerInfoView(player: player, bank: bank)
+                        Divider()
+                    }
+
+                    // Общая информация о банке
+                    bankInfoView(bank)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Информация об игроке
+    @ViewBuilder
+    private func playerInfoView(player: Player, bank: SessionBank) -> some View {
+        let contributions = bank.contributions(for: player)
+        let deposited = contributions.deposited
+        let withdrawn = contributions.withdrawn
+
+        Text("Игрок внёс: \(deposited.asCurrency())")
+            .monospaced()
+        Text("Игроку выдано: \(withdrawn.asCurrency())")
+            .monospaced()
+
+        switch mode {
+        case .deposit:
+            playerDepositInfo(player: player, bank: bank)
+        case .withdrawal:
+            playerWithdrawalInfo(deposited: deposited, withdrawn: withdrawn)
+        }
+    }
+
+    /// Информация при пополнении от игрока
+    @ViewBuilder
+    private func playerDepositInfo(player: Player, bank: SessionBank) -> some View {
+        let result = bank.financialResult(for: player)
+        let bankOwes = max(result, 0)
+        let playerOwes = max(-result, 0)
+
+        if bankOwes > 0 {
+            if player.chipProfit > 0 {
+                Text("Игрок выиграл: \(bankOwes.asCurrency())")
+                    .foregroundStyle(.green)
+                    .monospaced()
+            } else {
+                Text("Переплата: \(bankOwes.asCurrency())")
+                    .foregroundStyle(.blue)
+                    .monospaced()
+            }
+        } else if playerOwes > 0 {
+            Text("Осталось внести: \(playerOwes.asCurrency())")
+                .foregroundStyle(.secondary)
+                .monospaced()
+        } else {
+            Text("Расчёты закрыты")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Информация при выдаче игроку
+    @ViewBuilder
+    private func playerWithdrawalInfo(deposited: Int, withdrawn: Int) -> some View {
+        let available = max(deposited - withdrawn, 0)
+        Text("Доступно к выдаче: \(available.asCurrency())")
+            .foregroundStyle(.secondary)
+            .monospaced()
+    }
+
+    /// Общая информация о банке
+    @ViewBuilder
+    private func bankInfoView(_ bank: SessionBank) -> some View {
+        Text("В банке: \(bank.netBalance.asCurrency())")
+            .monospaced()
+        Text("Получено: \(bank.totalDeposited.asCurrency())")
+            .monospaced()
+        Text("Осталось собрать: \(bank.remainingToCollect.asCurrency())")
+            .monospaced()
+    }
+
+    // MARK: - Вспомогательные методы
+
+    /// Отправка формы
     private func submit() {
         guard isFormValid else { return }
 
@@ -240,6 +365,46 @@ struct SessionBankTransactionSheet: View {
         }
     }
 
+    /// Инициализация формы при открытии
+    private func initializeForm() {
+        viewModel.ensureBank(for: session)
+
+        if selectedPlayerID == nil {
+            selectedPlayerID = mode == .deposit
+            ? session.bank?.manager?.id ?? players.first?.id
+            : players.first?.id
+        }
+
+        if selectedExpenseID == nil {
+            selectedExpenseID = expenses.first?.id
+        }
+
+        if mode == .withdrawal {
+            resetWithdrawalPurposeIfNeeded()
+        }
+
+        updateSuggestedAmountIfNeeded(force: true)
+    }
+
+    /// Обработка изменения цели выдачи
+    private func handleWithdrawalPurposeChange() {
+        updateNoteForPurpose()
+        updateSuggestedAmountIfNeeded(force: true)
+    }
+
+    /// Обработка изменения выбранного расхода
+    private func handleExpenseSelectionChange() {
+        updateNoteForPurpose()
+        updateSuggestedAmountIfNeeded(force: true)
+    }
+
+    /// Обработка изменения суммы пользователем
+    private func handleAmountChange() {
+        guard !isUpdatingAmount else { return }
+        amountManuallyEdited = true
+    }
+
+    /// Binding для выбора игрока
     private var playerBinding: Binding<UUID?> {
         Binding(
             get: { selectedPlayerID },
@@ -251,6 +416,7 @@ struct SessionBankTransactionSheet: View {
         )
     }
 
+    /// Binding для выбора расхода
     private var expenseBinding: Binding<UUID?> {
         Binding(
             get: { selectedExpenseID },
@@ -261,10 +427,12 @@ struct SessionBankTransactionSheet: View {
         )
     }
 
+    /// Вычисление оставшейся суммы расхода
     private func expenseRemainingAmount(_ expense: Expense) -> Int {
         max(expense.amount - expense.paidFromBank, 0)
     }
 
+    /// Обновление заметки в зависимости от цели
     private func updateNoteForPurpose() {
         guard mode == .withdrawal else { return }
 
@@ -280,73 +448,11 @@ struct SessionBankTransactionSheet: View {
         }
     }
 
-    private var footerContent: some View {
-        Group {
-            if let bank {
-                VStack(alignment: .leading, spacing: 4) {
-                    // Для deposit или withdrawal игроку показываем информацию об игроке
-                    if let player = selectedPlayer, (mode == .deposit || withdrawalPurpose == .toPlayer) {
-                        let contributions = bank.contributions(for: player)
-                        let deposited = contributions.deposited
-                        let withdrawn = contributions.withdrawn
-                        Text("Игрок внёс: \(deposited.asCurrency())")
-                            .monospaced()
-                        Text("Игроку выдано: \(withdrawn.asCurrency())")
-                            .monospaced()
-
-                        switch mode {
-                        case .deposit:
-                            let result = bank.financialResult(for: player)
-                            let bankOwes = max(result, 0)
-                            let playerOwes = max(-result, 0)
-
-                            if bankOwes > 0 {
-                                if player.chipProfit > 0 {
-                                    Text("Игрок выиграл: \(bankOwes.asCurrency())")
-                                        .foregroundStyle(.green)
-                                        .monospaced()
-                                } else {
-                                    Text("Переплата: \(bankOwes.asCurrency())")
-                                        .foregroundStyle(.blue)
-                                        .monospaced()
-                                }
-                            } else if playerOwes > 0 {
-                                Text("Осталось внести: \(playerOwes.asCurrency())")
-                                    .foregroundStyle(.secondary)
-                                    .monospaced()
-                            } else {
-                                Text("Расчёты закрыты")
-                                    .foregroundStyle(.secondary)
-                            }
-                        case .withdrawal:
-                            let available = max(deposited - withdrawn, 0)
-                            Text("Доступно к выдаче: \(available.asCurrency())")
-                                .foregroundStyle(.secondary)
-                                .monospaced()
-                        }
-
-                        Divider()
-                    }
-
-                    // Общая информация о банке
-                    Text("В банке: \(bank.netBalance.asCurrency())")
-                        .monospaced()
-                    Text("Получено: \(bank.totalDeposited.asCurrency())")
-                        .monospaced()
-                    Text("Осталось собрать: \(bank.remainingToCollect.asCurrency())")
-                        .monospaced()
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-        }
-    }
-
+    /// Сброс цели выдачи если она стала недоступной
     private func resetWithdrawalPurposeIfNeeded() {
-        // Если выбранная цель withdrawal стала недоступной, сбрасываем на .toPlayer
         switch withdrawalPurpose {
         case .forExpense:
-            if !hasAvailableRakeForExpenses {
+            if !hasUnpaidExpenses {
                 withdrawalPurpose = .toPlayer
             }
         case .forTips:
@@ -354,14 +460,12 @@ struct SessionBankTransactionSheet: View {
                 withdrawalPurpose = .toPlayer
             }
         case .toPlayer:
-            break  // Всегда доступно
+            break
         }
     }
 
+    /// Обновление предлагаемой суммы
     private func updateSuggestedAmountIfNeeded(force: Bool) {
-        // Обновляем сумму если:
-        // - force = true (при первом открытии)
-        // - пользователь не редактировал сумму вручную после смены игрока/расхода
         guard force || !amountManuallyEdited else { return }
         guard let bank else { return }
 
@@ -378,13 +482,12 @@ struct SessionBankTransactionSheet: View {
         } else if mode == .withdrawal {
             switch withdrawalPurpose {
             case .toPlayer:
-                amount = nil  // Не подсказываем сумму для выдачи игроку
+                amount = nil
             case .forExpense:
                 if let expense = selectedExpense {
                     amount = expenseRemainingAmount(expense)
                 }
             case .forTips:
-                // Автозаполняем суммой зарезервированных чаевых минус уже выплаченные
                 let tipsReserved = bank.reservedForTips
                 let tipsPaid = session.tipsPaidFromBank
                 let tipsRemaining = max(tipsReserved - tipsPaid, 0)
@@ -397,6 +500,8 @@ struct SessionBankTransactionSheet: View {
         }
     }
 }
+
+// MARK: - Вспомогательные типы
 
 enum Mode {
     case deposit

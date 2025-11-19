@@ -89,7 +89,7 @@ private struct MetricRow: View {
 #Preview("Full Bank") {
     let session = PreviewData.sessionWithFullBank()
     if let bank = session.bank {
-        BankSummaryCard(bank: bank)
+            BankSummaryCard(bank: bank)
             .padding()
     }
 }
