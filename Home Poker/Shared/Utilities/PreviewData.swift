@@ -748,7 +748,7 @@ enum PreviewData {
             )
         }
 
-        let service = SessionTimerService()
+        let service = TimerService()
         let clampedIndex = max(0, min(levelIndex, items.count - 1))
         let currentItem = items[clampedIndex]
         let duration = service.durationInSeconds(for: currentItem)

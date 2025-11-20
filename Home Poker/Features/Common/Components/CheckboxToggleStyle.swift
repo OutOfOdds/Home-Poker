@@ -10,8 +10,8 @@ import SwiftUI
 struct CheckboxToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack {
-            Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
-                .foregroundStyle(configuration.isOn ? Color.dynamicColor(value: 1) : .secondary)
+            Image(systemName: configuration.isOn ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(configuration.isOn ? Color.green : .secondary)
                 .imageScale(.large)
                 .onTapGesture {
                     configuration.isOn.toggle()
