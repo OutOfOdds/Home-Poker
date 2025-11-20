@@ -437,6 +437,9 @@ final class TimerViewModel {
                 breakTitle = breakInfo.title
             }
 
+            // Вычисляем время окончания текущего уровня
+            let levelEndDate = Date().addingTimeInterval(state.remainingTimeInLevel)
+
             // Создаём ContentState для Live Activity
             let contentState = TimerActivityAttributes.ContentState(
                 currentLevelIndex: state.currentLevelIndex,
@@ -444,6 +447,7 @@ final class TimerViewModel {
                 bigBlind: bigBlind,
                 ante: ante,
                 remainingSeconds: state.remainingTimeInLevel,
+                levelEndDate: levelEndDate,
                 totalElapsedSeconds: state.totalElapsedTime,
                 levelDurationSeconds: levelDuration,
                 isRunning: state.isRunning,
