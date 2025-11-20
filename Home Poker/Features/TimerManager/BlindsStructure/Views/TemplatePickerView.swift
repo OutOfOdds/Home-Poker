@@ -18,6 +18,19 @@ struct TemplatePickerView: View {
         List {
             // Встроенные шаблоны
             DisclosureGroup("Встроенные шаблоны", isExpanded: $groupIsOpen) {
+                // Тестовые шаблоны
+                if !testTemplates.isEmpty {
+                    Section {
+                        TemplateGroupView(
+                            title: "Тестовые",
+                            icon: "flask.fill",
+                            subtitle: "Для проверки функций",
+                            templates: testTemplates,
+                            templateToEdit: $templateToEdit
+                        )
+                    }
+                }
+
                 Section {
                     TemplateGroupView(
                         title: "Турбо (2 часа)",
@@ -103,6 +116,10 @@ struct TemplatePickerView: View {
     }
 
     // MARK: - Computed Properties
+
+    private var testTemplates: [TournamentTemplate] {
+        templateViewModel.builtInTemplates.filter { $0.name.contains("ТЕСТ") || $0.name.contains("🧪") }
+    }
 
     private var turboTemplates: [TournamentTemplate] {
         templateViewModel.builtInTemplates.filter { $0.name.contains("Турбо") }

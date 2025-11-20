@@ -1,6 +1,8 @@
 import Foundation
 
-struct TournamentTemplate: Identifiable, Codable, Equatable, Hashable {
+// MARK: - Tournament Template
+
+struct TournamentTemplate: Identifiable, Codable, Equatable, Hashable, Sendable {
     let id: UUID
     var name: String
     var levels: [BlindLevel]
