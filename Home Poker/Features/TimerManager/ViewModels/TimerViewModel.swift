@@ -8,6 +8,7 @@ final class TimerViewModel {
 
     private let timerService: SessionTimerProtocol
     private let notificationService: NotificationServiceProtocol
+    private let liveActivityService: LiveActivityServiceProtocol
     private var timerTask: Task<Void, Never>?
     private var absoluteStartDate: Date?
     private var pausedAt: Date?
@@ -23,6 +24,9 @@ final class TimerViewModel {
     @ObservationIgnored
     @AppStorage("timerNotificationsEnabled") private var notificationsEnabled = true
 
+    @ObservationIgnored
+    @AppStorage("liveActivitiesEnabled") private var liveActivitiesEnabled = true
+
     // MARK: - Constants
 
     private enum Constants {
@@ -33,10 +37,12 @@ final class TimerViewModel {
 
     init(
         timerService: SessionTimerProtocol? = nil,
-        notificationService: NotificationServiceProtocol? = nil
+        notificationService: NotificationServiceProtocol? = nil,
+        liveActivityService: LiveActivityServiceProtocol? = nil
     ) {
         self.timerService = timerService ?? TimerService()
         self.notificationService = notificationService ?? NotificationService()
+        self.liveActivityService = liveActivityService ?? LiveActivityService()
     }
 
     // MARK: - Конфигурация
@@ -78,6 +84,16 @@ final class TimerViewModel {
         // Запланировать ВСЕ уведомления заранее (для работы в background)
         if notificationsEnabled {
             scheduleAllNotificationsUpfront()
+        }
+
+        // Запустить Live Activity
+        if liveActivitiesEnabled {
+            Task {
+                try? await liveActivityService.startActivity(
+                    tournamentName: "Poker Tournament",
+                    totalLevels: items.count
+                )
+            }
         }
 
         // Запуск таймера (только для UI обновлений в foreground)
@@ -142,6 +158,11 @@ final class TimerViewModel {
         // Отменить все запланированные уведомления
         Task {
             await notificationService.cancelAllNotifications()
+
+            // Остановить Live Activity
+            if liveActivitiesEnabled {
+                await liveActivityService.stopActivity()
+            }
         }
 
         absoluteStartDate = nil
@@ -367,6 +388,11 @@ final class TimerViewModel {
         )
 
         currentState = state
+
+        // Обновляем Live Activity
+        if liveActivitiesEnabled {
+            updateLiveActivity(state: state, currentItem: currentItem, levelDuration: levelDuration)
+        }
     }
 
     // MARK: - Редактирование уровня блайндов
@@ -387,6 +413,49 @@ final class TimerViewModel {
         items[index] = .blinds(updatedLevel)
     }
 
+    // MARK: - Live Activity Helpers
+
+    /// Обновляет Live Activity с текущим состоянием таймера
+    private func updateLiveActivity(state: TimerState, currentItem: LevelItem, levelDuration: TimeInterval) {
+        Task {
+            // Извлекаем данные из currentItem
+            let (smallBlind, bigBlind, ante, isBreak, breakTitle): (Int, Int, Int, Bool, String?)
+
+            switch currentItem {
+            case .blinds(let level):
+                smallBlind = level.smallBlind
+                bigBlind = level.bigBlind
+                ante = level.ante
+                isBreak = false
+                breakTitle = nil
+
+            case .break(let breakInfo):
+                smallBlind = 0
+                bigBlind = 0
+                ante = 0
+                isBreak = true
+                breakTitle = breakInfo.title
+            }
+
+            // Создаём ContentState для Live Activity
+            let contentState = TimerActivityAttributes.ContentState(
+                currentLevelIndex: state.currentLevelIndex,
+                smallBlind: smallBlind,
+                bigBlind: bigBlind,
+                ante: ante,
+                remainingSeconds: state.remainingTimeInLevel,
+                totalElapsedSeconds: state.totalElapsedTime,
+                levelDurationSeconds: levelDuration,
+                isRunning: state.isRunning,
+                isPaused: state.isPaused,
+                isBreak: isBreak,
+                breakTitle: breakTitle
+            )
+
+            // Обновляем Live Activity
+            await liveActivityService.updateActivity(contentState: contentState)
+        }
+    }
 
     // MARK: - Computed Properties
 
