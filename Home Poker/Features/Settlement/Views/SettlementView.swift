@@ -161,6 +161,7 @@ struct SettlementView: View {
 
             Text(amount.asCurrency())
                 .fontWeight(.semibold)
+                .monospaced()
                 .foregroundStyle(transfer?.isCompleted == true ? .secondary : color)
                 .strikethrough(transfer?.isCompleted == true)
         }
