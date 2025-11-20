@@ -46,6 +46,7 @@ final class LiveActivityService: LiveActivityServiceProtocol {
             bigBlind: 0,
             ante: 0,
             remainingSeconds: 0,
+            levelEndDate: Date(),
             totalElapsedSeconds: 0,
             levelDurationSeconds: 0,
             isRunning: false,
@@ -96,7 +97,7 @@ final class LiveActivityService: LiveActivityServiceProtocol {
         }
 
         // Финальное состояние (можно показать "Турнир завершен")
-        let finalState = await activity.content.state
+        let finalState = activity.content.state
 
         await activity.end(
             .init(state: finalState, staleDate: nil),

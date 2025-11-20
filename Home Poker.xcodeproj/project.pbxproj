@@ -59,6 +59,15 @@
 			);
 			target = 6B8C67E62ECF4EAB00FB86A3 /* PokerTimerWidgetExtension */;
 		};
+		6B8C68062ECF4FC000FB86A3 /* Exceptions for "Home Poker" folder in "PokerTimerWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Domain/Models/LiveActivity/TimerActivityAttributes.swift,
+				Domain/Models/Tournament/BlindModels.swift,
+				Domain/Models/Tournament/TournamentTemplate.swift,
+			);
+			target = 6B8C67E62ECF4EAB00FB86A3 /* PokerTimerWidgetExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -69,6 +78,9 @@
 		};
 		6B74D0512EA8E74100A85B0E /* Home Poker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6B8C68062ECF4FC000FB86A3 /* Exceptions for "Home Poker" folder in "PokerTimerWidgetExtension" target */,
+			);
 			path = "Home Poker";
 			sourceTree = "<group>";
 		};
@@ -372,12 +384,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PokerTimerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PokerTimerWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -408,12 +421,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 19;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PokerTimerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PokerTimerWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -577,6 +591,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Home-Poker-Info.plist";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -626,6 +641,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Home-Poker-Info.plist";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

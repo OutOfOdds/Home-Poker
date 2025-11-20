@@ -1,5 +1,6 @@
 import SwiftUI
 import ActivityKit
+import WidgetKit
 
 // MARK: - Expanded Views
 
@@ -39,7 +40,7 @@ struct ExpandedTrailingView: View {
                     .font(.caption)
             }
 
-            Text(context.state.formattedRemainingTime)
+            Text(context.state.levelEndDate, style: .timer)
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(timeColor)
@@ -130,21 +131,10 @@ struct CompactTrailingView: View {
     let context: ActivityViewContext<TimerActivityAttributes>
 
     var body: some View {
-        Text(compactTime)
+        Text(context.state.levelEndDate, style: .timer)
             .font(.system(size: 14, weight: .bold, design: .rounded))
             .monospacedDigit()
             .foregroundStyle(timeColor)
-    }
-
-    private var compactTime: String {
-        let minutes = Int(context.state.remainingSeconds) / 60
-        let seconds = Int(context.state.remainingSeconds) % 60
-
-        if minutes > 0 {
-            return "\(minutes)m"
-        } else {
-            return "\(seconds)s"
-        }
     }
 
     private var timeColor: Color {

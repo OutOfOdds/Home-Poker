@@ -25,6 +25,9 @@ struct TimerActivityAttributes: ActivityAttributes {
         /// Оставшееся время в текущем уровне (в секундах)
         var remainingSeconds: TimeInterval
 
+        /// Время окончания текущего уровня (для автоматического countdown)
+        var levelEndDate: Date
+
         /// Общее прошедшее время турнира (в секундах)
         var totalElapsedSeconds: TimeInterval
 

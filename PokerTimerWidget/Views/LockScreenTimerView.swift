@@ -64,10 +64,11 @@ struct LockScreenTimerView: View {
                         }
                     }
 
-                    Text(context.state.formattedRemainingTime)
+                    Text(context.state.levelEndDate, style: .timer)
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(timeColor)
+                        .multilineTextAlignment(.trailing)
 
                     Text("осталось")
                         .font(.caption2)
