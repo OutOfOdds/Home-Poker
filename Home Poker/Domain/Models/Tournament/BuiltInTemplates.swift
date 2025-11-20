@@ -5,6 +5,9 @@ struct BuiltInTemplates {
     // MARK: - Все шаблоны
 
     static let all: [TournamentTemplate] = [
+        // Тестовый шаблон (для разработки)
+        testNotifications,
+
         // Турбо (2 часа)
         turboSmall,
         turboMedium,
@@ -20,6 +23,19 @@ struct BuiltInTemplates {
         deepLarge,
         deepGiant
     ]
+
+    // MARK: - Тестовый шаблон (для проверки уведомлений)
+
+    static let testNotifications = TournamentTemplate(
+        name: "🧪 ТЕСТ (2 уровня по 1 мин)",
+        levels: [
+            BlindLevel(index: 1, smallBlind: 25, bigBlind: 50, ante: 0, minutes: 1),
+            BlindLevel(index: 2, smallBlind: 50, bigBlind: 100, ante: 25, minutes: 1),
+        ],
+        defaultPlayers: 6,
+        defaultStartingStack: 1000,
+        isBuiltIn: true
+    )
 
     // MARK: - Турбо (2 часа) - 12 уровней по 10 минут
 

@@ -3,10 +3,12 @@ import SwiftUI
 import Observation
 
 @Observable
+@MainActor
 final class TimerViewModel {
 
-    private let timerService = SessionTimerService()
-    private var timer: Timer?
+    private let timerService: SessionTimerProtocol
+    private let notificationService: NotificationServiceProtocol
+    private var timerTask: Task<Void, Never>?
     private var absoluteStartDate: Date?
     private var pausedAt: Date?
     private var accumulatedPausedTime: TimeInterval = 0
@@ -17,6 +19,25 @@ final class TimerViewModel {
     var isConfigured: Bool = false
     var showConfigForm: Bool = true
     var currentState: TimerState?
+
+    @ObservationIgnored
+    @AppStorage("timerNotificationsEnabled") private var notificationsEnabled = true
+
+    // MARK: - Constants
+
+    private enum Constants {
+        static let timerUpdateInterval: Duration = .seconds(1)
+    }
+
+    // MARK: - Initialization
+
+    init(
+        timerService: SessionTimerProtocol? = nil,
+        notificationService: NotificationServiceProtocol? = nil
+    ) {
+        self.timerService = timerService ?? TimerService()
+        self.notificationService = notificationService ?? NotificationService()
+    }
 
     // MARK: - Конфигурация
 
@@ -54,7 +75,12 @@ final class TimerViewModel {
         self.manualTimeOffset = 0
         self.pausedAt = nil
 
-        // Запуск таймера
+        // Запланировать ВСЕ уведомления заранее (для работы в background)
+        if notificationsEnabled {
+            scheduleAllNotificationsUpfront()
+        }
+
+        // Запуск таймера (только для UI обновлений в foreground)
         startTicking()
 
         // Немедленный расчёт состояния
@@ -67,6 +93,12 @@ final class TimerViewModel {
 
         pausedAt = Date()
         stopTicking()
+
+        // Отменяем все запланированные уведомления (они станут неактуальны)
+        Task { @MainActor in
+            await notificationService.cancelAllNotifications()
+            print("⏸️ [TimerViewModel] Paused - cancelled all notifications")
+        }
 
         // Обновляем состояние
         if let state = currentState {
@@ -93,6 +125,11 @@ final class TimerViewModel {
         accumulatedPausedTime += pauseDuration
         self.pausedAt = nil
 
+        // Пересчитываем и планируем уведомления заново с учётом прошедшего времени
+        if notificationsEnabled {
+            rescheduleNotificationsAfterPause()
+        }
+
         // Возобновляем тикание
         startTicking()
         tick()
@@ -101,6 +138,11 @@ final class TimerViewModel {
     /// Останавливает таймер полностью
     func stopTimer() {
         stopTicking()
+
+        // Отменить все запланированные уведомления
+        Task {
+            await notificationService.cancelAllNotifications()
+        }
 
         absoluteStartDate = nil
         pausedAt = nil
@@ -166,22 +208,115 @@ final class TimerViewModel {
         jumpToLevel(at: currentIndex)
     }
 
-    // MARK: - Методы таймера
+    // MARK: - Timer Implementation (Modern Task-based)
 
     private func startTicking() {
         stopTicking()
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.tick()
-        }
-        // Добавляем в RunLoop для работы в фоне
-        if let timer = timer {
-            RunLoop.current.add(timer, forMode: .common)
+
+        timerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Constants.timerUpdateInterval)
+
+                guard !Task.isCancelled else { break }
+                self?.tick()
+            }
         }
     }
 
     private func stopTicking() {
-        timer?.invalidate()
-        timer = nil
+        timerTask?.cancel()
+        timerTask = nil
+    }
+
+    /// Планирует ВСЕ уведомления заранее для работы в background
+    private func scheduleAllNotificationsUpfront() {
+        Task { @MainActor in
+            print("📅 [TimerViewModel] Pre-scheduling all notifications...")
+
+            // Отменяем предыдущие
+            await notificationService.cancelAllNotifications()
+
+            var cumulativeSeconds: TimeInterval = 0
+
+            // Проходим по всем уровням и планируем уведомления
+            for (index, item) in items.enumerated() {
+                // Пропускаем первый уровень (он стартует сразу)
+                if index == 0 {
+                    // Добавляем длительность первого уровня к cumulative
+                    switch item {
+                    case .blinds(let level):
+                        cumulativeSeconds += TimeInterval(level.minutes * 60)
+                    case .break(let breakInfo):
+                        cumulativeSeconds += TimeInterval(breakInfo.minutes * 60)
+                    }
+                    continue
+                }
+
+                // Планируем уведомление для этого уровня
+                // timeInterval = время с момента старта таймера
+                try? await notificationService.scheduleBlindLevelNotificationWithDelay(
+                    levelIndex: index,
+                    item: item,
+                    delay: cumulativeSeconds
+                )
+
+                // Добавляем длительность текущего уровня
+                switch item {
+                case .blinds(let level):
+                    cumulativeSeconds += TimeInterval(level.minutes * 60)
+                case .break(let breakInfo):
+                    cumulativeSeconds += TimeInterval(breakInfo.minutes * 60)
+                }
+            }
+
+            print("📅 [TimerViewModel] Scheduled \(items.count - 1) notifications")
+        }
+    }
+
+    /// Пересчитывает и планирует уведомления после паузы
+    private func rescheduleNotificationsAfterPause() {
+        guard let absoluteStartDate = absoluteStartDate else { return }
+
+        Task { @MainActor in
+            print("▶️ [TimerViewModel] Rescheduling notifications after pause...")
+
+            await notificationService.cancelAllNotifications()
+
+            // Вычисляем эффективное прошедшее время
+            let now = Date()
+            let effectiveElapsed = now.timeIntervalSince(absoluteStartDate) - accumulatedPausedTime - manualTimeOffset
+
+            var cumulativeSeconds: TimeInterval = 0
+
+            // Планируем только будущие уведомления
+            for (index, item) in items.enumerated() {
+                // Вычисляем когда должен начаться этот уровень
+                let levelStartTime = cumulativeSeconds
+
+                // Добавляем длительность к cumulative
+                switch item {
+                case .blinds(let level):
+                    cumulativeSeconds += TimeInterval(level.minutes * 60)
+                case .break(let breakInfo):
+                    cumulativeSeconds += TimeInterval(breakInfo.minutes * 60)
+                }
+
+                // Пропускаем уровни которые уже прошли
+                if levelStartTime <= effectiveElapsed {
+                    continue
+                }
+
+                // Планируем уведомление для будущего уровня
+                let delay = levelStartTime - effectiveElapsed
+                try? await notificationService.scheduleBlindLevelNotificationWithDelay(
+                    levelIndex: index,
+                    item: item,
+                    delay: delay
+                )
+            }
+
+            print("▶️ [TimerViewModel] Rescheduled notifications after pause")
+        }
     }
 
     private func tick() {
@@ -207,6 +342,7 @@ final class TimerViewModel {
         // Если автоматически перешли на новый уровень
         if levelIndex != currentIndex {
             currentIndex = levelIndex
+            // Уведомления уже запланированы заранее в scheduleAllNotificationsUpfront()
         }
 
         // Если дошли до конца всех уровней

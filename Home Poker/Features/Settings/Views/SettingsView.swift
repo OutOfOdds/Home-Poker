@@ -4,6 +4,7 @@ import SwiftData
 struct SettingsView: View {
     @Environment(\.modelContext) private var context
     @AppStorage("sessionListShowDetails") private var showSessionListDetails = true
+    @AppStorage("timerNotificationsEnabled") private var timerNotificationsEnabled = true
 
     // Import
     @State private var showImportPicker = false
@@ -15,7 +16,6 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-        
 
             Section {
                 Toggle("Показывать подробности", isOn: $showSessionListDetails)
@@ -26,6 +26,14 @@ struct SettingsView: View {
             footer: {
                 Text("Когда выключено — в списке отображается только название и дата последней игры.")
                     .font(.footnote)
+            }
+
+            Section {
+                Toggle("Уведомления при смене уровня", isOn: $timerNotificationsEnabled)
+            } header: {
+                Text("Таймер блайндов")
+            } footer: {
+                Text("Получать уведомления при автоматической смене уровня блайндов в турнире")
             }
 
             Section {

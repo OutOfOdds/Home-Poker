@@ -1,6 +1,8 @@
 import Foundation
 
-public struct BlindLevel: Identifiable, Hashable, Codable {
+// MARK: - Blind Level
+
+public struct BlindLevel: Identifiable, Hashable, Codable, Sendable {
     public var id: UUID
     public var index: Int
     public var smallBlind: Int
@@ -27,14 +29,14 @@ public struct BlindLevel: Identifiable, Hashable, Codable {
 
 // MARK: - Level Item
 
-public enum LevelItem: Hashable {
+public enum LevelItem: Hashable, Sendable {
     case blinds(BlindLevel)
     case `break`(BreakInfo)
 }
 
 // MARK: - Break Info
 
-public struct BreakInfo: Hashable, Codable {
+public struct BreakInfo: Hashable, Codable, Sendable {
     public var title: String = "Break"
     public var minutes: Int
 

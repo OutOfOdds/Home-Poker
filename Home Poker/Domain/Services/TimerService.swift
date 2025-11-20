@@ -34,7 +34,7 @@ protocol SessionTimerProtocol {
     func durationInSeconds(for item: LevelItem) -> TimeInterval
 }
 
-struct SessionTimerService: SessionTimerProtocol {
+struct TimerService: SessionTimerProtocol {
     
     /// Находит индекс уровня и время внутри него по общему прошедшему времени
     func calculateCurrentLevel(effectiveElapsed: TimeInterval, items: [LevelItem]) -> (index: Int, elapsedInLevel: TimeInterval) {
