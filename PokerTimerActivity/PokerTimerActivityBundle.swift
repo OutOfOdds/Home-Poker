@@ -11,7 +11,6 @@ import SwiftUI
 @main
 struct PokerTimerActivityBundle: WidgetBundle {
     var body: some Widget {
-        PokerTimerActivity()
         PokerTimerActivityLiveActivity()
     }
 }
