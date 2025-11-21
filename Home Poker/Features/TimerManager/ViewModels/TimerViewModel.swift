@@ -8,7 +8,6 @@ final class TimerViewModel {
 
     private let timerService: SessionTimerProtocol
     private let notificationService: NotificationServiceProtocol
-    private let liveActivityService: LiveActivityServiceProtocol
     private var timerTask: Task<Void, Never>?
     private var absoluteStartDate: Date?
     private var pausedAt: Date?
@@ -24,25 +23,35 @@ final class TimerViewModel {
     @ObservationIgnored
     @AppStorage("timerNotificationsEnabled") private var notificationsEnabled = true
 
-    @ObservationIgnored
-    @AppStorage("liveActivitiesEnabled") private var liveActivitiesEnabled = true
-
     // MARK: - Constants
 
     private enum Constants {
         static let timerUpdateInterval: Duration = .seconds(1)
+        static let persistentStateKey = "timerPersistentState"
+    }
+
+    // MARK: - Persistent State
+
+    private struct PersistentTimerState: Codable {
+        let absoluteStartDate: Date?
+        let pausedAt: Date?
+        let accumulatedPausedTime: TimeInterval
+        let currentIndex: Int
+        let manualTimeOffset: TimeInterval
+        let itemsJSON: Data // Храним items как JSON
     }
 
     // MARK: - Initialization
 
     init(
         timerService: SessionTimerProtocol? = nil,
-        notificationService: NotificationServiceProtocol? = nil,
-        liveActivityService: LiveActivityServiceProtocol? = nil
+        notificationService: NotificationServiceProtocol? = nil
     ) {
         self.timerService = timerService ?? TimerService()
         self.notificationService = notificationService ?? NotificationService()
-        self.liveActivityService = liveActivityService ?? LiveActivityService()
+
+        // Восстанавливаем состояние таймера если оно было сохранено
+        restoreTimerState()
     }
 
     // MARK: - Конфигурация
@@ -86,21 +95,14 @@ final class TimerViewModel {
             scheduleAllNotificationsUpfront()
         }
 
-        // Запустить Live Activity
-        if liveActivitiesEnabled {
-            Task {
-                try? await liveActivityService.startActivity(
-                    tournamentName: "Poker Tournament",
-                    totalLevels: items.count
-                )
-            }
-        }
-
         // Запуск таймера (только для UI обновлений в foreground)
         startTicking()
 
         // Немедленный расчёт состояния
         tick()
+
+        // Сохраняем начальное состояние
+        saveTimerState()
     }
 
     /// Ставит таймер на паузу
@@ -129,6 +131,9 @@ final class TimerViewModel {
             )
             currentState = pausedState
         }
+
+        // Сохраняем состояние паузы
+        saveTimerState()
     }
 
     /// Возобновляет таймер после паузы
@@ -146,25 +151,33 @@ final class TimerViewModel {
             rescheduleNotificationsAfterPause()
         }
 
+        // Обновляем состояние для возобновления
+        if let state = currentState {
+            let resumedState = TimerState(
+                currentLevelIndex: state.currentLevelIndex,
+                currentItem: state.currentItem,
+                elapsedTimeInLevel: state.elapsedTimeInLevel,
+                remainingTimeInLevel: state.remainingTimeInLevel,
+                totalElapsedTime: state.totalElapsedTime,
+                isRunning: true,
+                isPaused: false
+            )
+            currentState = resumedState
+        }
+
         // Возобновляем тикание
         startTicking()
         tick()
+
+        // Сохраняем возобновленное состояние
+        saveTimerState()
     }
 
     /// Останавливает таймер полностью
     func stopTimer() {
         stopTicking()
 
-        // Отменить все запланированные уведомления
-        Task {
-            await notificationService.cancelAllNotifications()
-
-            // Остановить Live Activity
-            if liveActivitiesEnabled {
-                await liveActivityService.stopActivity()
-            }
-        }
-
+        // Сразу очищаем состояние (синхронно для UI)
         absoluteStartDate = nil
         pausedAt = nil
         accumulatedPausedTime = 0
@@ -172,6 +185,14 @@ final class TimerViewModel {
         currentIndex = 0
         currentState = nil
         // НЕ очищаем items - структура блайндов должна сохраняться
+
+        // Очищаем сохраненное состояние
+        clearSavedState()
+
+        // Асинхронно отменяем уведомления
+        Task { @MainActor in
+            await notificationService.cancelAllNotifications()
+        }
     }
 
     /// Переключает паузу/возобновление
@@ -222,6 +243,16 @@ final class TimerViewModel {
         }
 
         tick()
+
+        // ВАЖНО: Перепланируем уведомления после ручного skip
+        // Временная шкала изменилась, старые уведомления неактуальны
+        if notificationsEnabled && !wasPaused {
+            rescheduleNotificationsAfterPause()
+            print("🔔 [TimerViewModel] Rescheduled notifications after manual jump to level \(index)")
+        }
+
+        // Сохраняем состояние после ручного skip
+        saveTimerState()
     }
 
     /// Перезапускает текущий уровень с начала
@@ -290,7 +321,12 @@ final class TimerViewModel {
                 }
             }
 
-            print("📅 [TimerViewModel] Scheduled \(items.count - 1) notifications")
+            // Планируем уведомление о завершении турнира после всех уровней
+            try? await notificationService.scheduleTournamentCompletedNotificationWithDelay(
+                delay: cumulativeSeconds
+            )
+
+            print("📅 [TimerViewModel] Scheduled \(items.count - 1) level notifications + tournament completion")
         }
     }
 
@@ -336,6 +372,15 @@ final class TimerViewModel {
                 )
             }
 
+            // Планируем уведомление о завершении турнира, если оно еще не наступило
+            let tournamentEndTime = cumulativeSeconds
+            if tournamentEndTime > effectiveElapsed {
+                let delay = tournamentEndTime - effectiveElapsed
+                try? await notificationService.scheduleTournamentCompletedNotificationWithDelay(
+                    delay: delay
+                )
+            }
+
             print("▶️ [TimerViewModel] Rescheduled notifications after pause")
         }
     }
@@ -362,19 +407,27 @@ final class TimerViewModel {
 
         // Если автоматически перешли на новый уровень
         if levelIndex != currentIndex {
+            let oldIndex = currentIndex
             currentIndex = levelIndex
+            print("🔄 [TimerViewModel] Level changed: \(oldIndex) → \(levelIndex)")
             // Уведомления уже запланированы заранее в scheduleAllNotificationsUpfront()
-        }
 
-        // Если дошли до конца всех уровней
-        guard items.indices.contains(currentIndex) else {
-            stopTimer()
-            return
+            // Сохраняем состояние при смене уровня
+            saveTimerState()
         }
 
         let currentItem = items[currentIndex]
         let levelDuration = timerService.durationInSeconds(for: currentItem)
         let remainingInLevel = max(0, levelDuration - elapsedInLevel)
+
+        // Проверяем завершение турнира: последний уровень и время истекло
+        let isLastLevel = currentIndex == items.count - 1
+        if isLastLevel && remainingInLevel <= 0 {
+            print("🏁 [TimerViewModel] All levels completed - stopping timer")
+            // Уведомление о завершении уже запланировано заранее в scheduleAllNotificationsUpfront()
+            stopTimer()
+            return
+        }
 
         // Создаём состояние
         let state = TimerState(
@@ -388,11 +441,6 @@ final class TimerViewModel {
         )
 
         currentState = state
-
-        // Обновляем Live Activity
-        if liveActivitiesEnabled {
-            updateLiveActivity(state: state, currentItem: currentItem, levelDuration: levelDuration)
-        }
     }
 
     // MARK: - Редактирование уровня блайндов
@@ -413,52 +461,107 @@ final class TimerViewModel {
         items[index] = .blinds(updatedLevel)
     }
 
-    // MARK: - Live Activity Helpers
+    // MARK: - Persistence
 
-    /// Обновляет Live Activity с текущим состоянием таймера
-    private func updateLiveActivity(state: TimerState, currentItem: LevelItem, levelDuration: TimeInterval) {
-        Task {
-            // Извлекаем данные из currentItem
-            let (smallBlind, bigBlind, ante, isBreak, breakTitle): (Int, Int, Int, Bool, String?)
+    /// Сохраняет текущее состояние таймера в UserDefaults
+    private func saveTimerState() {
+        // Сохраняем только если таймер реально запущен
+        guard let absoluteStartDate = absoluteStartDate, isRunning else {
+            // Если таймер не запущен, очищаем сохраненное состояние
+            clearSavedState()
+            return
+        }
 
-            switch currentItem {
-            case .blinds(let level):
-                smallBlind = level.smallBlind
-                bigBlind = level.bigBlind
-                ante = level.ante
-                isBreak = false
-                breakTitle = nil
+        do {
+            // Сериализуем items в JSON
+            let itemsData = try JSONEncoder().encode(items)
 
-            case .break(let breakInfo):
-                smallBlind = 0
-                bigBlind = 0
-                ante = 0
-                isBreak = true
-                breakTitle = breakInfo.title
-            }
-
-            // Вычисляем время окончания текущего уровня
-            let levelEndDate = Date().addingTimeInterval(state.remainingTimeInLevel)
-
-            // Создаём ContentState для Live Activity
-            let contentState = TimerActivityAttributes.ContentState(
-                currentLevelIndex: state.currentLevelIndex,
-                smallBlind: smallBlind,
-                bigBlind: bigBlind,
-                ante: ante,
-                remainingSeconds: state.remainingTimeInLevel,
-                levelEndDate: levelEndDate,
-                totalElapsedSeconds: state.totalElapsedTime,
-                levelDurationSeconds: levelDuration,
-                isRunning: state.isRunning,
-                isPaused: state.isPaused,
-                isBreak: isBreak,
-                breakTitle: breakTitle
+            let state = PersistentTimerState(
+                absoluteStartDate: absoluteStartDate,
+                pausedAt: pausedAt,
+                accumulatedPausedTime: accumulatedPausedTime,
+                currentIndex: currentIndex,
+                manualTimeOffset: manualTimeOffset,
+                itemsJSON: itemsData
             )
 
-            // Обновляем Live Activity
-            await liveActivityService.updateActivity(contentState: contentState)
+            // Кодируем в JSON и сохраняем
+            let encoded = try JSONEncoder().encode(state)
+            UserDefaults.standard.set(encoded, forKey: Constants.persistentStateKey)
+
+            print("💾 [TimerViewModel] Timer state saved")
+        } catch {
+            print("❌ [TimerViewModel] Failed to save timer state: \(error)")
         }
+    }
+
+    /// Восстанавливает состояние таймера из UserDefaults
+    private func restoreTimerState() {
+        guard let data = UserDefaults.standard.data(forKey: Constants.persistentStateKey) else {
+            print("ℹ️ [TimerViewModel] No saved timer state found")
+            return
+        }
+
+        do {
+            // Декодируем состояние
+            let state = try JSONDecoder().decode(PersistentTimerState.self, from: data)
+
+            // Десериализуем items
+            let restoredItems = try JSONDecoder().decode([LevelItem].self, from: state.itemsJSON)
+
+            // Проверяем, не устарело ли состояние (например, прошло более 24 часов)
+            if let absoluteStartDate = state.absoluteStartDate {
+                let hoursSinceStart = Date().timeIntervalSince(absoluteStartDate) / 3600
+
+                if hoursSinceStart > 24 {
+                    print("⏰ [TimerViewModel] Saved state is too old (>24h), clearing")
+                    clearSavedState()
+                    return
+                }
+            }
+
+            // Восстанавливаем состояние
+            self.items = restoredItems
+            self.absoluteStartDate = state.absoluteStartDate
+            self.pausedAt = state.pausedAt
+            self.accumulatedPausedTime = state.accumulatedPausedTime
+            self.currentIndex = state.currentIndex
+            self.manualTimeOffset = state.manualTimeOffset
+            self.isConfigured = !items.isEmpty
+            self.showConfigForm = false
+
+            // Если таймер был активен, восстанавливаем его работу
+            if let _ = state.absoluteStartDate {
+                // Если таймер был на паузе, НЕ запускаем tick автоматически
+                if state.pausedAt != nil {
+                    print("▶️ [TimerViewModel] Timer restored in PAUSED state")
+                    // Просто вычисляем текущее состояние для UI
+                    tick()
+                } else {
+                    // Таймер был активен - возобновляем
+                    print("▶️ [TimerViewModel] Timer restored and RESUMED")
+                    startTicking()
+                    tick()
+
+                    // Перепланируем уведомления
+                    if notificationsEnabled {
+                        rescheduleNotificationsAfterPause()
+                    }
+                }
+            }
+
+            print("✅ [TimerViewModel] Timer state restored successfully")
+        } catch {
+            print("❌ [TimerViewModel] Failed to restore timer state: \(error)")
+            // Очищаем поврежденное состояние
+            clearSavedState()
+        }
+    }
+
+    /// Очищает сохраненное состояние
+    private func clearSavedState() {
+        UserDefaults.standard.removeObject(forKey: Constants.persistentStateKey)
+        print("🗑️ [TimerViewModel] Saved timer state cleared")
     }
 
     // MARK: - Computed Properties

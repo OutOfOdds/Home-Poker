@@ -1,6 +1,7 @@
 import UserNotifications
 import Foundation
 import Observation
+import UIKit
 
 protocol NotificationServiceProtocol: Sendable {
     /// Запрашивает разрешение на уведомления
@@ -18,6 +19,12 @@ protocol NotificationServiceProtocol: Sendable {
         item: LevelItem,
         delay: TimeInterval
     ) async throws
+
+    /// Планирует уведомление о завершении турнира (немедленно, через 1 сек)
+    func scheduleTournamentCompletedNotification() async throws
+
+    /// Планирует уведомление о завершении турнира с указанной задержкой
+    func scheduleTournamentCompletedNotificationWithDelay(delay: TimeInterval) async throws
 
     /// Отменяет все запланированные уведомления
     func cancelAllNotifications() async
@@ -59,7 +66,7 @@ final class NotificationService: NSObject, NotificationServiceProtocol {
     func requestAuthorization() async -> Bool {
         do {
             let granted = try await notificationCenter.requestAuthorization(
-                options: [.alert, .sound, .badge]
+                options: [.alert, .sound]
             )
 
             print("🔔 [NotificationService] Authorization granted: \(granted)")
@@ -118,6 +125,14 @@ final class NotificationService: NSObject, NotificationServiceProtocol {
 
         content.categoryIdentifier = Constants.categoryIdentifier
         content.sound = .default
+
+        // Критично для показа на lock screen
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+
+        // Группировка уведомлений
+        content.threadIdentifier = "blind_level_changes"
 
         // Немедленная доставка (минимум 1 секунда для надежности)
         let trigger = UNTimeIntervalNotificationTrigger(
@@ -202,11 +217,107 @@ final class NotificationService: NSObject, NotificationServiceProtocol {
         }
     }
 
+    /// Планирует уведомление о завершении турнира
+    func scheduleTournamentCompletedNotification() async throws {
+        // Проверяем статус разрешений
+        let settings = await notificationCenter.notificationSettings()
+
+        guard settings.authorizationStatus == .authorized else {
+            print("❌ [NotificationService] Notifications not authorized")
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "🏆 Турнир завершен"
+        content.body = "Все уровни блайндов пройдены"
+        content.categoryIdentifier = Constants.categoryIdentifier
+        content.sound = .default
+
+        // Критично для показа на lock screen
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+
+        // Немедленная доставка (минимум 1 секунда для надежности)
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: 1,
+            repeats: false
+        )
+
+        let identifier = "tournament_completed_\(UUID().uuidString)"
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+
+        do {
+            try await notificationCenter.add(request)
+            print("🏆 [NotificationService] Scheduled tournament completion notification")
+        } catch {
+            print("❌ [NotificationService] Failed to schedule completion: \(error)")
+            throw error
+        }
+    }
+
+    /// Планирует уведомление о завершении турнира с указанной задержкой
+    func scheduleTournamentCompletedNotificationWithDelay(delay: TimeInterval) async throws {
+        // Проверяем статус разрешений
+        let settings = await notificationCenter.notificationSettings()
+
+        guard settings.authorizationStatus == .authorized else {
+            print("❌ [NotificationService] Notifications not authorized")
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "🏆 Турнир завершен"
+        content.body = "Все уровни блайндов пройдены"
+        content.categoryIdentifier = Constants.categoryIdentifier
+        content.sound = .default
+
+        // Критично для показа на lock screen
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+
+        // Планируем с указанной задержкой
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: delay,
+            repeats: false
+        )
+
+        let identifier = "tournament_completed_\(UUID().uuidString)"
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+
+        do {
+            try await notificationCenter.add(request)
+            print("🏆 [NotificationService] Scheduled tournament completion in \(Int(delay))s")
+        } catch {
+            print("❌ [NotificationService] Failed to schedule completion: \(error)")
+            throw error
+        }
+    }
+
     // MARK: - Cancellation
 
     func cancelAllNotifications() async {
         notificationCenter.removeAllPendingNotificationRequests()
         notificationCenter.removeAllDeliveredNotifications()
+
+        // Сбрасываем badge на иконке приложения
+        if #available(iOS 17.0, *) {
+            try? await notificationCenter.setBadgeCount(0)
+        } else {
+            await MainActor.run {
+                UIApplication.shared.applicationIconBadgeNumber = 0
+            }
+        }
+
         print("🗑 [NotificationService] All notifications cleared")
     }
 
@@ -234,10 +345,10 @@ extension NotificationService: UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         print("📱 [Delegate] willPresent called for: \(notification.request.content.title)")
-        print("📱 [Delegate] Showing banner, sound, and badge")
+        print("📱 [Delegate] Showing banner and sound")
 
-        // Показываем banner, sound и badge даже в foreground
-        completionHandler([.banner, .sound, .badge])
+        // Показываем banner и sound даже в foreground (без badge)
+        completionHandler([.banner, .sound])
     }
 
     /// Вызывается когда пользователь нажимает на уведомление
@@ -247,6 +358,12 @@ extension NotificationService: UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         print("✅ [Delegate] User tapped notification: \(response.notification.request.content.title)")
+
+        // Переключаемся на таб таймера при нажатии на уведомление
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: Notification.Name("SwitchToTimerTab"), object: nil)
+        }
+
         completionHandler()
     }
 }

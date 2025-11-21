@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		6B8C67EA2ECF4EAB00FB86A3 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6B8C67E92ECF4EAB00FB86A3 /* WidgetKit.framework */; };
-		6B8C67EC2ECF4EAB00FB86A3 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6B8C67EB2ECF4EAB00FB86A3 /* SwiftUI.framework */; };
-		6B8C67F92ECF4EAB00FB86A3 /* PokerTimerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6B8C67E72ECF4EAB00FB86A3 /* PokerTimerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6BE674EF2ED06F1D006142DE /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6BE674EE2ED06F1D006142DE /* WidgetKit.framework */; };
+		6BE674F12ED06F1D006142DE /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6BE674F02ED06F1D006142DE /* SwiftUI.framework */; };
+		6BE674FE2ED06F1F006142DE /* PokerTimerActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6BE674EC2ED06F1D006142DE /* PokerTimerActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,23 +20,23 @@
 			remoteGlobalIDString = 6BCB94722E8ED0BF007212D5;
 			remoteInfo = "Home Poker";
 		};
-		6B8C67F72ECF4EAB00FB86A3 /* PBXContainerItemProxy */ = {
+		6BE674FC2ED06F1F006142DE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6BCB946B2E8ED0BF007212D5 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 6B8C67E62ECF4EAB00FB86A3;
-			remoteInfo = PokerTimerWidgetExtension;
+			remoteGlobalIDString = 6BE674EB2ED06F1D006142DE;
+			remoteInfo = PokerTimerActivityExtension;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		6B8C67DE2ECF4DF500FB86A3 /* Embed Foundation Extensions */ = {
+		6BE674E32ED06DA0006142DE /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				6B8C67F92ECF4EAB00FB86A3 /* PokerTimerWidgetExtension.appex in Embed Foundation Extensions */,
+				6BE674FE2ED06F1F006142DE /* PokerTimerActivityExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -45,28 +45,19 @@
 
 /* Begin PBXFileReference section */
 		6B3A0C4E2EBB747C000FD68C /* Home PokerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Home PokerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		6B8C67E72ECF4EAB00FB86A3 /* PokerTimerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PokerTimerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		6B8C67E92ECF4EAB00FB86A3 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
-		6B8C67EB2ECF4EAB00FB86A3 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		6BCB94732E8ED0BF007212D5 /* Home Poker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Home Poker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6BE674EC2ED06F1D006142DE /* PokerTimerActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PokerTimerActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		6BE674EE2ED06F1D006142DE /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		6BE674F02ED06F1D006142DE /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		6B8C67FA2ECF4EAB00FB86A3 /* Exceptions for "PokerTimerWidget" folder in "PokerTimerWidgetExtension" target */ = {
+		6BE674FF2ED06F1F006142DE /* Exceptions for "PokerTimerActivity" folder in "PokerTimerActivityExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 6B8C67E62ECF4EAB00FB86A3 /* PokerTimerWidgetExtension */;
-		};
-		6B8C68062ECF4FC000FB86A3 /* Exceptions for "Home Poker" folder in "PokerTimerWidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Domain/Models/LiveActivity/TimerActivityAttributes.swift,
-				Domain/Models/Tournament/BlindModels.swift,
-				Domain/Models/Tournament/TournamentTemplate.swift,
-			);
-			target = 6B8C67E62ECF4EAB00FB86A3 /* PokerTimerWidgetExtension */;
+			target = 6BE674EB2ED06F1D006142DE /* PokerTimerActivityExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -78,18 +69,15 @@
 		};
 		6B74D0512EA8E74100A85B0E /* Home Poker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				6B8C68062ECF4FC000FB86A3 /* Exceptions for "Home Poker" folder in "PokerTimerWidgetExtension" target */,
-			);
 			path = "Home Poker";
 			sourceTree = "<group>";
 		};
-		6B8C67ED2ECF4EAB00FB86A3 /* PokerTimerWidget */ = {
+		6BE674F22ED06F1D006142DE /* PokerTimerActivity */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				6B8C67FA2ECF4EAB00FB86A3 /* Exceptions for "PokerTimerWidget" folder in "PokerTimerWidgetExtension" target */,
+				6BE674FF2ED06F1F006142DE /* Exceptions for "PokerTimerActivity" folder in "PokerTimerActivityExtension" target */,
 			);
-			path = PokerTimerWidget;
+			path = PokerTimerActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -102,15 +90,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6B8C67E42ECF4EAB00FB86A3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6B8C67EC2ECF4EAB00FB86A3 /* SwiftUI.framework in Frameworks */,
-				6B8C67EA2ECF4EAB00FB86A3 /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		6BCB94702E8ED0BF007212D5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -118,25 +97,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6BE674E92ED06F1D006142DE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6BE674F12ED06F1D006142DE /* SwiftUI.framework in Frameworks */,
+				6BE674EF2ED06F1D006142DE /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		6B8C67E82ECF4EAB00FB86A3 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				6B8C67E92ECF4EAB00FB86A3 /* WidgetKit.framework */,
-				6B8C67EB2ECF4EAB00FB86A3 /* SwiftUI.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		6BCB946A2E8ED0BF007212D5 = {
 			isa = PBXGroup;
 			children = (
 				6B74D0512EA8E74100A85B0E /* Home Poker */,
 				6B3A0C4F2EBB747C000FD68C /* Home PokerTests */,
-				6B8C67ED2ECF4EAB00FB86A3 /* PokerTimerWidget */,
-				6B8C67E82ECF4EAB00FB86A3 /* Frameworks */,
+				6BE674F22ED06F1D006142DE /* PokerTimerActivity */,
+				6BE674ED2ED06F1D006142DE /* Frameworks */,
 				6BCB94742E8ED0BF007212D5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -146,9 +125,18 @@
 			children = (
 				6BCB94732E8ED0BF007212D5 /* Home Poker.app */,
 				6B3A0C4E2EBB747C000FD68C /* Home PokerTests.xctest */,
-				6B8C67E72ECF4EAB00FB86A3 /* PokerTimerWidgetExtension.appex */,
+				6BE674EC2ED06F1D006142DE /* PokerTimerActivityExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		6BE674ED2ED06F1D006142DE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				6BE674EE2ED06F1D006142DE /* WidgetKit.framework */,
+				6BE674F02ED06F1D006142DE /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -177,28 +165,6 @@
 			productReference = 6B3A0C4E2EBB747C000FD68C /* Home PokerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		6B8C67E62ECF4EAB00FB86A3 /* PokerTimerWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 6B8C67FB2ECF4EAB00FB86A3 /* Build configuration list for PBXNativeTarget "PokerTimerWidgetExtension" */;
-			buildPhases = (
-				6B8C67E32ECF4EAB00FB86A3 /* Sources */,
-				6B8C67E42ECF4EAB00FB86A3 /* Frameworks */,
-				6B8C67E52ECF4EAB00FB86A3 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				6B8C67ED2ECF4EAB00FB86A3 /* PokerTimerWidget */,
-			);
-			name = PokerTimerWidgetExtension;
-			packageProductDependencies = (
-			);
-			productName = PokerTimerWidgetExtension;
-			productReference = 6B8C67E72ECF4EAB00FB86A3 /* PokerTimerWidgetExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		6BCB94722E8ED0BF007212D5 /* Home Poker */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6BCB94802E8ED0C0007212D5 /* Build configuration list for PBXNativeTarget "Home Poker" */;
@@ -206,12 +172,12 @@
 				6BCB946F2E8ED0BF007212D5 /* Sources */,
 				6BCB94702E8ED0BF007212D5 /* Frameworks */,
 				6BCB94712E8ED0BF007212D5 /* Resources */,
-				6B8C67DE2ECF4DF500FB86A3 /* Embed Foundation Extensions */,
+				6BE674E32ED06DA0006142DE /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				6B8C67F82ECF4EAB00FB86A3 /* PBXTargetDependency */,
+				6BE674FD2ED06F1F006142DE /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				6B74D0512EA8E74100A85B0E /* Home Poker */,
@@ -222,6 +188,28 @@
 			productName = "Home Poker";
 			productReference = 6BCB94732E8ED0BF007212D5 /* Home Poker.app */;
 			productType = "com.apple.product-type.application";
+		};
+		6BE674EB2ED06F1D006142DE /* PokerTimerActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6BE675002ED06F1F006142DE /* Build configuration list for PBXNativeTarget "PokerTimerActivityExtension" */;
+			buildPhases = (
+				6BE674E82ED06F1D006142DE /* Sources */,
+				6BE674E92ED06F1D006142DE /* Frameworks */,
+				6BE674EA2ED06F1D006142DE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				6BE674F22ED06F1D006142DE /* PokerTimerActivity */,
+			);
+			name = PokerTimerActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = PokerTimerActivityExtension;
+			productReference = 6BE674EC2ED06F1D006142DE /* PokerTimerActivityExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -237,11 +225,11 @@
 						CreatedOnToolsVersion = 26.0.1;
 						TestTargetID = 6BCB94722E8ED0BF007212D5;
 					};
-					6B8C67E62ECF4EAB00FB86A3 = {
-						CreatedOnToolsVersion = 26.1.1;
-					};
 					6BCB94722E8ED0BF007212D5 = {
 						CreatedOnToolsVersion = 26.0.1;
+					};
+					6BE674EB2ED06F1D006142DE = {
+						CreatedOnToolsVersion = 26.1.1;
 					};
 				};
 			};
@@ -264,7 +252,7 @@
 			targets = (
 				6BCB94722E8ED0BF007212D5 /* Home Poker */,
 				6B3A0C4D2EBB747C000FD68C /* Home PokerTests */,
-				6B8C67E62ECF4EAB00FB86A3 /* PokerTimerWidgetExtension */,
+				6BE674EB2ED06F1D006142DE /* PokerTimerActivityExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -277,14 +265,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6B8C67E52ECF4EAB00FB86A3 /* Resources */ = {
+		6BCB94712E8ED0BF007212D5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6BCB94712E8ED0BF007212D5 /* Resources */ = {
+		6BE674EA2ED06F1D006142DE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -301,14 +289,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6B8C67E32ECF4EAB00FB86A3 /* Sources */ = {
+		6BCB946F2E8ED0BF007212D5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6BCB946F2E8ED0BF007212D5 /* Sources */ = {
+		6BE674E82ED06F1D006142DE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -323,10 +311,10 @@
 			target = 6BCB94722E8ED0BF007212D5 /* Home Poker */;
 			targetProxy = 6B3A0C522EBB747C000FD68C /* PBXContainerItemProxy */;
 		};
-		6B8C67F82ECF4EAB00FB86A3 /* PBXTargetDependency */ = {
+		6BE674FD2ED06F1F006142DE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 6B8C67E62ECF4EAB00FB86A3 /* PokerTimerWidgetExtension */;
-			targetProxy = 6B8C67F72ECF4EAB00FB86A3 /* PBXContainerItemProxy */;
+			target = 6BE674EB2ED06F1D006142DE /* PokerTimerActivityExtension */;
+			targetProxy = 6BE674FC2ED06F1F006142DE /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -374,81 +362,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Home Poker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Home Poker";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		6B8C67FC2ECF4EAB00FB86A3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
-				DEVELOPMENT_TEAM = L6TR2N4F28;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PokerTimerWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = PokerTimerWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mikemailyan.Home-Poker.PokerTimerWidget";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		6B8C67FD2ECF4EAB00FB86A3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
-				DEVELOPMENT_TEAM = L6TR2N4F28;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PokerTimerWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = PokerTimerWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mikemailyan.Home-Poker.PokerTimerWidget";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -582,7 +495,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 26;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				ENABLE_APP_SANDBOX = YES;
@@ -632,7 +545,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 26;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = L6TR2N4F28;
 				ENABLE_APP_SANDBOX = YES;
@@ -675,6 +588,71 @@
 			};
 			name = Release;
 		};
+		6BE675012ED06F1F006142DE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L6TR2N4F28;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PokerTimerActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PokerTimerActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mikemailyan.Home-Poker.PokerTimerActivity";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6BE675022ED06F1F006142DE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L6TR2N4F28;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PokerTimerActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PokerTimerActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mikemailyan.Home-Poker.PokerTimerActivity";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -683,15 +661,6 @@
 			buildConfigurations = (
 				6B3A0C542EBB747C000FD68C /* Debug */,
 				6B3A0C552EBB747C000FD68C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		6B8C67FB2ECF4EAB00FB86A3 /* Build configuration list for PBXNativeTarget "PokerTimerWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				6B8C67FC2ECF4EAB00FB86A3 /* Debug */,
-				6B8C67FD2ECF4EAB00FB86A3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -710,6 +679,15 @@
 			buildConfigurations = (
 				6BCB94812E8ED0C0007212D5 /* Debug */,
 				6BCB94822E8ED0C0007212D5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6BE675002ED06F1F006142DE /* Build configuration list for PBXNativeTarget "PokerTimerActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6BE675012ED06F1F006142DE /* Debug */,
+				6BE675022ED06F1F006142DE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

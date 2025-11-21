@@ -26,14 +26,6 @@ struct Home_PokerApp: App {
                     // Запрос разрешений на уведомления
                     let granted = await notificationService.requestAuthorization()
                     print("🔔 [App] Notification authorization: \(granted)")
-                    print("🔔 [App] Delegate is set: \(notificationService.isDelegateSet)")
-
-                    // Проверяем что delegate действительно установлен в системе
-                    let systemDelegate = UNUserNotificationCenter.current().delegate
-                    print("🔔 [App] System delegate is set: \(systemDelegate != nil)")
-                }
-                .onAppear {
-                    print(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!)
                 }
         }
         .modelContainer(for: [
