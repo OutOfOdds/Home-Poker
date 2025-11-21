@@ -407,11 +407,9 @@ final class TimerViewModel {
         )
 
         // Если автоматически перешли на новый уровень
-        var levelChanged = false
         if levelIndex != currentIndex {
             let oldIndex = currentIndex
             currentIndex = levelIndex
-            levelChanged = true
             print("🔄 [TimerViewModel] Level changed: \(oldIndex) → \(levelIndex)")
             // Уведомления уже запланированы заранее в scheduleAllNotificationsUpfront()
 
