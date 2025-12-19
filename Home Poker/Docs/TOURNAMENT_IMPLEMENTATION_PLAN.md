@@ -54,7 +54,7 @@ enum TransactionType: String, Codable, CaseIterable {
     // Кеш-игра
     case chipBuyIn
     case chipAddOn
-    case сhipCashOut
+    case chipCashOut
 
     // Турнир
     case tournamentEntry  // вход в турнир

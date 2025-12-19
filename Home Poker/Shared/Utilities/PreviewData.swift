@@ -648,7 +648,7 @@ enum PreviewData {
         // Cash-out
         if let cashOut = cashOut {
             transactions.append(PlayerChipTransaction(
-                type: .сhipCashOut,
+                type: .chipCashOut,
                 amount: cashOut,
                 player: player,
                 timestamp: Date().addingTimeInterval(-30 * 60)

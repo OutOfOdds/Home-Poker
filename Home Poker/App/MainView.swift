@@ -41,4 +41,5 @@ struct MainView: View {
 #Preview {
     MainView()
         .environment(TimerViewModel())
+        .environment(NotificationService())
 }

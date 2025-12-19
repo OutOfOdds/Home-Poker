@@ -1,15 +1,16 @@
 import SwiftUI
 import SwiftData
+import TipKit
 
 struct SessionListView: View {
-
+    
     @Environment(\.modelContext) private var context
     @Query private var sessions: [Session]
     @State private var showingNewCashSession = false
     @State private var showingNewTournamentSession = false
     @AppStorage("sessionListShowDetails") private var showSessionDetails = true
     @State private var sessionToDelete: Session?
-
+    
     // Export
     @State private var sessionToExport: Session?
     @State private var exportedFileURL: URL?
@@ -19,113 +20,113 @@ struct SessionListView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
-                if sessions.isEmpty {
-                    ContentUnavailableView(
-                        "Нет сессий",
-                        systemImage: "tray",
-                        description: Text("Нажмите «+», чтобы добавить новую сессию")
-                    )
-                } else {
-                    sessionList
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink {
-                        SettingsView()
-                    } label: {
-                        Image(systemName: "gearshape")
+            sessionList
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink {
+                            SettingsView()
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
                     }
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button {
-                            showingNewCashSession = true
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Button {
+                                showingNewCashSession = true
+                            } label: {
+                                Label("Кеш-игра", systemImage: "dollarsign.circle")
+                            }
+                            
+                            Button {
+                                showingNewTournamentSession = true
+                            } label: {
+                                Label("Турнир", systemImage: "trophy")
+                            }
                         } label: {
-                            Label("Кеш-игра", systemImage: "dollarsign.circle")
-                        }
-
-                        Button {
-                            showingNewTournamentSession = true
-                        } label: {
-                            Label("Турнир", systemImage: "trophy")
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus")
-                            Text("Новая")
+                            HStack {
+                                Image(systemName: "plus")
+                                Text("Новая")
+                            }
                         }
                     }
                 }
-            }
-            .sheet(isPresented: $showingNewCashSession) {
-                NewSessionSheet(sessionType: .cash)
-            }
-            .sheet(isPresented: $showingNewTournamentSession) {
-                NewSessionSheet(sessionType: .tournament)
-            }
-            .alert("Удалить сессию?", isPresented: .constant(sessionToDelete != nil)) {
-                Button("Отмена", role: .cancel) {
-                    sessionToDelete = nil
+                .sheet(isPresented: $showingNewCashSession) {
+                    NewSessionSheet(sessionType: .cash)
                 }
-                Button("Удалить", role: .destructive) {
-                    if let session = sessionToDelete {
-                        deleteSessions([session])
+                .sheet(isPresented: $showingNewTournamentSession) {
+                    NewSessionSheet(sessionType: .tournament)
+                }
+                .alert("Удалить сессию?", isPresented: .constant(sessionToDelete != nil)) {
+                    Button("Отмена", role: .cancel) {
                         sessionToDelete = nil
                     }
-                }
-            } message: {
-                if let session = sessionToDelete {
-                    Text("Вы уверены, что хотите удалить сессию «\(session.sessionTitle)»? Это действие нельзя отменить.")
-                }
-            }
-            .navigationTitle("Сессии")
-            .sheet(isPresented: .constant(exportedFileURL != nil)) {
-                if let url = exportedFileURL {
-                    ActivityViewController(activityItems: [url]) {
-                        exportedFileURL = nil
-                        sessionToExport = nil
+                    Button("Удалить", role: .destructive) {
+                        if let session = sessionToDelete {
+                            deleteSessions([session])
+                            sessionToDelete = nil
+                        }
+                    }
+                } message: {
+                    if let session = sessionToDelete {
+                        Text("Вы уверены, что хотите удалить сессию «\(session.sessionTitle)»? Это действие нельзя отменить.")
                     }
                 }
-            }
-            .alert("Ошибка экспорта", isPresented: $showExportError) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(exportError?.localizedDescription ?? "Не удалось экспортировать сессию")
-            }
+                .navigationTitle("Сессии")
+                .sheet(isPresented: .constant(exportedFileURL != nil)) {
+                    if let url = exportedFileURL {
+                        ActivityViewController(activityItems: [url]) {
+                            exportedFileURL = nil
+                            sessionToExport = nil
+                        }
+                    }
+                }
+                .alert("Ошибка экспорта", isPresented: $showExportError) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text(exportError?.localizedDescription ?? "Не удалось экспортировать сессию")
+                }
         }
-
+        
     }
     
     private var sessionList: some View {
-        List {
-            ForEach(sessions) { session in
-                NavigationLink {
-                    SessionDetailView(session: session)
-                } label: {
-                    sessionRow(session)
-                }
-                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    Button {
-                        exportSession(session)
-                    } label: {
-                        Label("Поделиться", systemImage: "square.and.arrow.up")
+        Group {
+            if sessions.isEmpty {
+                ContentUnavailableView(
+                    "Нет сессий",
+                    systemImage: "tray",
+                    description: Text("Добавьте свою первую сессию")
+                )
+            } else {
+                List {
+                    ForEach(sessions) { session in
+                        NavigationLink {
+                            SessionDetailView(session: session)
+                        } label: {
+                            sessionRow(session)
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button {
+                                exportSession(session)
+                            } label: {
+                                Label("Поделиться", systemImage: "square.and.arrow.up")
+                            }
+                            .tint(.blue)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                sessionToDelete = session
+                            } label: {
+                                Label("Удалить", systemImage: "trash")
+                            }
+                        }
                     }
-                    .tint(.blue)
-                }
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        sessionToDelete = session
-                    } label: {
-                        Label("Удалить", systemImage: "trash")
+                    .onDelete { offsets in
+                        if let index = offsets.first {
+                            sessionToDelete = sessions[index]
+                        }
                     }
-                }
-            }
-            .onDelete { offsets in
-                if let index = offsets.first {
-                    sessionToDelete = sessions[index]
                 }
             }
         }
@@ -200,28 +201,28 @@ private extension SessionListView {
             showExportError = true
         }
     }
-
+    
     func generateFilename(for session: Session) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
         let dateString = dateFormatter.string(from: session.startTime)
-
+        
         let sanitizedTitle = session.sessionTitle
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: "/", with: "-")
             .replacingOccurrences(of: "\\", with: "-")
             .replacingOccurrences(of: ":", with: "-")
-
+        
         return "\(sanitizedTitle)_\(dateString).pokersession"
     }
-
+    
     func saveToTemporaryFile(data: Data, filename: String) throws -> URL {
         let tempDir = FileManager.default.temporaryDirectory
         let fileURL = tempDir.appendingPathComponent(filename)
         try data.write(to: fileURL)
         return fileURL
     }
-
+    
     func deleteSessions(_ sessions: [Session]) {
         guard !sessions.isEmpty else { return }
         let repository = SwiftDataSessionsRepository(context: context)
@@ -239,27 +240,47 @@ private extension SessionListView {
 struct ActivityViewController: UIViewControllerRepresentable {
     let activityItems: [Any]
     let onDismiss: () -> Void
-
+    
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(
             activityItems: activityItems,
             applicationActivities: nil
         )
-
+        
         controller.completionWithItemsHandler = { _, _, _, _ in
             onDismiss()
         }
-
+        
         return controller
     }
-
+    
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
         // No updates needed
     }
 }
 
-#Preview {
+#Preview("Пустой список") {
+    SessionListView()
+        .modelContainer(for: [Session.self], inMemory: true)
+        .environment(SessionDetailViewModel())
+        .task {
+            try? Tips.resetDatastore()
+            try? Tips.configure([
+                .displayFrequency(.immediate),
+                .datastoreLocation(.applicationDefault)
+            ])
+        }
+}
+
+#Preview("С данными") {
     SessionListView()
         .modelContainer(PreviewData.previewContainer)
         .environment(SessionDetailViewModel())
+        .task {
+            try? Tips.resetDatastore()
+            try? Tips.configure([
+                .displayFrequency(.immediate),
+                .datastoreLocation(.applicationDefault)
+            ])
+        }
 }

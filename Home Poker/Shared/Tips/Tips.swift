@@ -32,3 +32,17 @@ struct SessionBankTip: Tip {
     }
 }
 
+
+struct TestTip: Tip {
+    var title: Text {
+        Text("Добавь сессию!")
+    }
+    
+    var message: Text? {
+        Text("Они будут храняться в этом списке")
+    }
+    
+    var image: Image? {
+        Image(systemName: "plus")
+    }
+}

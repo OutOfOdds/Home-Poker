@@ -53,7 +53,7 @@ struct PlayerTransferDTO: Codable {
 struct PlayerChipTransactionTransferDTO: Codable {
     let id: UUID
     let timestamp: Date
-    let type: String // "chipBuyIn", "chipAddOn", "сhipCashOut"
+    let type: String // "chipBuyIn", "chipAddOn", "chipCashOut"
     let chipAmount: Int
 }
 

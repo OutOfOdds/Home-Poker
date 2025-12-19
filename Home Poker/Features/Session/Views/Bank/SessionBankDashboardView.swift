@@ -293,6 +293,7 @@ struct SessionBankDashboardView: View {
                         Image(systemName: "exclamationmark.circle.fill")
                             .foregroundStyle(.orange)
                             .font(.title3)
+                            .symbolEffect(.wiggle)
                     }
                     Image(systemName: "chevron.right")
                         .foregroundStyle(.secondary)

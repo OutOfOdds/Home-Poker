@@ -14,16 +14,13 @@ struct Home_PokerApp: App {
                 .environment(notificationService)
                 .environment(sessionDetailVM)
                 .task {
-                    // Инициализация TipKit
                     do {
-                        try Tips.resetDatastore()
+//                        try Tips.resetDatastore()
                         try Tips.configure()
                     }
                     catch {
                         print("Error initializing TipKit \(error.localizedDescription)")
                     }
-
-                    // Запрос разрешений на уведомления
                     let granted = await notificationService.requestAuthorization()
                     print("🔔 [App] Notification authorization: \(granted)")
                 }

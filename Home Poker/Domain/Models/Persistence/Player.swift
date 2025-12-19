@@ -28,7 +28,7 @@ final class Player {
             switch transaction.type {
             case .chipBuyIn, .chipAddOn:
                 return (result.buyIn + transaction.chipAmount, result.cashOut)
-            case .сhipCashOut:
+            case .chipCashOut:
                 return (result.buyIn, result.cashOut + transaction.chipAmount)
             }
         }

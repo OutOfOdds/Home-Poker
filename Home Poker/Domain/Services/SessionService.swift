@@ -64,7 +64,7 @@ struct SessionService: SessionServiceProtocol {
             throw SessionServiceError.insufficientBank
         }
 
-        let transaction = PlayerChipTransaction(type: .сhipCashOut, amount: amount, player: player)
+        let transaction = PlayerChipTransaction(type: .chipCashOut, amount: amount, player: player)
         player.transactions.append(transaction)
         player.inGame = false
         refreshBankExpectation(for: session)
@@ -103,8 +103,8 @@ struct SessionService: SessionServiceProtocol {
     func removeTransaction(_ transaction: PlayerChipTransaction, from session: Session) {
         if let player = transaction.player {
             player.transactions.removeAll { $0.id == transaction.id }
-            if transaction.type == .сhipCashOut {
-                let hasCashOut = player.transactions.contains { $0.type == .сhipCashOut }
+            if transaction.type == .chipCashOut {
+                let hasCashOut = player.transactions.contains { $0.type == .chipCashOut }
                 player.inGame = !hasCashOut
             }
         }

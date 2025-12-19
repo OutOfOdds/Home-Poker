@@ -9,6 +9,7 @@ struct SessionInfoSummary: View {
         Section {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
+                    Spacer()
                     Button(action: onEditTapped) {
                         Image(systemName: "ellipsis")
                             .foregroundStyle(.secondary)
@@ -16,7 +17,6 @@ struct SessionInfoSummary: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.blue)
-                    Spacer()
                 }
                 summaryRow(
                     label: "Сессия:",

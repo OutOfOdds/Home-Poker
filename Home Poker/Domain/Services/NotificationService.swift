@@ -50,6 +50,10 @@ final class NotificationService: NSObject, NotificationServiceProtocol {
     private enum Constants {
         static let categoryIdentifier = "BLIND_LEVEL_CHANGE"
         static let notificationPrefix = "blind_level_"
+        static let tournamentCompletedPrefix = "tournament_completed_"
+        static let switchToTimerTabNotification = "SwitchToTimerTab"
+        static let threadIdentifier = "blind_level_changes"
+        static let immediateDelay: TimeInterval = 1
     }
 
     // MARK: - Initialization
@@ -96,211 +100,31 @@ final class NotificationService: NSObject, NotificationServiceProtocol {
         levelIndex: Int,
         item: LevelItem
     ) async throws {
-        // Проверяем статус разрешений
-        let settings = await notificationCenter.notificationSettings()
-        print("🔍 [NotificationService] Authorization status: \(settings.authorizationStatus.rawValue)")
-        print("🔍 [NotificationService] Alert setting: \(settings.alertSetting.rawValue)")
-
-        guard settings.authorizationStatus == .authorized else {
-            print("❌ [NotificationService] Notifications not authorized, status: \(settings.authorizationStatus.rawValue)")
-            return
-        }
-
-        let content = UNMutableNotificationContent()
-
-        switch item {
-        case .blinds(let level):
-            content.title = "Уровень \(levelIndex + 1)"
-
-            if level.ante > 0 {
-                content.body = "Блайнды: \(level.smallBlind)/\(level.bigBlind), анте \(level.ante)"
-            } else {
-                content.body = "Блайнды: \(level.smallBlind)/\(level.bigBlind)"
-            }
-
-        case .break(let breakInfo):
-            content.title = breakInfo.title
-            content.body = "Длительность: \(breakInfo.minutes) мин"
-        }
-
-        content.categoryIdentifier = Constants.categoryIdentifier
-        content.sound = .default
-
-        // Критично для показа на lock screen
-        if #available(iOS 15.0, *) {
-            content.interruptionLevel = .timeSensitive
-        }
-
-        // Группировка уведомлений
-        content.threadIdentifier = "blind_level_changes"
-
-        // Немедленная доставка (минимум 1 секунда для надежности)
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: 1,
-            repeats: false
+        try await scheduleBlindLevel(
+            levelIndex: levelIndex,
+            item: item,
+            delay: Constants.immediateDelay
         )
-
-        // Уникальный identifier чтобы избежать коллизий
-        let identifier = "\(Constants.notificationPrefix)\(levelIndex)_\(UUID().uuidString)"
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: content,
-            trigger: trigger
-        )
-
-        do {
-            try await notificationCenter.add(request)
-            print("📬 [NotificationService] Scheduled: \(content.title) - \(content.body)")
-
-            // Проверяем pending notifications
-            let pending = await notificationCenter.pendingNotificationRequests()
-            print("📋 [NotificationService] Pending notifications count: \(pending.count)")
-        } catch {
-            print("❌ [NotificationService] Failed to schedule: \(error)")
-            throw error
-        }
     }
 
-    /// Планирует уведомление с указанной задержкой от текущего момента (для pre-scheduling)
     func scheduleBlindLevelNotificationWithDelay(
         levelIndex: Int,
         item: LevelItem,
         delay: TimeInterval
     ) async throws {
-        // Проверяем статус разрешений
-        let settings = await notificationCenter.notificationSettings()
-
-        guard settings.authorizationStatus == .authorized else {
-            print("❌ [NotificationService] Notifications not authorized")
-            return
-        }
-
-        let content = UNMutableNotificationContent()
-
-        switch item {
-        case .blinds(let level):
-            content.title = "Уровень \(levelIndex + 1)"
-
-            if level.ante > 0 {
-                content.body = "Блайнды: \(level.smallBlind)/\(level.bigBlind), анте \(level.ante)"
-            } else {
-                content.body = "Блайнды: \(level.smallBlind)/\(level.bigBlind)"
-            }
-
-        case .break(let breakInfo):
-            content.title = breakInfo.title
-            content.body = "Длительность: \(breakInfo.minutes) мин"
-        }
-
-        content.categoryIdentifier = Constants.categoryIdentifier
-        content.sound = .default
-
-        // Планируем с указанной задержкой
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: delay,
-            repeats: false
+        try await scheduleBlindLevel(
+            levelIndex: levelIndex,
+            item: item,
+            delay: delay
         )
-
-        let identifier = "\(Constants.notificationPrefix)\(levelIndex)_\(UUID().uuidString)"
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: content,
-            trigger: trigger
-        )
-
-        do {
-            try await notificationCenter.add(request)
-            print("📅 [NotificationService] Scheduled level \(levelIndex + 1) in \(Int(delay))s: \(content.title)")
-        } catch {
-            print("❌ [NotificationService] Failed to schedule: \(error)")
-            throw error
-        }
     }
 
-    /// Планирует уведомление о завершении турнира
     func scheduleTournamentCompletedNotification() async throws {
-        // Проверяем статус разрешений
-        let settings = await notificationCenter.notificationSettings()
-
-        guard settings.authorizationStatus == .authorized else {
-            print("❌ [NotificationService] Notifications not authorized")
-            return
-        }
-
-        let content = UNMutableNotificationContent()
-        content.title = "🏆 Турнир завершен"
-        content.body = "Все уровни блайндов пройдены"
-        content.categoryIdentifier = Constants.categoryIdentifier
-        content.sound = .default
-
-        // Критично для показа на lock screen
-        if #available(iOS 15.0, *) {
-            content.interruptionLevel = .timeSensitive
-        }
-
-        // Немедленная доставка (минимум 1 секунда для надежности)
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: 1,
-            repeats: false
-        )
-
-        let identifier = "tournament_completed_\(UUID().uuidString)"
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: content,
-            trigger: trigger
-        )
-
-        do {
-            try await notificationCenter.add(request)
-            print("🏆 [NotificationService] Scheduled tournament completion notification")
-        } catch {
-            print("❌ [NotificationService] Failed to schedule completion: \(error)")
-            throw error
-        }
+        try await scheduleTournamentCompleted(delay: Constants.immediateDelay)
     }
 
-    /// Планирует уведомление о завершении турнира с указанной задержкой
     func scheduleTournamentCompletedNotificationWithDelay(delay: TimeInterval) async throws {
-        // Проверяем статус разрешений
-        let settings = await notificationCenter.notificationSettings()
-
-        guard settings.authorizationStatus == .authorized else {
-            print("❌ [NotificationService] Notifications not authorized")
-            return
-        }
-
-        let content = UNMutableNotificationContent()
-        content.title = "🏆 Турнир завершен"
-        content.body = "Все уровни блайндов пройдены"
-        content.categoryIdentifier = Constants.categoryIdentifier
-        content.sound = .default
-
-        // Критично для показа на lock screen
-        if #available(iOS 15.0, *) {
-            content.interruptionLevel = .timeSensitive
-        }
-
-        // Планируем с указанной задержкой
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: delay,
-            repeats: false
-        )
-
-        let identifier = "tournament_completed_\(UUID().uuidString)"
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: content,
-            trigger: trigger
-        )
-
-        do {
-            try await notificationCenter.add(request)
-            print("🏆 [NotificationService] Scheduled tournament completion in \(Int(delay))s")
-        } catch {
-            print("❌ [NotificationService] Failed to schedule completion: \(error)")
-            throw error
-        }
+        try await scheduleTournamentCompleted(delay: delay)
     }
 
     // MARK: - Cancellation
@@ -332,6 +156,133 @@ final class NotificationService: NSObject, NotificationServiceProtocol {
 
         notificationCenter.setNotificationCategories([category])
     }
+
+    // MARK: - Private Scheduling Helpers
+
+    /// Проверяет авторизацию и возвращает true если разрешено
+    private func ensureAuthorized() async -> Bool {
+        let settings = await notificationCenter.notificationSettings()
+
+        guard settings.authorizationStatus == .authorized else {
+            print("❌ [NotificationService] Notifications not authorized")
+            return false
+        }
+
+        return true
+    }
+
+    /// Создает контент для уведомления о смене уровня блайндов
+    private func makeBlindLevelContent(levelIndex: Int, item: LevelItem) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+
+        switch item {
+        case .blinds(let level):
+            content.title = "Уровень \(levelIndex + 1)"
+
+            if level.ante > 0 {
+                content.body = "Блайнды: \(level.smallBlind)/\(level.bigBlind), анте \(level.ante)"
+            } else {
+                content.body = "Блайнды: \(level.smallBlind)/\(level.bigBlind)"
+            }
+
+        case .break(let breakInfo):
+            content.title = breakInfo.title
+            content.body = "Длительность: \(breakInfo.minutes) мин"
+        }
+
+        content.categoryIdentifier = Constants.categoryIdentifier
+        content.sound = .default
+        content.threadIdentifier = Constants.threadIdentifier
+
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+
+        return content
+    }
+
+    /// Создает контент для уведомления о завершении турнира
+    private func makeTournamentCompletedContent() -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = "🏆 Турнир завершен"
+        content.body = "Все уровни блайндов пройдены"
+        content.categoryIdentifier = Constants.categoryIdentifier
+        content.sound = .default
+
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+
+        return content
+    }
+
+    /// Планирует уведомление с заданным контентом, идентификатором и задержкой
+    private func scheduleNotification(
+        content: UNMutableNotificationContent,
+        identifier: String,
+        delay: TimeInterval
+    ) async throws {
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: delay,
+            repeats: false
+        )
+
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+
+        do {
+            try await notificationCenter.add(request)
+
+            if delay == Constants.immediateDelay {
+                print("📬 [NotificationService] Scheduled: \(content.title) - \(content.body)")
+            } else {
+                print("📅 [NotificationService] Scheduled in \(Int(delay))s: \(content.title)")
+            }
+
+            #if DEBUG
+            let pending = await notificationCenter.pendingNotificationRequests()
+            print("📋 [NotificationService] Pending notifications count: \(pending.count)")
+            #endif
+        } catch {
+            print("❌ [NotificationService] Failed to schedule: \(error)")
+            throw error
+        }
+    }
+
+    /// Планирует уведомление о смене уровня с заданной задержкой
+    private func scheduleBlindLevel(
+        levelIndex: Int,
+        item: LevelItem,
+        delay: TimeInterval
+    ) async throws {
+        guard await ensureAuthorized() else { return }
+
+        let content = makeBlindLevelContent(levelIndex: levelIndex, item: item)
+        let identifier = "\(Constants.notificationPrefix)\(levelIndex)_\(UUID().uuidString)"
+
+        try await scheduleNotification(
+            content: content,
+            identifier: identifier,
+            delay: delay
+        )
+    }
+
+    /// Планирует уведомление о завершении турнира с заданной задержкой
+    private func scheduleTournamentCompleted(delay: TimeInterval) async throws {
+        guard await ensureAuthorized() else { return }
+
+        let content = makeTournamentCompletedContent()
+        let identifier = "\(Constants.tournamentCompletedPrefix)\(UUID().uuidString)"
+
+        try await scheduleNotification(
+            content: content,
+            identifier: identifier,
+            delay: delay
+        )
+    }
 }
 
 // MARK: - UNUserNotificationCenterDelegate
@@ -361,7 +312,10 @@ extension NotificationService: UNUserNotificationCenterDelegate {
 
         // Переключаемся на таб таймера при нажатии на уведомление
         DispatchQueue.main.async {
-            NotificationCenter.default.post(name: Notification.Name("SwitchToTimerTab"), object: nil)
+            NotificationCenter.default.post(
+                name: Notification.Name(Constants.switchToTimerTabNotification),
+                object: nil
+            )
         }
 
         completionHandler()
