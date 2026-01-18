@@ -70,9 +70,13 @@ extension KBArticle {
                 Text("Добро пожаловать в Home Poker! Это руководство поможет вам создать вашу первую покерную сессию.")
 
                 ArticleSection(title: "Шаг 1: Открыть список сессий") {
-                    Text("На главном экране нажмите на вкладку ")
-                        + Text("\"Сессии\"").bold()
-                        + Text(" в нижней панели навигации.")
+                    Text("На главном экране нажмите на вкладку \"Сессии\" в нижней панели навигации.")
+                        .foregroundStyle(.primary)
+                        .overlay(
+                            Text("\"Сессии\"")
+                                .bold()
+                                .opacity(0) // placeholder to keep style reference if needed
+                        , alignment: .center)
                 }
 
                 ArticleSection(title: "Шаг 2: Создать новую сессию") {
@@ -118,9 +122,8 @@ extension KBArticle {
                 }
 
                 ArticleSection(title: "Шаг 4: Создать сессию") {
-                    Text("Нажмите ").foregroundStyle(.primary)
-                        + Text("\"Создать\"").bold()
-                        + Text(" в правом верхнем углу.")
+                    Text("Нажмите \"Создать\" в правом верхнем углу.")
+                        .foregroundStyle(.primary)
                 }
 
                 ArticleSection(title: "Шаг 5: Добавить игроков") {

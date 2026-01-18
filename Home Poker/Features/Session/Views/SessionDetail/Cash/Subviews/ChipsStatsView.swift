@@ -72,7 +72,9 @@ struct ChipsStatsView: View {
                                 .font(.title3).fontWeight(.semibold)
                                 .foregroundColor(.blue)
                                 .fontDesign(.monospaced)
+
                         }
+                    
                         .overlay(alignment: .topTrailing) {
                             if allPlayersFinished && session.chipsInGame > 0 && !hasRakeOrTips {
                                 Image(systemName: "exclamationmark.circle.fill")
@@ -82,6 +84,7 @@ struct ChipsStatsView: View {
                                     .onTapGesture {
                                         showingRakeSheet = true
                                     }
+
                             }
                         }
                     
@@ -107,8 +110,10 @@ struct ChipsStatsView: View {
                 }
                 .italic()
                 .fontDesign(.monospaced)
+                
             }
         }
+        
         Section {
             if allPlayersFinished && session.chipsInGame > 0 && !hasRakeOrTips {
                 Button {

@@ -168,6 +168,7 @@ struct SessionListView: View {
                         .background(statusColor(for: session.status).opacity(0.15), in: Capsule())
                         .foregroundStyle(statusColor(for: session.status))
                 }
+                .glassEffect()
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "calendar")

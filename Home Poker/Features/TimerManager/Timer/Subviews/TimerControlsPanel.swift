@@ -22,14 +22,17 @@ struct TimerControlsPanel: View {
             .tint(.indigo)
             .disabled(!viewModel.isRunning)
             .buttonStyle(.bordered)
-            
+            .glassEffect()
             
             // Кнопка "Старт" или "Пауза/Возобновить"
             playPauseButton
-            
+                .glassEffect()
+
             // Кнопка "Сброс" (показывается только когда таймер запущен)
             if viewModel.isRunning {
                 resetButton
+                    .glassEffect()
+
             }
             
             // Кнопка "Вперёд"
@@ -44,7 +47,8 @@ struct TimerControlsPanel: View {
             .tint(.indigo)
             .disabled(!viewModel.isRunning)
             .buttonStyle(.bordered)
-            
+            .glassEffect()
+
             Spacer()
         }
         .alert("Сбросить текущий уровень?", isPresented: $showRestartLevelAlert) {
@@ -74,8 +78,10 @@ struct TimerControlsPanel: View {
                     .font(.title)
             }
             .matchedGeometryEffect(id: "playPauseButton", in: namespace, isSource: true)
-            .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .buttonStyle(.bordered)
+            .tint(.green)
+
         } else if viewModel.isPaused {
             // Кнопка "Возобновить"
             Button {
@@ -87,8 +93,10 @@ struct TimerControlsPanel: View {
                     .font(.title)
             }
             .matchedGeometryEffect(id: "playPauseButton", in: namespace, isSource: true)
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.bordered)
             .controlSize(.large)
+            .tint(.green)
+
         } else if viewModel.isRunning {
             // Кнопка "Пауза"
             Button {
@@ -102,6 +110,8 @@ struct TimerControlsPanel: View {
             .matchedGeometryEffect(id: "playPauseButton", in: namespace, isSource: true)
             .buttonStyle(.bordered)
             .controlSize(.large)
+            .tint(.cyan)
+
         }
     }
     

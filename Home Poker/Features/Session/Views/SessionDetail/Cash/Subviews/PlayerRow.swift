@@ -61,7 +61,7 @@ struct PlayerRow: View {
                     }
                     .buttonStyle(.bordered)
                     .tint(.green)
-                    
+
                     Button {
                         showingCashOutSheet = true
                     } label: {
@@ -72,7 +72,7 @@ struct PlayerRow: View {
                     }
                     .buttonStyle(.bordered)
                     .tint(.pink)
-                    
+
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {

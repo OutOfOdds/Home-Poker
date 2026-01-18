@@ -79,6 +79,8 @@ struct TimerLevelCard: View {
             .padding(.vertical, 8)
             .background(color.opacity(0.2))
             .clipShape(Capsule())
+            .glassEffect()
+
     }
     
     private var levelTitle: String {

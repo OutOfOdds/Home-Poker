@@ -51,7 +51,7 @@ private extension TimerManagerView {
                 Button {
                     showBackToTemplatesAlert = true
                 } label: {
-                    Image(systemName: "xmark.circle")
+                    Image(systemName: "xmark")
                 }
             }
         }

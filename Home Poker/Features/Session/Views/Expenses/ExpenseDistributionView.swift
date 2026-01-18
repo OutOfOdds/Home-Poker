@@ -84,8 +84,8 @@ struct ExpenseDistributionView: View {
             playerSelectionSection
             summarySection
         }
-        .navigationTitle("Распределить расход")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Распределить:")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Отмена") {
