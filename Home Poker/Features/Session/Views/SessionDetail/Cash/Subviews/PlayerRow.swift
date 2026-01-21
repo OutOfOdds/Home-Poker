@@ -32,6 +32,12 @@ struct PlayerRow: View {
                                 .bold()
                                 .foregroundColor(.dynamicColor(value: player.chipProfit))
                                 .fontDesign(.monospaced)
+                            Image("chips")
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .foregroundColor(.dynamicColor(value: player.chipProfit))
+                                .frame(width: 20)
                         }
                     }
                     

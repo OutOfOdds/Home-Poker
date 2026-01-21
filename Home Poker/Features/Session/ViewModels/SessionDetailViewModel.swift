@@ -66,10 +66,13 @@ final class SessionDetailViewModel {
     // MARK: - Расходы
 
     // Добавляет расход в сессию и показывает alert при ошибке.
-    func addExpense(to session: Session, note: String, amount: Int?, payer: Player? = nil) -> Bool {
-        guard validateAmount(amount) else { return false }
-        return performServiceCall {
-            try service.addExpense(note: note, amount: amount!, payer: payer, to: session, createdAt: Date())
+    func addExpense(to session: Session, note: String, amount: Int?, payer: Player? = nil) -> Expense? {
+        guard validateAmount(amount) else { return nil }
+        do {
+            return try service.addExpense(note: note, amount: amount!, payer: payer, to: session, createdAt: Date())
+        } catch {
+            setError(error)
+            return nil
         }
     }
     

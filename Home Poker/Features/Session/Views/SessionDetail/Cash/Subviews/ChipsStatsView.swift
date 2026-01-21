@@ -50,10 +50,18 @@ struct ChipsStatsView: View {
                         
                         Spacer()
                         
-                        Text("\(session.totalChips)")
-                            .font(.title3).fontWeight(.semibold)
-                            .foregroundStyle(.green)
-                            .fontDesign(.monospaced)
+                        HStack {
+                            Text("\(session.totalChips)")
+                                .font(.title3).fontWeight(.semibold)
+                                .foregroundStyle(.green)
+                                .fontDesign(.monospaced)
+                            Image("chips")
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .foregroundStyle(.green)
+                                .frame(width: 25)
+                        }
                     }
                     
                     Line()
@@ -68,10 +76,19 @@ struct ChipsStatsView: View {
                             
                             Spacer()
                             
-                            Text("\(session.chipsInGame)")
-                                .font(.title3).fontWeight(.semibold)
-                                .foregroundColor(.blue)
-                                .fontDesign(.monospaced)
+                            HStack {
+                                Text("\(session.chipsInGame)")
+                                    .font(.title3).fontWeight(.semibold)
+                                    .foregroundColor(.blue)
+                                    .fontDesign(.monospaced)
+                                
+                                Image("chips")
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .foregroundColor(.blue)
+                                    .frame(width: 25)
+                            }
 
                         }
                     
@@ -100,10 +117,19 @@ struct ChipsStatsView: View {
                         
                         Spacer()
                         
-                        Text("\(session.totalCashOut)")
-                            .font(.title3).fontWeight(.semibold)
-                            .foregroundColor(.orange)
-                            .fontDesign(.monospaced)
+                        HStack {
+                            Text("\(session.totalCashOut)")
+                                .font(.title3).fontWeight(.semibold)
+                                .foregroundColor(.orange)
+                                .fontDesign(.monospaced)
+                            
+                            Image("chips")
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .foregroundColor(.orange)
+                                .frame(width: 25)
+                        }
                     }
                     
                     

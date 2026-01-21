@@ -45,7 +45,7 @@ struct SessionBankDashboardView: View {
                     }
             }
         }
-        .navigationTitle("Банк сессии")
+        .navigationTitle("УЧЕТ")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

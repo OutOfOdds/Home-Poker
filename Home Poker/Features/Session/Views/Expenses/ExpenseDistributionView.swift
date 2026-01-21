@@ -14,48 +14,48 @@ struct ExpenseDistributionView: View {
     @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
 
+    @State private var payerSelection: ExpensePayerSelection = .player
+    @State private var selectedPayerId: UUID?
+    @State private var draftPaidFromBank: Int = 0
+    @State private var draftPaidFromRake: Int = 0
+
     // UI состояние (локальное)
     @State private var distributionMode: ExpenseDistributionMode = .equal
     @State private var playerSelections: [PlayerSelection] = []
-
-    // Для редактирования значений
-    @State private var editingPlayerId: UUID?
-    @State private var showEditAlert = false
-    @State private var editValue = ""
-
-    // Для выбора рейка как участника распределения
-    @State private var rakeSelection: RakeSelection = RakeSelection(isSelected: false, amount: 0)
 
     // Computed properties
     private var totalAmount: Int {
         expense.amount
     }
 
+    private var bankBalance: Int {
+        session.bank?.netBalance ?? 0
+    }
+
+    private var remainingBankPayment: Int {
+        max(expense.amount - draftPaidFromBank, 0)
+    }
+
+    private var canSelectBank: Bool {
+        bankBalance > 0 || expense.paidFromBank > 0
+    }
+
+    private var canSelectRake: Bool {
+        availableRake > 0 || draftPaidFromRake > 0
+    }
+
     private var totalDistributed: Int {
-        let playerTotal = playerSelections.filter { $0.isSelected }.reduce(0) { $0 + $1.amount }
-        let rakeTotal = rakeSelection.isSelected ? rakeSelection.amount : 0
-        return playerTotal + rakeTotal
+        playerSelections.filter { $0.isSelected }.reduce(0) { $0 + $1.amount }
     }
 
     private var remaining: Int {
         totalAmount - totalDistributed
     }
 
-    private var editingPlayer: PlayerSelection? {
-        guard let id = editingPlayerId else { return nil }
-        return playerSelections.first { $0.id == id }
-    }
-
-    private var editingTitle: String {
-        if let player = editingPlayer {
-            return player.player.name
-        } else if showEditAlert {
-            return "Рейк"
-        }
-        return ""
-    }
-
     private var isDistributionInvalid: Bool {
+        if payerSelection == .rake {
+            return false
+        }
         // Валидация:
         // 1. Если весь расход распределен (remaining == 0) - валидно
         // 2. Если ничего не распределено (totalDistributed == 0) - тоже валидно
@@ -64,15 +64,23 @@ struct ExpenseDistributionView: View {
         return remaining != 0 && totalDistributed != 0
     }
 
-    private var availableRake: Int {
-        viewModel.availableRakeForExpenses(for: session)
+    private var isPaymentInvalid: Bool {
+        switch payerSelection {
+        case .player:
+            return selectedPayerId == nil
+        case .bank:
+            return draftPaidFromBank < expense.amount
+        case .rake:
+            return draftPaidFromRake < expense.amount
+        }
     }
 
-    private var canShowRakeOption: Bool {
-        // Показываем рейк если:
-        // 1. Рейк был зафиксирован (сессия завершена)
-        // 2. Есть доступный рейк ИЛИ расход уже частично оплачен из рейка
-        session.rakeAmount > 0 && (availableRake > 0 || expense.paidFromRake > 0)
+    private var isFormInvalid: Bool {
+        isDistributionInvalid || isPaymentInvalid
+    }
+
+    private var availableRake: Int {
+        viewModel.availableRakeForExpenses(for: session)
     }
 
     // MARK: - Body
@@ -80,52 +88,113 @@ struct ExpenseDistributionView: View {
     var body: some View {
         Form {
             expenseInfoSection
-            distributionModeSection
-            playerSelectionSection
-            summarySection
+            payerSection
+            if payerSelection != .rake {
+                distributionModeSection
+                playerSelectionSection
+                summarySection
+            } else {
+                Section {
+                    Text("Расход покрыт организаторами, распределение между игроками не требуется.")
+                        .foregroundStyle(.secondary)
+                        .font(.footnote)
+                }
+            }
         }
         .navigationTitle("Распределить:")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Отмена") {
-                    dismiss()
-                }
-            }
-
             ToolbarItem(placement: .confirmationAction) {
-                Button("Сохранить") {
+                Button("Сохранить", systemImage: "checkmark") {
                     submitDistribution()
                 }
-                .disabled(isDistributionInvalid)
+                .disabled(isFormInvalid)
             }
         }
         .onAppear {
             initializePlayerSelections()
+            initializePayerSelection()
         }
         .onChange(of: distributionMode) { _, newMode in
             handleDistributionModeChange(newMode)
         }
-        .alert(editingTitle, isPresented: $showEditAlert) {
-            TextField("Сумма", text: $editValue)
-                .keyboardType(.numberPad)
-            Button("Отмена", role: .cancel) {
-                editingPlayerId = nil
-                editValue = ""
-            }
-            Button("Сохранить") {
-                saveEditedValue()
-            }
-        } message: {
-            if editingPlayer == nil && showEditAlert {
-                Text("Доступно рейка: \(availableRake.asCurrency())\nОсталось распределить: \(remaining.asCurrency())")
-            } else {
-                Text("Осталось: \(remaining.asCurrency())")
-            }
+        .onChange(of: payerSelection) { _, newValue in
+            handlePayerSelectionChange(newValue)
+        }
+        .onChange(of: selectedPayerId) { _, newValue in
+            handleSelectedPayerChange(newValue)
         }
     }
 
     // MARK: - View Sections
+
+    private var payerSection: some View {
+        Section("Источник оплаты:") {
+            Picker("Источник оплаты", selection: $payerSelection) {
+                Text("Игрок").tag(ExpensePayerSelection.player)
+                if canSelectBank {
+                    Text("Касса").tag(ExpensePayerSelection.bank)
+                }
+                if canSelectRake {
+                    Text("Рейк").tag(ExpensePayerSelection.rake)
+                }
+            }
+            .pickerStyle(.segmented)
+
+        if payerSelection == .player {
+                Picker("Оплатил игрок", selection: $selectedPayerId) {
+                    ForEach(session.players, id: \.id) { player in
+                        Text(player.name).tag(Optional(player.id))
+                    }
+                }
+            } else if payerSelection == .bank {
+                if draftPaidFromBank > 0 {
+                    HStack {
+                        Text("Оплачено из кассы")
+                        Spacer()
+                        Text(draftPaidFromBank.asCurrency())
+                            .fontWeight(.semibold)
+                    }
+                }
+
+                HStack {
+                    Text("Осталось оплатить")
+                    Spacer()
+                    Text(remainingBankPayment.asCurrency())
+                        .fontWeight(.semibold)
+                }
+
+                Button("Оплатить из кассы") {
+                    applyBankPayment()
+                }
+                .disabled(remainingBankPayment == 0 || bankBalance < remainingBankPayment)
+
+                if bankBalance < remainingBankPayment {
+                    Text("Недостаточно средств в кассе")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+            } else if payerSelection == .rake {
+                HStack {
+                    Text("Доступно рейка")
+                    Spacer()
+                    Text(availableRake.asCurrency())
+                        .fontWeight(.semibold)
+                }
+
+                Button("Оплатить из рейка") {
+                    applyRakePayment()
+                }
+                .disabled(availableRake == 0)
+
+                if availableRake + expense.paidFromRake < expense.amount {
+                    Text("Недостаточно рейка для полной оплаты")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+            }
+        }
+    }
 
     private var expenseInfoSection: some View {
         Section {
@@ -136,20 +205,33 @@ struct ExpenseDistributionView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .monospaced()
-                if let payer = expense.payer {
-                    Text("Оплатил: \(payer.name)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                if expense.paidFromRake > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                        Text("Оплачено из рейка: \(expense.paidFromRake.asCurrency())")
+                if draftPaidFromRake > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "dollarsign.circle.fill")
+                        Text("Покрыто организаторами (рейк): \(draftPaidFromRake.asCurrency())")
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+                    .padding(.top, 4)
+                } else if draftPaidFromBank > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "banknote.fill")
+                        Text("Оплачено из кассы: \(draftPaidFromBank.asCurrency())")
                     }
                     .font(.subheadline)
                     .foregroundStyle(.green)
                     .padding(.top, 4)
-                }
+                } else if payerSelection == .player,
+                          let id = selectedPayerId,
+                          let payer = session.players.first(where: { $0.id == id }) {
+                    Text("Оплатил: \(payer.name)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+        } else {
+            Text("Плательщик не указан")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
@@ -167,13 +249,13 @@ struct ExpenseDistributionView: View {
     }
 
     private var playerSelectionSection: some View {
-        Section("Кто участвует в оплате?") {
+        Section("На кого делить расход?") {
             ForEach($playerSelections) { $selection in
                 HStack {
                     Toggle(isOn: $selection.isSelected) {
                         HStack {
                             Text(selection.player.name)
-                            if let payer = expense.payer, payer.id == selection.player.id {
+                            if payerSelection == .player, selectedPayerId == selection.player.id {
                                 Image(systemName: "star.fill")
                                     .font(.caption)
                                     .foregroundStyle(.yellow)
@@ -190,7 +272,7 @@ struct ExpenseDistributionView: View {
                     Spacer()
 
                     if selection.isSelected {
-                        playerAmountView(for: selection)
+                        playerAmountView(for: $selection)
                     } else {
                         Text("Не участвует")
                             .foregroundStyle(.secondary)
@@ -199,80 +281,26 @@ struct ExpenseDistributionView: View {
                     }
                 }
             }
-
-            // Рейк как участник оплаты
-            if canShowRakeOption {
-                rakeParticipantRow
-            }
         }
     }
 
-    private var rakeParticipantRow: some View {
-        HStack {
-            Toggle(isOn: $rakeSelection.isSelected) {
-                HStack(spacing: 6) {
-                    Image(systemName: "banknote.fill")
-                        .foregroundStyle(.orange)
-                        .font(.body)
-                    Text("Рейк")
-                }
-                .foregroundStyle(rakeSelection.isSelected ? .primary : .secondary)
-            }
-            .toggleStyle(CheckboxToggleStyle())
-            .tint(.orange)
-            .onChange(of: rakeSelection.isSelected) { _, isSelected in
-                handleRakeSelectionChange(isSelected)
-            }
 
-            Spacer()
-
-            if rakeSelection.isSelected {
-                rakeAmountView
-            } else {
-                Text("Не участвует")
+    @ViewBuilder
+    private func playerAmountView(for selection: Binding<PlayerSelection>) -> some View {
+        if distributionMode == .manual {
+            HStack(spacing: 4) {
+                TextField("0", text: amountTextBinding(for: selection))
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 80)
+                    .textFieldStyle(.roundedBorder)
+                Text("₽")
                     .foregroundStyle(.secondary)
-                    .font(.subheadline)
-                    .italic()
             }
-        }
-    }
-
-    @ViewBuilder
-    private var rakeAmountView: some View {
-        if distributionMode == .manual {
-            Button {
-                openEditAlertForRake()
-            } label: {
-                HStack(spacing: 4) {
-                    Text(rakeSelection.amount.asCurrency())
-                    Image(systemName: "pencil")
-                        .font(.caption)
-                }
-                .fontWeight(.semibold)
-            }
+            .fontWeight(.semibold)
+            .monospacedDigit()
         } else {
-            Text(rakeSelection.amount.asCurrency())
-                .foregroundStyle(.primary)
-                .fontWeight(.semibold)
-        }
-    }
-
-
-    @ViewBuilder
-    private func playerAmountView(for selection: PlayerSelection) -> some View {
-        if distributionMode == .manual {
-            Button {
-                openEditAlert(for: selection)
-            } label: {
-                HStack(spacing: 4) {
-                    Text(selection.amount.asCurrency())
-                    Image(systemName: "pencil")
-                        .font(.caption)
-                }
-                .fontWeight(.semibold)
-            }
-        } else {
-            Text(selection.amount.asCurrency())
+            Text(selection.wrappedValue.amount.asCurrency())
                 .foregroundStyle(.primary)
                 .fontWeight(.semibold)
         }
@@ -307,13 +335,6 @@ struct ExpenseDistributionView: View {
     // MARK: - Logic
 
     private func initializePlayerSelections() {
-        // Инициализация rakeSelection из expense.paidFromRake
-        if expense.paidFromRake > 0 {
-            rakeSelection = RakeSelection(isSelected: true, amount: expense.paidFromRake)
-        } else {
-            rakeSelection = RakeSelection(isSelected: false, amount: 0)
-        }
-
         // Если уже есть распределение - загружаем его
         if !expense.distributions.isEmpty {
             let distributionMap = Dictionary(uniqueKeysWithValues: expense.distributions.map { ($0.player.id, $0.amount) })
@@ -342,10 +363,66 @@ struct ExpenseDistributionView: View {
             }
 
             // Автоматически распределяем поровну если есть выбранные
-            if playerSelections.contains(where: { $0.isSelected }) || rakeSelection.isSelected {
+            if playerSelections.contains(where: { $0.isSelected }) {
                 distributeEqually()
             }
         }
+    }
+
+    private func initializePayerSelection() {
+        if let payer = expense.payer {
+            payerSelection = .player
+            selectedPayerId = payer.id
+        } else if expense.paidFromBank > 0 {
+            payerSelection = .bank
+            selectedPayerId = nil
+        } else if expense.paidFromRake > 0 {
+            payerSelection = .rake
+            selectedPayerId = nil
+        } else {
+            payerSelection = .player
+            selectedPayerId = session.players.first?.id
+        }
+        draftPaidFromBank = expense.paidFromBank
+        draftPaidFromRake = expense.paidFromRake
+    }
+
+    private func handlePayerSelectionChange(_ newValue: ExpensePayerSelection) {
+        switch newValue {
+        case .player:
+            if selectedPayerId == nil {
+                selectedPayerId = session.players.first?.id
+            }
+            draftPaidFromRake = 0
+        case .bank:
+            selectedPayerId = nil
+            draftPaidFromRake = 0
+        case .rake:
+            selectedPayerId = nil
+            clearAllPlayerSelections()
+            if availableRake + expense.paidFromRake >= expense.amount {
+                draftPaidFromRake = expense.amount
+            } else {
+                draftPaidFromRake = 0
+            }
+        }
+    }
+
+    private func handleSelectedPayerChange(_ newValue: UUID?) {
+        guard payerSelection == .player else { return }
+        selectedPayerId = newValue
+    }
+
+    private func applyRakePayment() {
+        let maxPayable = availableRake + expense.paidFromRake
+        let amount = min(maxPayable, expense.amount)
+        draftPaidFromRake = amount
+    }
+
+    private func applyBankPayment() {
+        let maxPayable = expense.paidFromBank + bankBalance
+        let amount = min(maxPayable, expense.amount)
+        draftPaidFromBank = amount
     }
 
     private func handleDistributionModeChange(_ newMode: ExpenseDistributionMode) {
@@ -390,11 +467,10 @@ struct ExpenseDistributionView: View {
 
     private func distributeEqually() {
         let selectedIndices = playerSelections.indices.filter { playerSelections[$0].isSelected }
-        let totalParticipants = selectedIndices.count + (rakeSelection.isSelected ? 1 : 0)
+        let totalParticipants = selectedIndices.count
 
         guard totalParticipants > 0 else {
             clearUnselectedPlayers()
-            rakeSelection.amount = 0
             return
         }
 
@@ -408,71 +484,35 @@ struct ExpenseDistributionView: View {
             playerSelections[index].amount = amounts[i]
         }
 
-        // Распределяем на рейк если выбран
-        if rakeSelection.isSelected {
-            rakeSelection.amount = amounts[selectedIndices.count]
-        } else {
-            rakeSelection.amount = 0
-        }
-
         clearUnselectedPlayers()
     }
 
-    // MARK: - Rake Selection Change
-
-    private func handleRakeSelectionChange(_ isSelected: Bool) {
-        if distributionMode == .equal {
-            distributeEqually()
-        } else {
-            // В ручном режиме просто обнуляем, если снят
-            if !isSelected {
-                rakeSelection.amount = 0
+    private func amountTextBinding(for selection: Binding<PlayerSelection>) -> Binding<String> {
+        Binding(
+            get: {
+                let amount = selection.wrappedValue.amount
+                return amount == 0 ? "" : String(amount)
+            },
+            set: { newValue in
+                let filtered = newValue.filter { $0.isNumber }
+                selection.wrappedValue.amount = Int(filtered) ?? 0
             }
-        }
-    }
-
-    // MARK: - Edit Alert
-
-    private func openEditAlert(for selection: PlayerSelection) {
-        editingPlayerId = selection.id
-        editValue = "\(selection.amount)"
-        showEditAlert = true
-    }
-
-    private func openEditAlertForRake() {
-        editingPlayerId = nil // Специальное значение для рейка
-        editValue = "\(rakeSelection.amount)"
-        showEditAlert = true
-    }
-
-    private func saveEditedValue() {
-        guard let value = Int(editValue) else {
-            editingPlayerId = nil
-            editValue = ""
-            return
-        }
-
-        // Если editingPlayerId == nil, редактируем рейк
-        if let playerId = editingPlayerId,
-           let index = playerSelections.firstIndex(where: { $0.id == playerId }) {
-            playerSelections[index].amount = value
-        } else {
-            // Редактируем рейк
-            rakeSelection.amount = min(value, availableRake + expense.paidFromRake)
-        }
-
-        editingPlayerId = nil
-        editValue = ""
+        )
     }
 
     // MARK: - Submit
 
     private func submitDistribution() {
-        let distributions = playerSelections
-            .filter { $0.isSelected && $0.amount > 0 }
-            .map { ($0.player, $0.amount) }
+        let distributions: [(Player, Int)]
+        if payerSelection == .rake {
+            distributions = []
+        } else {
+            distributions = playerSelections
+                .filter { $0.isSelected && $0.amount > 0 }
+                .map { ($0.player, $0.amount) }
+        }
 
-        let rakeAmount = rakeSelection.isSelected ? rakeSelection.amount : 0
+        let rakeAmount = 0
 
         let success = viewModel.saveExpenseDistribution(
             for: expense,
@@ -481,7 +521,48 @@ struct ExpenseDistributionView: View {
         )
 
         if success {
+            if payerSelection != .bank && expense.paidFromBank > 0 {
+                removeLinkedBankPayments()
+            }
+
+            switch payerSelection {
+            case .player:
+                if let id = selectedPayerId,
+                   let player = session.players.first(where: { $0.id == id }) {
+                    expense.payer = player
+                } else {
+                    expense.payer = nil
+                }
+                expense.paidFromRake = 0
+            case .bank:
+                expense.payer = nil
+                expense.paidFromRake = 0
+                let delta = max(draftPaidFromBank - expense.paidFromBank, 0)
+                if delta > 0 {
+                    _ = viewModel.payExpenseFromBank(expense: expense, amount: delta, from: session)
+                }
+            case .rake:
+                expense.payer = nil
+                expense.paidFromRake = draftPaidFromRake
+            }
             dismiss()
+        }
+    }
+
+    private func clearAllPlayerSelections() {
+        for index in playerSelections.indices {
+            playerSelections[index].isSelected = false
+            playerSelections[index].amount = 0
+        }
+    }
+
+    private func removeLinkedBankPayments() {
+        guard let bank = session.bank else { return }
+        let linked = bank.transactions.filter { transaction in
+            transaction.type == .expensePayment && transaction.linkedExpense?.id == expense.id
+        }
+        for transaction in linked {
+            _ = viewModel.deleteBankTransaction(transaction, from: session)
         }
     }
 
@@ -503,9 +584,10 @@ private struct PlayerSelection: Identifiable {
     }
 }
 
-private struct RakeSelection {
-    var isSelected: Bool
-    var amount: Int
+private enum ExpensePayerSelection {
+    case player
+    case bank
+    case rake
 }
 
 enum ExpenseDistributionMode {

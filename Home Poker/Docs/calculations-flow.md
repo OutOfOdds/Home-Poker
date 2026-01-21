@@ -1,4 +1,4 @@
-# Settlement Calculation Flow - Complete Documentation
+а# Settlement Calculation Flow - Complete Documentation
 
 **Версия**: 4.0 (С РАСХОДАМИ)
 **Дата**: 11 ноября 2025

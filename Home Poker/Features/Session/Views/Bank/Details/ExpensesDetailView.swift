@@ -179,31 +179,7 @@ struct ExpensesDetailView: View {
                         .font(.body)
                 }
 
-                if let payerName = expense.payer?.name {
-                    Text("Оплатил: \(payerName)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
-                if expense.paidFromBank > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "banknote.fill")
-                            .font(.caption2)
-                        Text("Оплачено из кассы: \(expense.paidFromBank.asCurrency())")
-                    }
-                    .font(.caption2)
-                    .foregroundStyle(.green)
-                }
-
-                if expense.paidFromRake > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "dollarsign.circle.fill")
-                            .font(.caption2)
-                        Text("Взято на организаторов: \(expense.paidFromRake.asCurrency())")
-                    }
-                    .font(.caption2)
-                    .foregroundStyle(.blue)
-                }
+                expensePaymentStatus(expense)
 
                 // Дополнительные подсказки о статусе
                 if !expense.isFullyDistributed {
@@ -231,6 +207,35 @@ struct ExpensesDetailView: View {
                 .monospaced()
         }
         .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private func expensePaymentStatus(_ expense: Expense) -> some View {
+        if expense.paidFromRake > 0 {
+            HStack(spacing: 4) {
+                Image(systemName: "dollarsign.circle.fill")
+                    .font(.caption2)
+                Text("Покрыто организаторами: \(expense.paidFromRake.asCurrency())")
+            }
+            .font(.caption2)
+            .foregroundStyle(.blue)
+        } else if expense.paidFromBank > 0 {
+            HStack(spacing: 4) {
+                Image(systemName: "banknote.fill")
+                    .font(.caption2)
+                Text("Оплачено из кассы: \(expense.paidFromBank.asCurrency())")
+            }
+            .font(.caption2)
+            .foregroundStyle(.green)
+        } else if let payerName = expense.payer?.name {
+            Text("Оплатил: \(payerName)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        } else {
+            Text("Не оплачен")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Кнопки тулбара

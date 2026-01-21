@@ -76,8 +76,8 @@ struct CashSessionDetailView: View {
                         .environment(viewModel)
                 } label: {
                     HStack {
-                        Image(systemName: "building.columns")
-                        Text("Банк сессии")
+                        Image(systemName: "pencil.and.list.clipboard")
+                        Text("УЧЕТ")
                     }
                 }
                 .popoverTip(bankTip, arrowEdge: .top)

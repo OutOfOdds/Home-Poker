@@ -93,11 +93,13 @@ struct SessionListView: View {
     private var sessionList: some View {
         Group {
             if sessions.isEmpty {
-                ContentUnavailableView(
-                    "Нет сессий",
-                    systemImage: "tray",
-                    description: Text("Добавьте свою первую сессию")
-                )
+                List {
+                    ContentUnavailableView(
+                        "Нет сессий",
+                        systemImage: "tray",
+                        description: Text("Добавьте свою первую сессию")
+                    )
+                }
             } else {
                 List {
                     ForEach(sessions) { session in
@@ -141,23 +143,17 @@ struct SessionListView: View {
             }
             if showSessionDetails {
                 HStack(spacing: 8) {
-                    Image(systemName: "calendar")
-                        .foregroundStyle(.secondary)
                     Text(session.startTime, format: .dateTime)
                         .foregroundStyle(.secondary)
                 }
                 
                 HStack(spacing: 8) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .foregroundStyle(.secondary)
                     Text("\(session.location)")
                         .foregroundStyle(.secondary)
                 }
                 
                 HStack(spacing: 8) {
-                    Image(systemName: "suit.club.fill")
-                        .foregroundStyle(.secondary)
-                    Text("\(session.gameType.rawValue) • \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
+                    Text("\(session.gameType.rawValue) | \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
                         .foregroundStyle(.secondary)
                 }
                 

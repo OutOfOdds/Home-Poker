@@ -114,6 +114,22 @@ private struct ExpenseRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                    if expense.payer == nil && expense.paidFromBank == 0 && expense.paidFromRake == 0 {
+                        Text("Не оплачен")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if expense.paidFromRake > 0 {
+                        Text("Покрыто организаторами: \(expense.paidFromRake.asCurrency())")
+                            .font(.caption2)
+                            .foregroundStyle(.blue)
+                    } else if expense.paidFromBank > 0 {
+                        Text("Оплачено из кассы: \(expense.paidFromBank.asCurrency())")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    }
+
                     if !expense.distributions.isEmpty {
                         Text("Распределено: \(expense.totalDistributed.asCurrency()) из \(expense.amount.asCurrency())")
                             .font(.caption2)

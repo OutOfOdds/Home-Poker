@@ -13,7 +13,7 @@ struct SessionBankTip: Tip {
     static var hasAddedFirstPlayer: Bool = false
 
     var title: Text {
-        Text("Это Банк Сессии")
+        Text("Это учет")
     }
 
     var message: Text? {
@@ -21,7 +21,7 @@ struct SessionBankTip: Tip {
     }
 
     var image: Image? {
-        Image(systemName: "building.columns")
+        Image(systemName: "pencil.and.list.clipboard")
     }
 
     var rules: [Rule] {

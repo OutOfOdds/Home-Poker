@@ -26,7 +26,7 @@ struct KBArticle: Identifiable {
 enum KBCategory: String, CaseIterable {
     case gettingStarted = "Начало работы"
     case sessions = "Управление сессиями"
-    case bank = "Банк сессии"
+    case bank = "Учет"
     case timer = "Таймер турнира"
     case settlement = "Расчеты"
     case faq = "FAQ"
@@ -46,7 +46,7 @@ enum KBCategory: String, CaseIterable {
         switch self {
         case .gettingStarted: return "star.fill"
         case .sessions: return "list.star"
-        case .bank: return "banknote"
+        case .bank: return "pencil.and.list.clipboard"
         case .timer: return "timer"
         case .settlement: return "dollarsign.arrow.circlepath"
         case .faq: return "questionmark.circle.fill"

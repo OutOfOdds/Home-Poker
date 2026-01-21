@@ -18,7 +18,7 @@ protocol SessionServiceProtocol {
     func removeBankTransaction(_ transaction: SessionBankTransaction, from session: Session) throws
 
     // Управление расходами
-    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws
+    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws -> Expense
     func removeExpenses(_ expenses: [Expense], from session: Session)
     func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)], rakeAmount: Int) throws
 
@@ -173,9 +173,6 @@ struct SessionService: SessionServiceProtocol {
         // Обновление связанных сущностей
         if let expense = linkedExpense, type == .expensePayment {
             expense.paidFromBank += amount
-            // Автоматически устанавливаем ответственность на организаторов
-            // Используем max() чтобы не дублировать если уже установлено вручную
-            expense.paidFromRake = max(expense.paidFromRake, expense.paidFromBank)
         } else if type == .tipPayment {
             session.tipsPaidFromBank += amount
         }
@@ -190,8 +187,6 @@ struct SessionService: SessionServiceProtocol {
         // Синхронизация связанных сущностей при удалении
         if let expense = transaction.linkedExpense, transaction.type == .expensePayment {
             expense.paidFromBank -= transaction.amount
-            // Также уменьшаем paidFromRake для сохранения синхронизации
-            expense.paidFromRake = max(0, expense.paidFromRake - transaction.amount)
         } else if transaction.type == .tipPayment {
             session.tipsPaidFromBank = max(0, session.tipsPaidFromBank - transaction.amount)
         }
@@ -203,16 +198,32 @@ struct SessionService: SessionServiceProtocol {
     // MARK: - Расходы
     
     // Регистрирует расход, совершённый в рамках сессии.
-    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws {
+    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws -> Expense {
         try validatePositiveAmount(amount)
         let trimmedNote = note.trimmed
         let expense = Expense(amount: amount, note: trimmedNote, createdAt: createdAt, payer: payer)
         session.expenses.append(expense)
+        return expense
     }
     
     // Удаляет указанные расходы из сессии.
     func removeExpenses(_ expenses: [Expense], from session: Session) {
-        let ids = expenses.map { $0.id }
+        let ids = Set(expenses.map { $0.id })
+
+        if let bank = session.bank {
+            let linkedTransactions = bank.transactions.filter { transaction in
+                if let linkedExpense = transaction.linkedExpense {
+                    return ids.contains(linkedExpense.id)
+                }
+                return false
+            }
+
+            for transaction in linkedTransactions {
+                bank.transactions.removeAll { $0.id == transaction.id }
+                transaction.modelContext?.delete(transaction)
+            }
+        }
+
         session.expenses.removeAll { ids.contains($0.id) }
     }
 

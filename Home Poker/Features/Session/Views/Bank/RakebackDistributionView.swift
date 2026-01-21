@@ -95,13 +95,13 @@ struct RakebackDistributionView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Отмена") {
+                Button("Отмена", systemImage: "xmark") {
                     dismiss()
                 }
             }
             
             ToolbarItem(placement: .confirmationAction) {
-                Button("Сохранить") {
+                Button("Сохранить", systemImage: "checkmark") {
                     submitDistribution()
                 }
                 .disabled(isDistributionInvalid)
