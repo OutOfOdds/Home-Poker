@@ -138,11 +138,11 @@ private func cashSessionDetailPreview(session: Session) -> some View {
         for: [Session.self, Player.self, PlayerChipTransaction.self, Expense.self, SessionBank.self, SessionBankTransaction.self],
         inMemory: true
     )
-    .task {
-        try? Tips.resetDatastore()
-        try? Tips.configure([.displayFrequency(.immediate)])
-        Tips.showAllTipsForTesting()
-    }
+//    .task {
+//        try? Tips.resetDatastore()
+//        try? Tips.configure([.displayFrequency(.immediate)])
+//        Tips.showAllTipsForTesting()
+//    }
 }
 
 #Preview("Активная сессия") {

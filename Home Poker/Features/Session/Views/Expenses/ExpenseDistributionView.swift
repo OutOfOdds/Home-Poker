@@ -22,6 +22,7 @@ struct ExpenseDistributionView: View {
     // UI состояние (локальное)
     @State private var distributionMode: ExpenseDistributionMode = .equal
     @State private var playerSelections: [PlayerSelection] = []
+    @State private var showInfoSheet = false
 
     // Computed properties
     private var totalAmount: Int {
@@ -104,6 +105,14 @@ struct ExpenseDistributionView: View {
         .navigationTitle("Распределить:")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showInfoSheet = true
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .accessibilityLabel("О распределении расходов")
+            }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Сохранить", systemImage: "checkmark") {
                     submitDistribution()
@@ -124,12 +133,18 @@ struct ExpenseDistributionView: View {
         .onChange(of: selectedPayerId) { _, newValue in
             handleSelectedPayerChange(newValue)
         }
+        .sheet(isPresented: $showInfoSheet) {
+            ExpenseDistributionInfoSheet()
+        }
     }
 
     // MARK: - View Sections
 
     private var payerSection: some View {
-        Section("Источник оплаты:") {
+        Section(
+            header: stepHeader("Шаг 1: источник оплаты"),
+            footer: payerFooter
+        ) {
             Picker("Источник оплаты", selection: $payerSelection) {
                 Text("Игрок").tag(ExpensePayerSelection.player)
                 if canSelectBank {
@@ -141,7 +156,7 @@ struct ExpenseDistributionView: View {
             }
             .pickerStyle(.segmented)
 
-        if payerSelection == .player {
+            if payerSelection == .player {
                 Picker("Оплатил игрок", selection: $selectedPayerId) {
                     ForEach(session.players, id: \.id) { player in
                         Text(player.name).tag(Optional(player.id))
@@ -164,11 +179,6 @@ struct ExpenseDistributionView: View {
                         .fontWeight(.semibold)
                 }
 
-                Button("Оплатить из кассы") {
-                    applyBankPayment()
-                }
-                .disabled(remainingBankPayment == 0 || bankBalance < remainingBankPayment)
-
                 if bankBalance < remainingBankPayment {
                     Text("Недостаточно средств в кассе")
                         .foregroundStyle(.secondary)
@@ -181,11 +191,6 @@ struct ExpenseDistributionView: View {
                     Text(availableRake.asCurrency())
                         .fontWeight(.semibold)
                 }
-
-                Button("Оплатить из рейка") {
-                    applyRakePayment()
-                }
-                .disabled(availableRake == 0)
 
                 if availableRake + expense.paidFromRake < expense.amount {
                     Text("Недостаточно рейка для полной оплаты")
@@ -239,7 +244,10 @@ struct ExpenseDistributionView: View {
     }
 
     private var distributionModeSection: some View {
-        Section {
+        Section(
+            header: stepHeader("Шаг 3: суммы"),
+            footer: distributionFooter
+        ) {
             Picker("Режим распределения", selection: $distributionMode) {
                 Text("Поровну").tag(ExpenseDistributionMode.equal)
                 Text("Вручную").tag(ExpenseDistributionMode.manual)
@@ -249,7 +257,10 @@ struct ExpenseDistributionView: View {
     }
 
     private var playerSelectionSection: some View {
-        Section("На кого делить расход?") {
+        Section(
+            header: stepHeader("Шаг 2: участники"),
+            footer: playersFooter
+        ) {
             ForEach($playerSelections) { $selection in
                 HStack {
                     Toggle(isOn: $selection.isSelected) {
@@ -307,7 +318,10 @@ struct ExpenseDistributionView: View {
     }
 
     private var summarySection: some View {
-        Section("Итого") {
+        Section(
+            header: Text("Итого"),
+            footer: summaryFooter
+        ) {
             distributedRow
             remainingRow
         }
@@ -324,7 +338,7 @@ struct ExpenseDistributionView: View {
 
     private var remainingRow: some View {
         HStack {
-            Text("Осталось:")
+            Text("Осталось распределить:")
             Spacer()
             Text(remaining.asCurrency())
                 .foregroundStyle(remaining != 0 ? .red : .green)
@@ -397,32 +411,18 @@ struct ExpenseDistributionView: View {
         case .bank:
             selectedPayerId = nil
             draftPaidFromRake = 0
+            draftPaidFromBank = min(expense.paidFromBank + bankBalance, expense.amount)
         case .rake:
             selectedPayerId = nil
             clearAllPlayerSelections()
-            if availableRake + expense.paidFromRake >= expense.amount {
-                draftPaidFromRake = expense.amount
-            } else {
-                draftPaidFromRake = 0
-            }
+            let maxPayable = availableRake + expense.paidFromRake
+            draftPaidFromRake = min(maxPayable, expense.amount)
         }
     }
 
     private func handleSelectedPayerChange(_ newValue: UUID?) {
         guard payerSelection == .player else { return }
         selectedPayerId = newValue
-    }
-
-    private func applyRakePayment() {
-        let maxPayable = availableRake + expense.paidFromRake
-        let amount = min(maxPayable, expense.amount)
-        draftPaidFromRake = amount
-    }
-
-    private func applyBankPayment() {
-        let maxPayable = expense.paidFromBank + bankBalance
-        let amount = min(maxPayable, expense.amount)
-        draftPaidFromBank = amount
     }
 
     private func handleDistributionModeChange(_ newMode: ExpenseDistributionMode) {
@@ -498,6 +498,46 @@ struct ExpenseDistributionView: View {
                 selection.wrappedValue.amount = Int(filtered) ?? 0
             }
         )
+    }
+
+    private func stepHeader(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+
+    private var payerFooter: some View {
+        Group {
+            if payerSelection == .player {
+                Text("Оплата игроком влияет только на выбор плательщика.")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
+    private var distributionFooter: some View {
+        Text(distributionMode == .manual
+             ? "Введите суммы для выбранных игроков."
+             : "Суммы распределяются автоматически поровну.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+
+    private var playersFooter: some View {
+        Text("Выбрано игроков: \(playerSelections.filter { $0.isSelected }.count)")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+
+    private var summaryFooter: some View {
+        Group {
+            if isDistributionInvalid {
+                Text("Нужно распределить всю сумму или оставить 0.")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.red)
     }
 
     // MARK: - Submit
@@ -593,6 +633,61 @@ private enum ExpensePayerSelection {
 enum ExpenseDistributionMode {
     case equal
     case manual
+}
+
+private struct ExpenseDistributionInfoSheet: View {
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Group {
+                        Text("Зачем распределять расходы")
+                            .font(.headline)
+                        Text("Этот экран помогает учесть расходы, которые уменьшают итоговые выплаты игрокам. Распределение позволяет корректно рассчитать, кто и сколько фактически должен получить или доплатить.")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Group {
+                        Text("Какие расходы нужно добавлять")
+                            .font(.headline)
+                        Text("Добавляйте только общие расходы, которые влияют на выплаты между игроками. Личные траты (например, еда для себя) не нужно записывать.")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Group {
+                        Text("Источник оплаты")
+                            .font(.headline)
+                        Text("Выберите, кто оплатил расход: игрок, касса или рейк. Это влияет на баланс сессии и итоговые выплаты.")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Group {
+                        Text("Кого включать")
+                            .font(.headline)
+                        Text("Отметьте игроков, на которых делится расход. Если игрок не участвует, на его выплату это не влияет.")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Group {
+                        Text("Режимы распределения")
+                            .font(.headline)
+                        Text("Поровну — сумма делится автоматически. Вручную — можно задать точные значения для каждого игрока.")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Group {
+                        Text("Как это влияет на выплаты")
+                            .font(.headline)
+                        Text("Сумма расходов уменьшает итоговые выплаты выбранным игрокам. Если расход оплачен из кассы или рейка, важно корректно распределить его между участниками.")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("О распределении расходов")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
 }
 
 // MARK: - Preview

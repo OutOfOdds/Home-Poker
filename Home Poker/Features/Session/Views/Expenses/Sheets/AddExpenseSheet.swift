@@ -8,6 +8,8 @@ struct AddExpenseSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var expenseDescription = ""
     @State private var expenseAmount: Int? = nil
+    @State private var payerSelection: AddExpenseSource = .player
+    @State private var selectedPayerId: UUID?
 
     var body: some View {
         FormSheetView(
@@ -28,7 +30,56 @@ struct AddExpenseSheet: View {
                 } header: {
                     Text("Информация о расходе")
                         .font(.caption)
+                } footer: {
+                    Text("Добавляйте только общие расходы, которые влияют на выплаты между игроками. Личные траты (например, еда для себя) не нужно записывать.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+
+                Section {
+                    Picker("Источник оплаты", selection: $payerSelection) {
+                        Text("Игрок").tag(AddExpenseSource.player)
+                        if canSelectBank {
+                            Text("Касса").tag(AddExpenseSource.bank)
+                        }
+                        if canSelectRake {
+                            Text("Рейк").tag(AddExpenseSource.rake)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if payerSelection == .player {
+                        Picker("Оплатил игрок", selection: $selectedPayerId) {
+                            ForEach(session.players, id: \.id) { player in
+                                Text(player.name).tag(Optional(player.id))
+                            }
+                        }
+                    } else if payerSelection == .bank {
+                        HStack {
+                            Text("Доступно в кассе")
+                            Spacer()
+                            Text(bankBalance.asCurrency())
+                                .fontWeight(.semibold)
+                        }
+                    } else if payerSelection == .rake {
+                        HStack {
+                            Text("Доступно рейка")
+                            Spacer()
+                            Text(availableRake.asCurrency())
+                                .fontWeight(.semibold)
+                        }
+                    }
+                } header: {
+                    Text("Источник оплаты")
+                        .font(.caption)
+                } footer: {
+                    sourceFooter
+                }
+            }
+        }
+        .onAppear {
+            if selectedPayerId == nil {
+                selectedPayerId = session.players.first?.id
             }
         }
     }
@@ -36,14 +87,79 @@ struct AddExpenseSheet: View {
     private var canSubmit: Bool {
         guard expenseDescription.nonEmptyTrimmed != nil else { return false }
         guard let amount = expenseAmount, amount > 0 else { return false }
-        return true
+        switch payerSelection {
+        case .player:
+            return selectedPayerId != nil
+        case .bank:
+            return amount <= bankBalance
+        case .rake:
+            return amount <= availableRake
+        }
     }
 
     private func addExpense() {
         guard let note = expenseDescription.nonEmptyTrimmed else { return }
-        if viewModel.addExpense(to: session, note: note, amount: expenseAmount, payer: nil) != nil {
-            dismiss()
+        let payer = selectedPayer
+        guard let expense = viewModel.addExpense(to: session, note: note, amount: expenseAmount, payer: payer) else {
+            return
         }
+
+        switch payerSelection {
+        case .player:
+            break
+        case .bank:
+            if !viewModel.payExpenseFromBank(expense: expense, amount: expenseAmount, from: session) {
+                viewModel.removeExpenses([expense], from: session)
+                return
+            }
+        case .rake:
+            expense.paidFromRake = expense.amount
+        }
+        dismiss()
+    }
+
+    private var selectedPayer: Player? {
+        guard payerSelection == .player, let id = selectedPayerId else { return nil }
+        return session.players.first { $0.id == id }
+    }
+
+    private var bankBalance: Int {
+        session.bank?.netBalance ?? 0
+    }
+
+    private var availableRake: Int {
+        viewModel.availableRakeForExpenses(for: session)
+    }
+
+    private var canSelectBank: Bool {
+        bankBalance > 0
+    }
+
+    private var canSelectRake: Bool {
+        availableRake > 0
+    }
+
+    private var sourceFooter: some View {
+        Group {
+            switch payerSelection {
+            case .player:
+                Text("Выбор игрока влияет на итоговые выплаты.")
+            case .bank:
+                if let amount = expenseAmount, amount > bankBalance {
+                    Text("Недостаточно средств в кассе для полной оплаты.")
+                } else {
+                    Text("Расход будет оплачен из кассы сразу.")
+                }
+            case .rake:
+                if let amount = expenseAmount, amount > availableRake {
+                    Text("Недостаточно рейка для полной оплаты.")
+                } else {
+                    Text("Расход будет покрыт организаторами.")
+                }
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
 }
 
@@ -53,4 +169,10 @@ struct AddExpenseSheet: View {
     AddExpenseSheet(session: session)
         .modelContainer(for: [Session.self, Player.self, Expense.self, SessionBank.self, SessionBankTransaction.self], inMemory: true)
         .environment(SessionDetailViewModel(service: SessionService()))
+}
+
+private enum AddExpenseSource {
+    case player
+    case bank
+    case rake
 }

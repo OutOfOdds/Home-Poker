@@ -53,6 +53,7 @@ struct TimerLevelCard: View {
                 .font(.system(size: 96, weight: .bold, design: .monospaced))
                 .foregroundStyle(state.isPaused ? .secondary : .primary)
                 .contentTransition(.numericText())
+                .animation(.linear, value: state.remainingTimeInLevel)
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
         } else if let firstItem = viewModel.items.first {
