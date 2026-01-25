@@ -17,10 +17,6 @@ struct RakebackDistributionView: View {
     @State private var distributionMode: DistributionMode = .equal
     @State private var playerSelections: [PlayerSelection] = []
 
-    // Для редактирования значений
-    @State private var editingPlayerId: UUID?
-    @State private var showEditAlert = false
-    @State private var editValue = ""
 
     // Computed properties
     private var totalAvailable: Int {
@@ -63,10 +59,6 @@ struct RakebackDistributionView: View {
         }
     }
 
-    private var editingPlayer: PlayerSelection? {
-        guard let id = editingPlayerId else { return nil }
-        return playerSelections.first { $0.id == id }
-    }
 
     private var isDistributionInvalid: Bool {
         // Если распределено 0 - это валидно (весь рейкбек остается дому)
@@ -77,7 +69,25 @@ struct RakebackDistributionView: View {
         if distributionMode == .percentage && totalPercentage > 100 {
             return true
         }
+        if hasSelectedPlayers && !hasEnteredValues {
+            return true
+        }
         return false
+    }
+
+    private var hasSelectedPlayers: Bool {
+        playerSelections.contains { $0.isSelected }
+    }
+
+    private var hasEnteredValues: Bool {
+        switch distributionMode {
+        case .percentage:
+            return totalPercentage > 0
+        case .manual:
+            return totalDistributed > 0
+        case .equal:
+            return true
+        }
     }
 
     // MARK: - Body
@@ -112,25 +122,6 @@ struct RakebackDistributionView: View {
         }
         .onChange(of: distributionMode) { _, newMode in
             handleDistributionModeChange(newMode)
-        }
-        .alert(editingPlayer?.player.name ?? "", isPresented: $showEditAlert) {
-            TextField(distributionMode == .percentage ? "Процент" : "Сумма", text: $editValue)
-                .keyboardType(.numberPad)
-            Button("Отмена", role: .cancel) {
-                editingPlayerId = nil
-                editValue = ""
-            }
-            Button("Сохранить") {
-                saveEditedValue()
-            }
-        } message: {
-            if distributionMode == .percentage {
-                Text("Осталось распределить: \(percentageRemaining)%")
-                    .monospaced()
-            } else {
-                Text("Осталось: \(remaining.asCurrency())")
-                    .monospaced()
-            }
         }
     }
 
@@ -194,31 +185,30 @@ struct RakebackDistributionView: View {
 
     @ViewBuilder
     private func playerAmountView(for selection: PlayerSelection) -> some View {
-        if distributionMode == .percentage || distributionMode == .manual {
-            VStack(spacing: 2) {
-                Button {
-                    openEditAlert(for: selection)
-                } label: {
-                    HStack(spacing: 4) {
-                        if distributionMode == .percentage {
-                            Text("\(selection.percentage)%")
-                                .monospaced()
-                        } else {
-                            Text(selection.amount.asCurrency())
-                                .monospaced()
-                        }
-                        Image(systemName: "pencil")
-                            .font(.caption)
-                    }
-                    .fontWeight(.semibold)
-                }
-
-                Text(selection.amount.asCurrency())
+        if distributionMode == .percentage {
+            HStack(spacing: 4) {
+                TextField("0", text: percentageTextBinding(for: selection))
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 60)
+                    .textFieldStyle(.roundedBorder)
+                Text("%")
                     .foregroundStyle(.secondary)
-                    .font(.caption)
-                    .italic()
-                    .monospaced()
             }
+            .fontWeight(.semibold)
+            .monospacedDigit()
+        } else if distributionMode == .manual {
+            HStack(spacing: 4) {
+                TextField("0", text: amountTextBinding(for: selection))
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 80)
+                    .textFieldStyle(.roundedBorder)
+                Text("₽")
+                    .foregroundStyle(.secondary)
+            }
+            .fontWeight(.semibold)
+            .monospacedDigit()
         } else {
             Text(selection.amount.asCurrency())
                 .foregroundStyle(.primary)
@@ -384,49 +374,47 @@ struct RakebackDistributionView: View {
 
     private func recalculateAmountsFromPercentages() {
         let selectedIndices = playerSelections.indices.filter { playerSelections[$0].isSelected }
-        let percentages = selectedIndices.map { playerSelections[$0].percentage }
-        let amounts = RakebackCalculator.distributeByPercentage(
-            totalAmount: totalAvailable,
-            percentages: percentages
-        )
-
-        for (i, index) in selectedIndices.enumerated() {
-            playerSelections[index].amount = amounts[i]
+        for index in selectedIndices {
+            let percentage = playerSelections[index].percentage
+            let amount = (totalAvailable * percentage) / 100
+            playerSelections[index].amount = amount
         }
 
         clearUnselectedPlayers()
     }
 
-    // MARK: - Алерт редактирования
-
-    private func openEditAlert(for selection: PlayerSelection) {
-        editingPlayerId = selection.id
-        if distributionMode == .percentage {
-            editValue = "\(selection.percentage)"
-        } else {
-            editValue = "\(selection.amount)"
-        }
-        showEditAlert = true
+    private func amountTextBinding(for selection: PlayerSelection) -> Binding<String> {
+        Binding(
+            get: {
+                let amount = selection.amount
+                return amount == 0 ? "" : String(amount)
+            },
+            set: { newValue in
+                let filtered = newValue.filter { $0.isNumber }
+                let value = Int(filtered) ?? 0
+                if let index = playerSelections.firstIndex(where: { $0.id == selection.id }) {
+                    playerSelections[index].amount = value
+                }
+            }
+        )
     }
 
-    private func saveEditedValue() {
-        guard let playerId = editingPlayerId,
-              let index = playerSelections.firstIndex(where: { $0.id == playerId }),
-              let value = Int(editValue) else {
-            editingPlayerId = nil
-            editValue = ""
-            return
-        }
-
-        if distributionMode == .percentage {
-            playerSelections[index].percentage = value
-            recalculateAmountsFromPercentages()
-        } else {
-            playerSelections[index].amount = value
-        }
-
-        editingPlayerId = nil
-        editValue = ""
+    private func percentageTextBinding(for selection: PlayerSelection) -> Binding<String> {
+        Binding(
+            get: {
+                let percentage = selection.percentage
+                return percentage == 0 ? "" : String(percentage)
+            },
+            set: { newValue in
+                let filtered = newValue.filter { $0.isNumber }
+                let rawValue = Int(filtered) ?? 0
+                let value = min(max(rawValue, 0), 100)
+                if let index = playerSelections.firstIndex(where: { $0.id == selection.id }) {
+                    playerSelections[index].percentage = value
+                }
+                recalculateAmountsFromPercentages()
+            }
+        )
     }
 
     // MARK: - Подтверждение

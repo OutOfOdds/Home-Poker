@@ -9,10 +9,15 @@ struct SettlementView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
+    @State private var errorMessage: String?
+
+
     var body: some View {
         NavigationStack {
             List {
-                if !viewModel.bankTransfers.isEmpty {
+                if !viewModel.bankTransfers.isEmpty ||
+                    !viewModel.returnTransfers.isEmpty ||
+                    !viewModel.playerToBankTransfers.isEmpty {
                     bankTransfersSection
                 }
 
@@ -34,6 +39,20 @@ struct SettlementView: View {
                     }
                 }
             }
+            .alert("Ошибка", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        errorMessage = nil
+                    }
+                }
+            )) {
+                Button("Ок", role: .cancel) {}
+            } message: {
+                if let errorMessage {
+                    Text(errorMessage)
+                }
+            }
             .onAppear {
                 // Загружаем или создаем переводы
                 loadOrCreateTransfers()
@@ -46,6 +65,26 @@ struct SettlementView: View {
 
     private var bankTransfersSection: some View {
         Section("Операции с кассой") {
+            if !viewModel.playerToBankTransfers.isEmpty {
+                ForEach(Array(viewModel.playerToBankTransfers.enumerated()), id: \.offset) { _, ptb in
+                    let matchedTransfer = viewModel.findMatchingTransfer(for: ptb)
+                    transferRow(
+                        fromText: ptb.from.name,
+                        toText: "В кассу",
+                        amount: ptb.amount,
+                        color: .orange,
+                        transfer: matchedTransfer
+                    )
+                    .contextMenu {
+                        if matchedTransfer?.isCompleted != true {
+                            ShareLink(item: formatReminderForPlayerToBankTransfer(ptb)) {
+                                Label("Напомнить игроку", systemImage: "bell")
+                            }
+                        }
+                    }
+                }
+            }
+
             ForEach(Array(viewModel.bankTransfers.enumerated()), id: \.offset) { _, bt in
                 let matchedTransfer = viewModel.findMatchingTransfer(for: bt)
                 transferRow(
@@ -176,6 +215,7 @@ struct SettlementView: View {
         // Вычисляем ожидаемое количество переводов
         let expectedCount = viewModel.bankTransfers.count +
                             viewModel.returnTransfers.count +
+                            viewModel.playerToBankTransfers.count +
                             viewModel.transfers.count
 
         // Проверяем актуальность
@@ -201,6 +241,7 @@ struct SettlementView: View {
         // Проверка 2: Общая сумма переводов
         let expectedTotal = viewModel.bankTransfers.reduce(0) { $0 + $1.amount } +
                             viewModel.returnTransfers.reduce(0) { $0 + $1.amount } +
+                            viewModel.playerToBankTransfers.reduce(0) { $0 + $1.amount } +
                             viewModel.transfers.reduce(0) { $0 + $1.amount }
 
         let persistedTotal = viewModel.persistedTransfers.reduce(0) { $0 + $1.amount }
@@ -242,9 +283,11 @@ struct SettlementView: View {
 
     private func toggleTransfer(_ transfer: SettlementTransfer) {
         do {
-            try viewModel.toggleTransferStatus(transfer, context: modelContext)
+            try viewModel.toggleTransferStatus(transfer, session: session, context: modelContext)
             print("✅ Transfer toggled: \(transfer.isCompleted ? "completed" : "incomplete")")
         } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription
+                ?? "Произошла ошибка. Попробуйте ещё раз."
             print("❌ Failed to toggle transfer: \(error)")
         }
     }
@@ -300,6 +343,22 @@ struct SettlementView: View {
         """
     }
 
+    private func formatReminderForPlayerToBankTransfer(_ transfer: PlayerToBankTransfer) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .long
+        dateFormatter.timeStyle = .none
+        let dateString = dateFormatter.string(from: session.startTime)
+
+        return """
+        Привет, \(transfer.from.name)!
+
+        По итогам игры от \(dateString):
+        Тебе нужно внести в кассу: \(transfer.amount.asCurrency())
+
+        Спасибо!
+        """
+    }
+
     // MARK: - Форматирование текста для шаринга
 
     private func formatSettlementText() -> String {
@@ -333,6 +392,16 @@ struct SettlementView: View {
                 let matchedTransfer = viewModel.findMatchingTransfer(for: rt)
                 let prefix = matchedTransfer?.isCompleted == true ? "✅ " : "⭕️ "
                 text += "\(prefix)\(rt.from.name) → В кассу: \(rt.amount.asCurrency()) (\(rt.expenseNote))\n"
+            }
+        }
+
+        // Пополнение кассы
+        if !viewModel.playerToBankTransfers.isEmpty {
+            text += "\nПОПОЛНЕНИЕ КАССЫ:\n"
+            for ptb in viewModel.playerToBankTransfers {
+                let matchedTransfer = viewModel.findMatchingTransfer(for: ptb)
+                let prefix = matchedTransfer?.isCompleted == true ? "✅ " : "⭕️ "
+                text += "\(prefix)\(ptb.from.name) → В кассу: \(ptb.amount.asCurrency())\n"
             }
         }
 

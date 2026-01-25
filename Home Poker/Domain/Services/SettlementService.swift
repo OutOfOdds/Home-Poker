@@ -103,15 +103,23 @@ struct SettlementService: SettlementProtocol {
         }
 
         // Если банка нет, возвращаем стандартный расчёт без банковских переводов
-        guard let bank = session.bank else {
+        if session.bank == nil {
             let transfers = greedyTransfers(from: balances)
+            let playerToBankTransfers = buildPlayerToBankTransfers(
+                balances: balances,
+                playerTransfers: transfers
+            )
+
             return SettlementResult(
                 balances: balances,
                 bankTransfers: [],
                 returnToBankTransfers: [],
+                playerToBankTransfers: playerToBankTransfers,
                 playerTransfers: transfers
             )
         }
+
+        let bank = session.bank!
 
         // ============================================================
         // ШАГ 3: СБОР NET-CONTRIBUTION
@@ -138,6 +146,7 @@ struct SettlementService: SettlementProtocol {
             let netContribution = playerNetContributions[balances[i].player.id] ?? 0
             balances[i].netCash += netContribution
         }
+
 
         // ============================================================
         // ШАГ 4-5 (УПРОЩЕННЫЙ): РАСПРЕДЕЛЕНИЕ БАЛАНСА БАНКА
@@ -253,6 +262,10 @@ struct SettlementService: SettlementProtocol {
             balances: balances,
             bankTransfers: bankTransfers,
             returnToBankTransfers: returnToBankTransfers,
+            playerToBankTransfers: buildPlayerToBankTransfers(
+                balances: balances,
+                playerTransfers: playerTransfers
+            ),
             playerTransfers: playerTransfers
         )
     }
@@ -274,6 +287,25 @@ struct SettlementService: SettlementProtocol {
         // Долг ПОСЛЕ применения рейкбека (это итоговый netCash, если он отрицательный)
         let debtAfterRakeback = abs(min(balance.netCash, 0))
         return max(deposited - debtAfterRakeback, 0)
+    }
+
+    private func buildPlayerToBankTransfers(
+        balances: [PlayerBalance],
+        playerTransfers: [TransferProposal]
+    ) -> [PlayerToBankTransfer] {
+        var directPaid: [UUID: Int] = [:]
+        for transfer in playerTransfers {
+            directPaid[transfer.from.id, default: 0] += transfer.amount
+        }
+
+        return balances.compactMap { balance in
+            guard balance.netCash < 0 else { return nil }
+            let totalDebt = abs(balance.netCash)
+            let paidDirectly = directPaid[balance.player.id, default: 0]
+            let remaining = max(totalDebt - paidDirectly, 0)
+            guard remaining > 0 else { return nil }
+            return PlayerToBankTransfer(from: balance.player, amount: remaining)
+        }
     }
 
     /// Жадный алгоритм, сопоставляющий игроков с положительным и отрицательным результатом.
@@ -356,10 +388,17 @@ struct ReturnToBankTransfer {
     let expenseNote: String  // Название расхода для справки
 }
 
+/// Перевод игрока в кассу по результатам игры.
+struct PlayerToBankTransfer {
+    let from: Player
+    let amount: Int  // В рублях (cash)
+}
+
 /// Результат работы калькулятора расчётов: балансы игроков, банковские переводы и прямые переводы.
 struct SettlementResult {
     let balances: [PlayerBalance]
     let bankTransfers: [BankTransfer]
     let returnToBankTransfers: [ReturnToBankTransfer]
+    let playerToBankTransfers: [PlayerToBankTransfer]
     let playerTransfers: [TransferProposal]
 }

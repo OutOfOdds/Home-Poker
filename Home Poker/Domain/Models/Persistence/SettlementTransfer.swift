@@ -31,6 +31,9 @@ final class SettlementTransfer {
     /// Дополнительная заметка (например "Расход: доставка")
     var note: String?
 
+    /// Связанный банковский перевод (если был создан)
+    var linkedBankTransactionId: UUID?
+
     /// Дата создания записи о переводе
     var createdAt: Date = Date()
 
