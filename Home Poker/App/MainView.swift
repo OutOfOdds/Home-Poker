@@ -2,6 +2,7 @@ import SwiftUI
 
 enum AppTab: Hashable {
     case sessions
+    case search
     case timer
 }
 
@@ -15,6 +16,9 @@ struct MainView: View {
         TabView(selection: $selectedTab) {
             Tab("Сессии", systemImage: "list.star", value: .sessions) {
                 SessionListView()
+            }
+            Tab("Поиск", systemImage: "magnifyingglass", value: .search, role: .search) {
+                SessionSearchView()
             }
             Tab("Таймер", systemImage: "timer", value: .timer) {
                 if let timerViewModel {

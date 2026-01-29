@@ -153,6 +153,12 @@ struct SessionListView: View {
                 }
                 
                 HStack(spacing: 8) {
+                    Text(session.sessionType == .cash ? "Cash Game" : "Tournament")
+                    Image(systemName: session.sessionType == .cash ? "banknote" : "trophy")
+                }
+                .foregroundStyle(.secondary)
+                
+                HStack(spacing: 8) {
                     Text("\(session.gameType.rawValue) | \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
                         .foregroundStyle(.secondary)
                 }
