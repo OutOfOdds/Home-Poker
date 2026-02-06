@@ -14,9 +14,6 @@ struct EditSessionInfoSheet: View {
     @State private var bigBlind: Int?
     @State private var ante: Int?
 
-    @FocusState private var focusedField: Field?
-    private enum Field { case small, big, ratio }
-
     init(session: Session) {
         self.session = session
         _sessionTitle = State(initialValue: session.sessionTitle)
@@ -57,11 +54,11 @@ struct EditSessionInfoSheet: View {
             HStack {
                 Text("1 фишка равна:")
                 Spacer()
-                TextField("Наличные", value: $cashToChipsRatio, format: .number)
-                    .multilineTextAlignment(.trailing)
-                    .focused($focusedField, equals: .ratio)
+                GroupedIntegerTextField(
+                    placeholder: "Наличные",
+                    value: $cashToChipsRatio
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
             }
         } header: {
             Text("Основная информация")
@@ -75,30 +72,31 @@ struct EditSessionInfoSheet: View {
             HStack {
                 Text("Small Blind")
                 Spacer()
-                TextField("SB", value: $smallBlind, format: .number)
-                    .multilineTextAlignment(.trailing)
-                    .focused($focusedField, equals: .small)
+                GroupedIntegerTextField(
+                    placeholder: "SB",
+                    value: $smallBlind
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
             }
 
             HStack {
                 Text("Big Blind")
                 Spacer()
-                TextField("BB", value: $bigBlind, format: .number)
-                    .multilineTextAlignment(.trailing)
-                    .focused($focusedField, equals: .big)
+                GroupedIntegerTextField(
+                    placeholder: "BB",
+                    value: $bigBlind
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
             }
 
             HStack {
                 Text("Ante")
                 Spacer()
-                TextField("Ante", value: $ante, format: .number)
-                    .multilineTextAlignment(.trailing)
+                GroupedIntegerTextField(
+                    placeholder: "Ante",
+                    value: $ante
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
             }
         } header: {
             Text("Блайнды")

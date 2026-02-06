@@ -25,11 +25,6 @@ struct NewSessionSheet: View {
     @State private var ante: Int? = nil
     @State private var bigManuallyEdited = false
     
-    
-    @FocusState private var focusedField: Field?
-    
-    private enum Field { case small, big }
-    
     var body: some View {
         NavigationStack {
             Form {
@@ -70,10 +65,11 @@ struct NewSessionSheet: View {
             HStack {
                 Text("1 фишка равна:")
                 Spacer()
-                TextField("Наличные", value: $cashToChipsRatio, format: .number)
-                    .multilineTextAlignment(.trailing)
+                GroupedIntegerTextField(
+                    placeholder: "Наличные",
+                    value: $cashToChipsRatio
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
             }
         } footer: {
             Text("прим. 1 фишка = 10 у.e.")
@@ -85,19 +81,21 @@ struct NewSessionSheet: View {
             HStack {
                 Text("Бай-ин")
                 Spacer()
-                TextField("0", value: $entryFee, format: .number)
-                    .multilineTextAlignment(.trailing)
+                GroupedIntegerTextField(
+                    placeholder: "0",
+                    value: $entryFee
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
             }
 
             HStack {
                 Text("Стартовый стек")
                 Spacer()
-                TextField("0", value: $startingStack, format: .number)
-                    .multilineTextAlignment(.trailing)
+                GroupedIntegerTextField(
+                    placeholder: "0",
+                    value: $startingStack
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
             }
 
             Toggle("Разрешить Re-entry", isOn: $allowReEntry)
@@ -109,11 +107,11 @@ struct NewSessionSheet: View {
             HStack {
                 Text("Small Blind")
                 Spacer()
-                TextField("SB", value: $smallBlind, format: .number)
-                    .multilineTextAlignment(.trailing)
-                    .focused($focusedField, equals: .small)
+                GroupedIntegerTextField(
+                    placeholder: "SB",
+                    value: $smallBlind
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
                     .onChange(of: smallBlind) { _, newValue in
                         if !bigManuallyEdited {
                             bigBlind = newValue.map { $0 * 2 }
@@ -123,24 +121,25 @@ struct NewSessionSheet: View {
             HStack {
                 Text("Big Blind")
                 Spacer()
-                TextField("BB", value: $bigBlind, format: .number)
-                    .multilineTextAlignment(.trailing)
-                    .focused($focusedField, equals: .big)
+                GroupedIntegerTextField(
+                    placeholder: "BB",
+                    value: $bigBlind,
+                    onEditingChanged: { isEditing in
+                        if isEditing {
+                            bigManuallyEdited = true
+                        }
+                    }
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
-            }
-            .onChange(of: focusedField) { _, newValue in
-                if newValue == .big {
-                    bigManuallyEdited = true
-                }
             }
             HStack {
                 Text("Ante")
                 Spacer()
-                TextField("Ante", value: $ante, format: .number)
-                    .multilineTextAlignment(.trailing)
+                GroupedIntegerTextField(
+                    placeholder: "Ante",
+                    value: $ante
+                )
                     .frame(maxWidth: 120)
-                    .keyboardType(.numberPad)
             }
         }
         header: {

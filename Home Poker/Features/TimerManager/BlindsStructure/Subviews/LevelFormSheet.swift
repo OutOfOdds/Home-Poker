@@ -7,10 +7,10 @@ struct LevelFormSheet: View {
     @Binding var template: TournamentTemplate
     let onSave: (BlindLevel) -> Void
 
-    @State private var smallBlind: String = ""
-    @State private var bigBlind: String = ""
-    @State private var ante: String = ""
-    @State private var minutes: String = ""
+    @State private var smallBlind: Int? = nil
+    @State private var bigBlind: Int? = nil
+    @State private var ante: Int? = nil
+    @State private var minutes: Int? = nil
 
     enum Mode: Identifiable {
         case add
@@ -44,37 +44,45 @@ struct LevelFormSheet: View {
                     HStack {
                         Text("Small Blind")
                         Spacer()
-                        TextField("SB", text: $smallBlind)
+                        GroupedIntegerTextField(
+                            placeholder: "SB",
+                            value: $smallBlind,
+                            borderStyle: .roundedRect
+                        )
                             .frame(width: 100)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
                     }
 
                     HStack {
                         Text("Big Blind")
                         Spacer()
-                        TextField("BB", text: $bigBlind)
+                        GroupedIntegerTextField(
+                            placeholder: "BB",
+                            value: $bigBlind,
+                            borderStyle: .roundedRect
+                        )
                             .frame(width: 100)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
                     }
 
                     HStack {
                         Text("Ante")
                         Spacer()
-                        TextField("Ante", text: $ante)
+                        GroupedIntegerTextField(
+                            placeholder: "Ante",
+                            value: $ante,
+                            borderStyle: .roundedRect
+                        )
                             .frame(width: 100)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
                     }
 
                     HStack {
                         Text("Длительность (мин)")
                         Spacer()
-                        TextField("Мин.", text: $minutes)
+                        GroupedIntegerTextField(
+                            placeholder: "Мин.",
+                            value: $minutes,
+                            borderStyle: .roundedRect
+                        )
                             .frame(width: 100)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
                     }
                 } footer: {
                     if let message = validationMessage {
@@ -103,24 +111,24 @@ struct LevelFormSheet: View {
             if case .edit(let index) = mode,
                template.levels.indices.contains(index) {
                 let level = template.levels[index]
-                smallBlind = String(level.smallBlind)
-                bigBlind = String(level.bigBlind)
-                ante = String(level.ante)
-                minutes = String(level.minutes)
+                smallBlind = level.smallBlind
+                bigBlind = level.bigBlind
+                ante = level.ante
+                minutes = level.minutes
             } else {
-                smallBlind = "100"
-                bigBlind = "200"
-                ante = "0"
-                minutes = "12"
+                smallBlind = 100
+                bigBlind = 200
+                ante = 0
+                minutes = 12
             }
         }
     }
 
     private var isValid: Bool {
-        guard let sb = Int(smallBlind), sb > 0,
-              let bb = Int(bigBlind), bb > 0,
-              Int(ante) != nil,
-              let min = Int(minutes), min > 0
+        guard let sb = smallBlind, sb > 0,
+              let bb = bigBlind, bb > 0,
+              let ante = ante, ante >= 0,
+              let min = minutes, min > 0
         else {
             return false
         }
@@ -128,8 +136,8 @@ struct LevelFormSheet: View {
     }
 
     private var validationMessage: String? {
-        guard let sb = Int(smallBlind),
-              let bb = Int(bigBlind)
+        guard let sb = smallBlind,
+              let bb = bigBlind
         else {
             return nil
         }
@@ -138,10 +146,10 @@ struct LevelFormSheet: View {
     }
 
     private func saveLevel() {
-        guard let sb = Int(smallBlind),
-              let bb = Int(bigBlind),
-              let anteValue = Int(ante),
-              let min = Int(minutes)
+        guard let sb = smallBlind,
+              let bb = bigBlind,
+              let anteValue = ante,
+              let min = minutes
         else {
             return
         }

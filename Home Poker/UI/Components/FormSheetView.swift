@@ -32,7 +32,6 @@ struct FormSheetView<Content: View>: View {
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Отмена",systemImage: "xmark", action: cancelAction)
-                            .tint(.red)
                     }
 
                     ToolbarItem(placement: .confirmationAction) {

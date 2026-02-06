@@ -14,10 +14,12 @@ struct SettingsView: View {
     @State private var importedSession: Session?
     private let transferService: SessionTransferServiceProtocol = SessionTransferService()
 
-    #if DEBUG
-    @State private var showGenerateConfirm = false
-    @State private var isGeneratingDebugSessions = false
-    #endif
+#if DEBUG
+@State private var showGenerateConfirm = false
+@State private var isGeneratingDebugSessions = false
+@State private var showClearSessionsConfirm = false
+@State private var showClearDatabaseConfirm = false
+#endif
 
     var body: some View {
         Form {
@@ -73,6 +75,18 @@ struct SettingsView: View {
                     Label("Сгенерировать 1000 сессий", systemImage: "sparkles")
                 }
                 .disabled(isGeneratingDebugSessions)
+
+                Button(role: .destructive) {
+                    showClearSessionsConfirm = true
+                } label: {
+                    Label("Очистить все сессии", systemImage: "trash")
+                }
+
+                Button(role: .destructive) {
+                    showClearDatabaseConfirm = true
+                } label: {
+                    Label("Очистить всю базу", systemImage: "trash.slash")
+                }
             } header: {
                 Text("Debug")
             } footer: {
@@ -110,6 +124,22 @@ struct SettingsView: View {
             }
         } message: {
             Text("Это добавит 1000 случайных записей в базу данных.")
+        }
+        .alert("Очистить все сессии?", isPresented: $showClearSessionsConfirm) {
+            Button("Отмена", role: .cancel) { }
+            Button("Очистить", role: .destructive) {
+                clearAllSessions()
+            }
+        } message: {
+            Text("Все сессии и связанные данные будут удалены без возможности восстановления.")
+        }
+        .alert("Очистить всю базу?", isPresented: $showClearDatabaseConfirm) {
+            Button("Отмена", role: .cancel) { }
+            Button("Очистить", role: .destructive) {
+                clearAllData()
+            }
+        } message: {
+            Text("Будут удалены все сессии, игроки, расходы, банк и переводы. Действие необратимо.")
         }
         #endif
     }
@@ -252,6 +282,39 @@ struct SettingsView: View {
         } catch {
             assertionFailure("Failed to generate sessions: \(error)")
         }
+    }
+
+    private func clearAllSessions() {
+        do {
+            let descriptor = FetchDescriptor<Session>()
+            let allSessions = try context.fetch(descriptor)
+            allSessions.forEach(context.delete)
+            try context.save()
+        } catch {
+            assertionFailure("Failed to clear sessions: \(error)")
+        }
+    }
+
+    private func clearAllData() {
+        do {
+            try deleteAll(ExpenseDistribution.self)
+            try deleteAll(Expense.self)
+            try deleteAll(SessionBankTransaction.self)
+            try deleteAll(SessionBank.self)
+            try deleteAll(SettlementTransfer.self)
+            try deleteAll(PlayerChipTransaction.self)
+            try deleteAll(Player.self)
+            try deleteAll(Session.self)
+            try context.save()
+        } catch {
+            assertionFailure("Failed to clear database: \(error)")
+        }
+    }
+
+    private func deleteAll<T: PersistentModel>(_ type: T.Type) throws {
+        let descriptor = FetchDescriptor<T>()
+        let items = try context.fetch(descriptor)
+        items.forEach(context.delete)
     }
     #endif
 }

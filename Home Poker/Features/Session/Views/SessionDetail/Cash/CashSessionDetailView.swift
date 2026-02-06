@@ -59,6 +59,12 @@ struct CashSessionDetailView: View {
 
             if !session.players.isEmpty {
                 PlayerList(session: session)
+            } else {
+                ContentUnavailableView(
+                    "Пока нет игроков",
+                    systemImage: "person.fill.questionmark",
+                    description: Text("Добавьте игроков в правом верхнем углу")
+                )
             }
         }
         .navigationTitle(navigationTitle)
@@ -76,10 +82,11 @@ struct CashSessionDetailView: View {
                         .environment(viewModel)
                 } label: {
                     HStack {
-                        Image(systemName: "pencil.and.list.clipboard")
-                        Text("УЧЕТ")
+                        Image(systemName: "dollarsign.bank.building.fill")
+                        Text("Финансы")
                     }
                 }
+                .tint(.blue)
                 .popoverTip(bankTip, arrowEdge: .top)
             }
 
@@ -91,8 +98,9 @@ struct CashSessionDetailView: View {
                 Button {
                     activeSheet = .addPlayer
                 } label: {
-                    Image(systemName: "person.badge.plus")
+                    Image(systemName: "person.badge.plus.fill")
                 }
+                .tint(.green)
                 .popoverTip(addPlayerTip, arrowEdge: .top)
             }
         }

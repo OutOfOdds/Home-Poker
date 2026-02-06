@@ -11,8 +11,6 @@ struct BlindsEditorSheet: View {
     @State private var bigBlind: Int? = nil
     @State private var ante: Int? = nil
     @State private var bigManuallyEdited = false
-    @FocusState private var focusedField: Field?
-    private enum Field { case small, big }
     
     var body: some View {
         NavigationStack {
@@ -21,10 +19,10 @@ struct BlindsEditorSheet: View {
                     HStack {
                         Text("Small Blind")
                         Spacer()
-                        TextField("SB", value: $smallBlind, format: .number)
-                            .multilineTextAlignment(.trailing)
-                            .focused($focusedField, equals: .small)
-                            .keyboardType(.numberPad)
+                        GroupedIntegerTextField(
+                            placeholder: "SB",
+                            value: $smallBlind
+                        )
                             .onChange(of: smallBlind) { _, newValue in
                                 if !bigManuallyEdited {
                                     bigBlind = newValue.map { $0 * 2 }
@@ -34,20 +32,21 @@ struct BlindsEditorSheet: View {
                     HStack {
                         Text("Big Blind")
                         Spacer()
-                        TextField("BB", value: $bigBlind, format: .number)
-                            .multilineTextAlignment(.trailing)
-                            .focused($focusedField, equals: .big)
-                            .keyboardType(.numberPad)
-                    }
-                    .onChange(of: focusedField) { _, newValue in
-                        if newValue == .big { bigManuallyEdited = true }
+                        GroupedIntegerTextField(
+                            placeholder: "BB",
+                            value: $bigBlind,
+                            onEditingChanged: { isEditing in
+                                if isEditing { bigManuallyEdited = true }
+                            }
+                        )
                     }
                     HStack {
                         Text("Ante")
                         Spacer()
-                        TextField("Ante", value: $ante, format: .number)
-                            .multilineTextAlignment(.trailing)
-                            .keyboardType(.numberPad)
+                        GroupedIntegerTextField(
+                            placeholder: "Ante",
+                            value: $ante
+                        )
                     }
                 }
                 

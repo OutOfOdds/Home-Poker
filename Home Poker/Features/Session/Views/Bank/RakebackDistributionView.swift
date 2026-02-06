@@ -187,11 +187,15 @@ struct RakebackDistributionView: View {
     private func playerAmountView(for selection: PlayerSelection) -> some View {
         if distributionMode == .percentage {
             HStack(spacing: 4) {
-                TextField("0", text: percentageTextBinding(for: selection))
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.trailing)
+                GroupedIntegerTextField(
+                    placeholder: "0",
+                    value: percentageValueBinding(for: selection),
+                    usesGrouping: false,
+                    minValue: 0,
+                    maxValue: 100,
+                    borderStyle: .roundedRect
+                )
                     .frame(width: 60)
-                    .textFieldStyle(.roundedBorder)
                 Text("%")
                     .foregroundStyle(.secondary)
             }
@@ -199,11 +203,12 @@ struct RakebackDistributionView: View {
             .monospacedDigit()
         } else if distributionMode == .manual {
             HStack(spacing: 4) {
-                TextField("0", text: amountTextBinding(for: selection))
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.trailing)
+                GroupedIntegerTextField(
+                    placeholder: "0",
+                    value: amountValueBinding(for: selection),
+                    borderStyle: .roundedRect
+                )
                     .frame(width: 80)
-                    .textFieldStyle(.roundedBorder)
                 Text("₽")
                     .foregroundStyle(.secondary)
             }
@@ -383,15 +388,14 @@ struct RakebackDistributionView: View {
         clearUnselectedPlayers()
     }
 
-    private func amountTextBinding(for selection: PlayerSelection) -> Binding<String> {
+    private func amountValueBinding(for selection: PlayerSelection) -> Binding<Int?> {
         Binding(
             get: {
                 let amount = selection.amount
-                return amount == 0 ? "" : String(amount)
+                return amount == 0 ? nil : amount
             },
             set: { newValue in
-                let filtered = newValue.filter { $0.isNumber }
-                let value = Int(filtered) ?? 0
+                let value = max(newValue ?? 0, 0)
                 if let index = playerSelections.firstIndex(where: { $0.id == selection.id }) {
                     playerSelections[index].amount = value
                 }
@@ -399,16 +403,14 @@ struct RakebackDistributionView: View {
         )
     }
 
-    private func percentageTextBinding(for selection: PlayerSelection) -> Binding<String> {
+    private func percentageValueBinding(for selection: PlayerSelection) -> Binding<Int?> {
         Binding(
             get: {
                 let percentage = selection.percentage
-                return percentage == 0 ? "" : String(percentage)
+                return percentage == 0 ? nil : percentage
             },
             set: { newValue in
-                let filtered = newValue.filter { $0.isNumber }
-                let rawValue = Int(filtered) ?? 0
-                let value = min(max(rawValue, 0), 100)
+                let value = min(max(newValue ?? 0, 0), 100)
                 if let index = playerSelections.firstIndex(where: { $0.id == selection.id }) {
                     playerSelections[index].percentage = value
                 }

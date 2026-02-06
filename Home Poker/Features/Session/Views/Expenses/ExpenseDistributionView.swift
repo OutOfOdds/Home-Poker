@@ -300,11 +300,12 @@ struct ExpenseDistributionView: View {
     private func playerAmountView(for selection: Binding<PlayerSelection>) -> some View {
         if distributionMode == .manual {
             HStack(spacing: 4) {
-                TextField("0", text: amountTextBinding(for: selection))
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.trailing)
+                GroupedIntegerTextField(
+                    placeholder: "0",
+                    value: amountValueBinding(for: selection),
+                    borderStyle: .roundedRect
+                )
                     .frame(width: 80)
-                    .textFieldStyle(.roundedBorder)
                 Text("₽")
                     .foregroundStyle(.secondary)
             }
@@ -487,15 +488,14 @@ struct ExpenseDistributionView: View {
         clearUnselectedPlayers()
     }
 
-    private func amountTextBinding(for selection: Binding<PlayerSelection>) -> Binding<String> {
+    private func amountValueBinding(for selection: Binding<PlayerSelection>) -> Binding<Int?> {
         Binding(
             get: {
                 let amount = selection.wrappedValue.amount
-                return amount == 0 ? "" : String(amount)
+                return amount == 0 ? nil : amount
             },
             set: { newValue in
-                let filtered = newValue.filter { $0.isNumber }
-                selection.wrappedValue.amount = Int(filtered) ?? 0
+                selection.wrappedValue.amount = max(newValue ?? 0, 0)
             }
         )
     }

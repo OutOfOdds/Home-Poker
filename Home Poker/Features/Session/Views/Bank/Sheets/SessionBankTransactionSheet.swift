@@ -235,8 +235,10 @@ struct SessionBankTransactionSheet: View {
     /// Поле ввода суммы
     @ViewBuilder
     private var amountField: some View {
-        TextField("Сумма", value: $amount, format: .number)
-            .keyboardType(.numberPad)
+        GroupedIntegerTextField(
+            placeholder: "Сумма",
+            value: $amount
+        )
             .onChange(of: amount) { _, _ in
                 handleAmountChange()
             }

@@ -45,8 +45,7 @@ struct SessionBankDashboardView: View {
                     }
             }
         }
-        .navigationTitle("УЧЕТ")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Учет финансов")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 settlementButton

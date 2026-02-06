@@ -56,9 +56,10 @@ struct RakeAndTipsSheet: View {
                     HStack {
                         Text("Рейк")
                         Spacer()
-                        TextField("0", value: $rakeAmount, format: .number)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
+                        GroupedIntegerTextField(
+                            placeholder: "0",
+                            value: $rakeAmount
+                        )
                             .frame(width: 100)
                             .fontDesign(.monospaced)
                     }
@@ -66,9 +67,10 @@ struct RakeAndTipsSheet: View {
                     HStack {
                         Text("Чаевые дилеру")
                         Spacer()
-                        TextField("0", value: $tipsAmount, format: .number)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
+                        GroupedIntegerTextField(
+                            placeholder: "0",
+                            value: $tipsAmount
+                        )
                             .frame(width: 100)
                             .fontDesign(.monospaced)
                     }

@@ -28,8 +28,10 @@ struct PlayerAddOnSheet: View {
             Form {
                 Section("Докупка для \(player.name)") {
                     
-                    TextField("Сумма докупки", value: $buyInAmount, format: .number)
-                        .keyboardType(.numberPad)
+                    GroupedIntegerTextField(
+                        placeholder: "Сумма докупки",
+                        value: $buyInAmount
+                    )
                     
                     
                 }
@@ -54,8 +56,10 @@ struct PlayerAddOnSheet: View {
                         }
                     
                     if settleWithBank {
-                        TextField("Сумма для банка", value: $bankContributionAmount, format: .number)
-                            .keyboardType(.numberPad)
+                        GroupedIntegerTextField(
+                            placeholder: "Сумма для банка",
+                            value: $bankContributionAmount
+                        )
                     }
                 } footer: {
                     if settleWithBank {

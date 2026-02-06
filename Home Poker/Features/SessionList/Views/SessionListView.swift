@@ -10,6 +10,7 @@ struct SessionListView: View {
     @State private var showingNewTournamentSession = false
     @AppStorage("sessionListShowDetails") private var showSessionDetails = true
     @State private var sessionToDelete: Session?
+    @State private var showDeleteConfirmation = false
     
     // Export
     @State private var sessionToExport: Session?
@@ -57,7 +58,15 @@ struct SessionListView: View {
                 .sheet(isPresented: $showingNewTournamentSession) {
                     NewSessionSheet(sessionType: .tournament)
                 }
-                .alert("Удалить сессию?", isPresented: .constant(sessionToDelete != nil)) {
+                .sheet(isPresented: .constant(exportedFileURL != nil)) {
+                    if let url = exportedFileURL {
+                        ActivityViewController(activityItems: [url]) {
+                            exportedFileURL = nil
+                            sessionToExport = nil
+                        }
+                    }
+                }
+                .alert("Удалить сессию?", isPresented: $showDeleteConfirmation) {
                     Button("Отмена", role: .cancel) {
                         sessionToDelete = nil
                     }
@@ -69,16 +78,7 @@ struct SessionListView: View {
                     }
                 } message: {
                     if let session = sessionToDelete {
-                        Text("Вы уверены, что хотите удалить сессию «\(session.sessionTitle)»? Это действие нельзя отменить.")
-                    }
-                }
-                .navigationTitle("Сессии")
-                .sheet(isPresented: .constant(exportedFileURL != nil)) {
-                    if let url = exportedFileURL {
-                        ActivityViewController(activityItems: [url]) {
-                            exportedFileURL = nil
-                            sessionToExport = nil
-                        }
+                        Text("\nВы уверены, что хотите удалить сессию «\(session.sessionTitle)»?\n\nЭто действие нельзя отменить.")
                     }
                 }
                 .alert("Ошибка экспорта", isPresented: $showExportError) {
@@ -86,8 +86,8 @@ struct SessionListView: View {
                 } message: {
                     Text(exportError?.localizedDescription ?? "Не удалось экспортировать сессию")
                 }
+                .navigationTitle("Сессии")
         }
-        
     }
     
     private var sessionList: some View {
@@ -116,20 +116,20 @@ struct SessionListView: View {
                             }
                             .tint(.blue)
                         }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button {
                                 sessionToDelete = session
+                                showDeleteConfirmation = true
                             } label: {
                                 Label("Удалить", systemImage: "trash")
                             }
-                        }
-                    }
-                    .onDelete { offsets in
-                        if let index = offsets.first {
-                            sessionToDelete = sessions[index]
+                            .tint(.red)
                         }
                     }
                 }
+                .listRowSeparator(.hidden)
+                .listRowSpacing(8)
+
             }
         }
     }
@@ -237,9 +237,7 @@ private extension SessionListView {
     }
 }
 
-// MARK: - Supporting Types
-
-/// UIKit Activity View Controller обертка для SwiftUI
+/// UIKit Activity View Controller обертка для SwiftUI для шеринга сессии
 struct ActivityViewController: UIViewControllerRepresentable {
     let activityItems: [Any]
     let onDismiss: () -> Void

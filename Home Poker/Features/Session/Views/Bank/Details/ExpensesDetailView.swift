@@ -246,7 +246,6 @@ struct ExpensesDetailView: View {
         } label: {
             Image(systemName: "plus")
         }
-        .disabled(session.players.isEmpty)
     }
 }
 

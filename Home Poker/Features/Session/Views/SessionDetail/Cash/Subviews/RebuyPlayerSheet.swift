@@ -35,8 +35,10 @@ struct RebuyPlayerSheet: View {
                 }
 
                 Section("Новая закупка") {
-                    TextField("Сумма закупки", value: $rebuyAmount, format: .number)
-                        .keyboardType(.numberPad)
+                    GroupedIntegerTextField(
+                        placeholder: "Сумма закупки",
+                        value: $rebuyAmount
+                    )
                 }
 
                 Section {

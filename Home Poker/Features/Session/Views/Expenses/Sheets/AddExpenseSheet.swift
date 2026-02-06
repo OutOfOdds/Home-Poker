@@ -8,7 +8,7 @@ struct AddExpenseSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var expenseDescription = ""
     @State private var expenseAmount: Int? = nil
-    @State private var payerSelection: AddExpenseSource = .player
+    @State private var payerSelection: AddExpenseSource = .later
     @State private var selectedPayerId: UUID?
 
     var body: some View {
@@ -24,20 +24,22 @@ struct AddExpenseSheet: View {
                     TextField("Описание расхода", text: $expenseDescription)
                         .textInputAutocapitalization(.sentences)
 
-                    TextField("Сумма", value: $expenseAmount, format: .number)
-                        .keyboardType(.numberPad)
+                    GroupedIntegerTextField(
+                        placeholder: "Сумма",
+                        value: $expenseAmount
+                    )
 
                 } header: {
                     Text("Информация о расходе")
                         .font(.caption)
                 } footer: {
-                    Text("Добавляйте только общие расходы, которые влияют на выплаты между игроками. Личные траты (например, еда для себя) не нужно записывать.")
+                    Text("Важено: добавляйте только общие расходы, которые влияют на выплаты между игроками. Личные траты (например, еда для конеретного игрока) не нужно записывать.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 Section {
                     Picker("Источник оплаты", selection: $payerSelection) {
+                        Text("Указать позже").tag(AddExpenseSource.later)
                         Text("Игрок").tag(AddExpenseSource.player)
                         if canSelectBank {
                             Text("Касса").tag(AddExpenseSource.bank)
@@ -46,8 +48,7 @@ struct AddExpenseSheet: View {
                             Text("Рейк").tag(AddExpenseSource.rake)
                         }
                     }
-                    .pickerStyle(.segmented)
-
+                    
                     if payerSelection == .player {
                         Picker("Оплатил игрок", selection: $selectedPayerId) {
                             ForEach(session.players, id: \.id) { player in
@@ -88,6 +89,8 @@ struct AddExpenseSheet: View {
         guard expenseDescription.nonEmptyTrimmed != nil else { return false }
         guard let amount = expenseAmount, amount > 0 else { return false }
         switch payerSelection {
+        case .later:
+            return true
         case .player:
             return selectedPayerId != nil
         case .bank:
@@ -105,6 +108,8 @@ struct AddExpenseSheet: View {
         }
 
         switch payerSelection {
+        case .later:
+            break
         case .player:
             break
         case .bank:
@@ -142,6 +147,8 @@ struct AddExpenseSheet: View {
     private var sourceFooter: some View {
         Group {
             switch payerSelection {
+            case .later:
+                Text("Быстрая запись: источник оплаты и распределение можно указать позже.")
             case .player:
                 Text("Выбор игрока влияет на итоговые выплаты.")
             case .bank:
@@ -172,6 +179,7 @@ struct AddExpenseSheet: View {
 }
 
 private enum AddExpenseSource {
+    case later
     case player
     case bank
     case rake

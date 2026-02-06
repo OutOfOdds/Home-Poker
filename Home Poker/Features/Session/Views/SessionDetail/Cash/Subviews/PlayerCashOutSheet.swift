@@ -46,8 +46,10 @@ struct PlayerCashOutSheet: View {
         ) {
             Form {
                 Section {
-                    TextField("Сколько фишек вывести", value: $chipsCashoutAmount, format: .number)
-                        .keyboardType(.numberPad)
+                    GroupedIntegerTextField(
+                        placeholder: "Сколько фишек вывести",
+                        value: $chipsCashoutAmount
+                    )
                 } header: {
                     Text("Вывод фишек игрока \(player.name)")
                 }
@@ -71,8 +73,10 @@ struct PlayerCashOutSheet: View {
 
                 if instantSettlement {
                     Section {
-                        TextField("Сумма для банка", value: $moneyToSessionBank, format: .number)
-                            .keyboardType(.numberPad)
+                        GroupedIntegerTextField(
+                            placeholder: "Сумма для банка",
+                            value: $moneyToSessionBank
+                        )
                     } header: {
                         Text("Игрок готов пополнить банк на:")
                     }

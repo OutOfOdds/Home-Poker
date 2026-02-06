@@ -47,8 +47,10 @@ struct AddPlayerSheet: View {
                         }
                     }
 
-                    TextField("Сумма закупа", value: $buyInAmount, format: .number)
-                        .keyboardType(.numberPad)
+                    GroupedIntegerTextField(
+                        placeholder: "Сумма закупа",
+                        value: $buyInAmount
+                    )
                 }
 
                 Section {
@@ -66,8 +68,10 @@ struct AddPlayerSheet: View {
                         }
 
                     if settleWithBank {
-                        TextField("Сумма для банка", value: $bankContributionAmount, format: .number)
-                            .keyboardType(.numberPad)
+                        GroupedIntegerTextField(
+                            placeholder: "Сумма для банка",
+                            value: $bankContributionAmount
+                        )
                     }
                 } footer: {
                     if settleWithBank {

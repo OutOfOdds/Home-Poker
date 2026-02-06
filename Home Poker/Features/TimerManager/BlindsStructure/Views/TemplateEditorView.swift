@@ -70,19 +70,23 @@ struct TemplateEditorView: View {
                 HStack {
                     Text("Игроков")
                     Spacer()
-                    TextField("", value: $template.defaultPlayers, format: .number)
+                    GroupedIntegerTextField(
+                        placeholder: "",
+                        value: $template.defaultPlayers,
+                        borderStyle: .roundedRect
+                    )
                         .frame(width: 100)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
                 }
 
                 HStack {
                     Text("Стартовый стек")
                     Spacer()
-                    TextField("", value: $template.defaultStartingStack, format: .number)
+                    GroupedIntegerTextField(
+                        placeholder: "",
+                        value: $template.defaultStartingStack,
+                        borderStyle: .roundedRect
+                    )
                         .frame(width: 100)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
                 }
             }
         }
