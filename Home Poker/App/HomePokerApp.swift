@@ -26,6 +26,10 @@ struct Home_PokerApp: App {
                 }
         }
         .modelContainer(for: [
+            Club.self,
+            ClubMember.self,
+            ClubMemberStats.self,
+            ClubMemberSessionStats.self,
             Player.self,
             Session.self,
             PlayerChipTransaction.self,

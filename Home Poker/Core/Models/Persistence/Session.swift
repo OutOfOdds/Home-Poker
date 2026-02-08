@@ -15,6 +15,9 @@ final class Session {
     var bigBlind: Int = 0
     var ante: Int = 0
 
+    @Relationship(inverse: \Club.sessions)
+    var club: Club?
+
     // Турнирные поля (используются только если sessionType == .tournament)
     var entryFee: Int? = nil
     var startingStack: Int? = nil
@@ -53,13 +56,22 @@ final class Session {
 
 
     
-    init(startTime: Date, location: String, gameType: GameType, sessionType: SessionType, status: SessionStatus, sessionTitle: String) {
+    init(
+        startTime: Date,
+        location: String,
+        gameType: GameType,
+        sessionType: SessionType,
+        status: SessionStatus,
+        sessionTitle: String,
+        club: Club? = nil
+    ) {
         self.startTime = startTime
         self.location = location
         self.gameType = gameType
         self.sessionType = sessionType
         self.status = status
         self.sessionTitle = sessionTitle
+        self.club = club
     }
     
     /// Общее количество закупленных фишек всеми игроками
@@ -134,6 +146,11 @@ extension Session {
     var isCash: Bool { sessionType == .cash }
     var isTournament: Bool { sessionType == .tournament }
 
+    /// Заголовок сессии формируется автоматически: дата + клуб.
+    var displayTitle: String {
+        Session.makeDisplayTitle(startTime: startTime, clubName: club?.name)
+    }
+
     /// Computed properties с учетом типа
     var effectiveChipsRatio: Int {
         switch sessionType {
@@ -142,5 +159,24 @@ extension Session {
         case .tournament:
             return 0 // турнирные фишки не конвертируются
         }
+    }
+
+    /// Пересчитывает поля заголовка/локации по новым правилам.
+    func applyAutomaticHeader() {
+        sessionTitle = displayTitle
+        location = ""
+    }
+
+    static func makeDisplayTitle(startTime: Date, clubName: String?) -> String {
+        let dateString = startTime.formatted(
+            .dateTime
+                .day(.twoDigits)
+                .month(.twoDigits)
+                .year()
+        )
+        guard let clubName = clubName?.nonEmptyTrimmed else {
+            return dateString
+        }
+        return "\(dateString) · \(clubName)"
     }
 }

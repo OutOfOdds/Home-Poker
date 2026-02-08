@@ -94,57 +94,65 @@ private struct ExpenseRow: View {
                     HStack(spacing: 4) {
                         Text(expense.note.isEmpty ? "Без описания" : expense.note)
                             .font(.body)
-                        if expense.isFullyDistributed {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.green)
-                        } else {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
+                        Image(systemName: distributionIcon(for: expense))
+                            .font(.caption)
+                            .foregroundStyle(distributionColor(for: expense))
                     }
 
                     HStack(spacing: 6) {
-                        if let payerName = expense.payer?.name {
-                            Text("Оплатил: \(payerName)")
-                        }
+                        Text(expense.sourceStatusText)
                         Text(expense.createdAt, style: .date)
                     }
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(sourceColor(for: expense))
 
-                    if expense.payer == nil && expense.paidFromBank == 0 && expense.paidFromRake == 0 {
-                        Text("Не оплачен")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if expense.paidFromRake > 0 {
-                        Text("Покрыто организаторами: \(expense.paidFromRake.asCurrency())")
-                            .font(.caption2)
-                            .foregroundStyle(.blue)
-                    } else if expense.paidFromBank > 0 {
-                        Text("Оплачено из кассы: \(expense.paidFromBank.asCurrency())")
-                            .font(.caption2)
-                            .foregroundStyle(.green)
-                    }
-
-                    if !expense.distributions.isEmpty {
-                        Text("Распределено: \(expense.totalDistributed.asCurrency()) из \(expense.amount.asCurrency())")
-                            .font(.caption2)
-                            .foregroundStyle(expense.isFullyDistributed ? .green : .orange)
-                    } else {
-                        Text("Не распределено")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                    }
+                    Text(expense.distributionStatusText)
+                        .font(.caption2)
+                        .foregroundStyle(distributionColor(for: expense))
                 }
                 Spacer()
                 Text(expense.amount.asCurrency())
                     .font(.body.weight(.semibold))
             }
             .padding(.vertical, 4)
+        }
+    }
+
+    private func sourceColor(for expense: Expense) -> Color {
+        if expense.requiresReview {
+            return .red
+        }
+        switch expense.resolvedSource {
+        case .later, .player:
+            return .secondary
+        case .bank:
+            return .green
+        case .rake:
+            return .blue
+        case .organizers:
+            return .purple
+        }
+    }
+
+    private func distributionIcon(for expense: Expense) -> String {
+        switch expense.distributionState {
+        case .notRequired, .distributed:
+            return "checkmark.circle.fill"
+        case .needsDistribution:
+            return "exclamationmark.circle.fill"
+        case .needsReview:
+            return "xmark.octagon.fill"
+        }
+    }
+
+    private func distributionColor(for expense: Expense) -> Color {
+        switch expense.distributionState {
+        case .notRequired, .distributed:
+            return .green
+        case .needsDistribution:
+            return .orange
+        case .needsReview:
+            return .red
         }
     }
 }

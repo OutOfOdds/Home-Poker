@@ -63,15 +63,8 @@ struct TournamentSessionDetailView: View {
         Section {
             VStack(alignment: .leading, spacing: 12) {
                 summaryRow(
-                    label: "Название:",
-                    value: session.sessionTitle.isEmpty ? "Не указано" : session.sessionTitle
-                )
-
-                divider
-
-                summaryRow(
-                    label: "Место:",
-                    value: session.location.isEmpty ? "Не указано" : session.location
+                    label: "Сессия:",
+                    value: session.displayTitle
                 )
 
                 divider

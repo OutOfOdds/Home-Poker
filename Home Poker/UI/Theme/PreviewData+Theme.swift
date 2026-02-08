@@ -772,6 +772,10 @@ enum PreviewData {
     @MainActor
     static var previewContainer: ModelContainer {
         let schema = Schema([
+            Club.self,
+            ClubMember.self,
+            ClubMemberStats.self,
+            ClubMemberSessionStats.self,
             Session.self,
             Player.self,
             PlayerChipTransaction.self,
@@ -786,7 +790,16 @@ enum PreviewData {
 
             // Добавляем примеры данных
             let context = container.mainContext
+            let club = Club(name: "Домашний клуб")
+            club.members = [
+                ClubMember(name: "Александр", club: club),
+                ClubMember(name: "Дмитрий", club: club),
+                ClubMember(name: "Максим", club: club)
+            ]
+            context.insert(club)
+
             let sessions = sampleSessions()
+            sessions.forEach { $0.club = club }
             sessions.forEach { context.insert($0) }
 
             return container

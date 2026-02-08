@@ -3,13 +3,12 @@ import SwiftData
 
 struct NewSessionSheet: View {
     let sessionType: SessionType
+    let club: Club
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
 
     @State private var startTime: Date = Date()
-    @State private var sessionTitle: String = ""
-    @State private var location: String = ""
     @State private var gameType: GameType = .NLHoldem
 
     // Кеш-игра поля
@@ -49,9 +48,7 @@ struct NewSessionSheet: View {
     
     private var sessionInfoSection: some View {
         Section {
-            TextField("Название", text: $sessionTitle)
             DatePicker("Начало", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
-            TextField("Место проведения", text: $location)
 
             Picker("Игра", selection: $gameType) {
                 Text(GameType.NLHoldem.rawValue).tag(GameType.NLHoldem)
@@ -177,8 +174,6 @@ struct NewSessionSheet: View {
     }
     
     private var canSave: Bool {
-        guard location.nonEmptyTrimmed != nil else { return false }
-
         switch sessionType {
         case .cash:
             return cashToChipsRatio != nil
@@ -190,8 +185,6 @@ struct NewSessionSheet: View {
     private func createNewSession() {
         let input = NewSessionInput(
             startTime: startTime,
-            title: sessionTitle,
-            location: location,
             gameType: gameType,
             sessionType: sessionType,
             cashToChipsRatio: cashToChipsRatio,
@@ -204,7 +197,7 @@ struct NewSessionSheet: View {
         )
         let repository = SwiftDataSessionsRepository(context: context)
         do {
-            try repository.createSession(from: input)
+            try repository.createSession(from: input, in: club)
             dismiss()
         } catch {
             assertionFailure("Failed to create session: \\(error)")
@@ -213,11 +206,19 @@ struct NewSessionSheet: View {
 }
 
 #Preview("Кеш-игра") {
-    NewSessionSheet(sessionType: .cash)
-        .modelContainer(PreviewData.previewContainer)
+    let container = PreviewData.previewContainer
+    let context = container.mainContext
+    let club = (try? context.fetch(FetchDescriptor<Club>()).first) ?? Club(name: "Клуб")
+
+    return NewSessionSheet(sessionType: .cash, club: club)
+        .modelContainer(container)
 }
 
 #Preview("Турнир") {
-    NewSessionSheet(sessionType: .tournament)
-        .modelContainer(PreviewData.previewContainer)
+    let container = PreviewData.previewContainer
+    let context = container.mainContext
+    let club = (try? context.fetch(FetchDescriptor<Club>()).first) ?? Club(name: "Клуб")
+
+    return NewSessionSheet(sessionType: .tournament, club: club)
+        .modelContainer(container)
 }

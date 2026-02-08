@@ -4,12 +4,13 @@ import SwiftData
 protocol SessionsRepository {
     func fetchSessions() throws -> [Session]
     @discardableResult
-    func createSession(from input: NewSessionInput) throws -> Session
+    func createSession(from input: NewSessionInput, in club: Club) throws -> Session
     func deleteSessions(_ sessions: [Session]) throws
 }
 
 final class SwiftDataSessionsRepository: SessionsRepository {
     private let context: ModelContext
+    private let statsService = ClubMemberStatsService()
 
     init(context: ModelContext) {
         self.context = context
@@ -23,15 +24,17 @@ final class SwiftDataSessionsRepository: SessionsRepository {
     }
 
     @discardableResult
-    func createSession(from input: NewSessionInput) throws -> Session {
+    func createSession(from input: NewSessionInput, in club: Club) throws -> Session {
         let session = Session(
             startTime: input.startTime,
-            location: input.location.trimmed,
+            location: "",
             gameType: input.gameType,
             sessionType: input.sessionType,
             status: .active,
-            sessionTitle: input.title.trimmed
+            sessionTitle: Session.makeDisplayTitle(startTime: input.startTime, clubName: club.name),
+            club: club
         )
+        session.applyAutomaticHeader()
 
         // Кеш-игра поля
         if input.sessionType == .cash {
@@ -64,15 +67,16 @@ final class SwiftDataSessionsRepository: SessionsRepository {
     }
 
     func deleteSessions(_ sessions: [Session]) throws {
-        sessions.forEach(context.delete)
+        for session in sessions {
+            statsService.removeStats(forDeletedSession: session, context: context)
+            context.delete(session)
+        }
         try context.save()
     }
 }
 
 struct NewSessionInput {
     var startTime: Date
-    var title: String
-    var location: String
     var gameType: GameType
     var sessionType: SessionType
 

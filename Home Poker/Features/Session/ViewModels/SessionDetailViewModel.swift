@@ -66,10 +66,23 @@ final class SessionDetailViewModel {
     // MARK: - Расходы
 
     // Добавляет расход в сессию и показывает alert при ошибке.
-    func addExpense(to session: Session, note: String, amount: Int?, payer: Player? = nil) -> Expense? {
+    func addExpense(
+        to session: Session,
+        note: String,
+        amount: Int?,
+        payer: Player? = nil,
+        source: ExpenseSource = .later
+    ) -> Expense? {
         guard validateAmount(amount) else { return nil }
         do {
-            return try service.addExpense(note: note, amount: amount!, payer: payer, to: session, createdAt: Date())
+            return try service.addExpense(
+                note: note,
+                amount: amount!,
+                payer: payer,
+                source: source,
+                to: session,
+                createdAt: Date()
+            )
         } catch {
             setError(error)
             return nil
@@ -86,13 +99,15 @@ final class SessionDetailViewModel {
     func saveExpenseDistribution(
         for expense: Expense,
         distributions: [(Player, Int)],
-        rakeAmount: Int
+        rakeAmount: Int,
+        in session: Session
     ) -> Bool {
         return performServiceCall {
             try service.saveExpenseDistribution(
                 for: expense,
                 distributions: distributions,
-                rakeAmount: rakeAmount
+                rakeAmount: rakeAmount,
+                in: session
             )
         }
     }
@@ -100,6 +115,13 @@ final class SessionDetailViewModel {
     // Возвращает доступную сумму рейка для оплаты расходов.
     func availableRakeForExpenses(for session: Session) -> Int {
         return session.bank?.availableRakeForExpenses ?? 0
+    }
+
+    /// Покрывает расход организаторов (без вычета) из резерва рейка.
+    func coverOrganizerExpenseFromRake(_ expense: Expense, in session: Session) -> Bool {
+        performServiceCall {
+            try service.coverOrganizerExpenseFromRake(expense, in: session)
+        }
     }
 
     // MARK: - Настройки сессии

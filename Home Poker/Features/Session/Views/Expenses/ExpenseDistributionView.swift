@@ -73,6 +73,8 @@ struct ExpenseDistributionView: View {
             return draftPaidFromBank < expense.amount
         case .rake:
             return draftPaidFromRake < expense.amount
+        case .organizers:
+            return false
         }
     }
 
@@ -153,6 +155,7 @@ struct ExpenseDistributionView: View {
                 if canSelectRake {
                     Text("Рейк").tag(ExpensePayerSelection.rake)
                 }
+                Text("Организаторы").tag(ExpensePayerSelection.organizers)
             }
             .pickerStyle(.segmented)
 
@@ -197,6 +200,10 @@ struct ExpenseDistributionView: View {
                         .foregroundStyle(.secondary)
                         .font(.caption)
                 }
+            } else if payerSelection == .organizers {
+                Text("Расход оплачен организаторами. Выберите, с каких игроков списать сумму.")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
             }
         }
     }
@@ -232,6 +239,10 @@ struct ExpenseDistributionView: View {
                     Text("Оплатил: \(payer.name)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+        } else if payerSelection == .organizers {
+            Text("Оплачено организаторами")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         } else {
             Text("Плательщик не указан")
                 .font(.subheadline)
@@ -385,16 +396,20 @@ struct ExpenseDistributionView: View {
     }
 
     private func initializePayerSelection() {
-        if let payer = expense.payer {
+        switch expense.resolvedSource {
+        case .player:
             payerSelection = .player
-            selectedPayerId = payer.id
-        } else if expense.paidFromBank > 0 {
+            selectedPayerId = expense.payer?.id ?? session.players.first?.id
+        case .bank:
             payerSelection = .bank
             selectedPayerId = nil
-        } else if expense.paidFromRake > 0 {
+        case .rake:
             payerSelection = .rake
             selectedPayerId = nil
-        } else {
+        case .organizers:
+            payerSelection = .organizers
+            selectedPayerId = nil
+        case .later:
             payerSelection = .player
             selectedPayerId = session.players.first?.id
         }
@@ -418,6 +433,9 @@ struct ExpenseDistributionView: View {
             clearAllPlayerSelections()
             let maxPayable = availableRake + expense.paidFromRake
             draftPaidFromRake = min(maxPayable, expense.amount)
+        case .organizers:
+            selectedPayerId = nil
+            draftPaidFromRake = 0
         }
     }
 
@@ -557,7 +575,8 @@ struct ExpenseDistributionView: View {
         let success = viewModel.saveExpenseDistribution(
             for: expense,
             distributions: distributions,
-            rakeAmount: rakeAmount
+            rakeAmount: rakeAmount,
+            in: session
         )
 
         if success {
@@ -574,9 +593,11 @@ struct ExpenseDistributionView: View {
                     expense.payer = nil
                 }
                 expense.paidFromRake = 0
+                expense.source = .player
             case .bank:
                 expense.payer = nil
                 expense.paidFromRake = 0
+                expense.source = .bank
                 let delta = max(draftPaidFromBank - expense.paidFromBank, 0)
                 if delta > 0 {
                     _ = viewModel.payExpenseFromBank(expense: expense, amount: delta, from: session)
@@ -584,6 +605,15 @@ struct ExpenseDistributionView: View {
             case .rake:
                 expense.payer = nil
                 expense.paidFromRake = draftPaidFromRake
+                expense.source = .rake
+            case .organizers:
+                expense.payer = nil
+                if expense.resolvedSource == .organizers, distributions.isEmpty {
+                    expense.paidFromRake = min(expense.paidFromRake, expense.amount)
+                } else {
+                    expense.paidFromRake = 0
+                }
+                expense.source = .organizers
             }
             dismiss()
         }
@@ -628,6 +658,7 @@ private enum ExpensePayerSelection {
     case player
     case bank
     case rake
+    case organizers
 }
 
 enum ExpenseDistributionMode {
@@ -657,7 +688,7 @@ private struct ExpenseDistributionInfoSheet: View {
                     Group {
                         Text("Источник оплаты")
                             .font(.headline)
-                        Text("Выберите, кто оплатил расход: игрок, касса или рейк. Это влияет на баланс сессии и итоговые выплаты.")
+                        Text("Выберите источник оплаты: игрок, касса, рейк или организаторы. Это влияет на баланс сессии и итоговые выплаты.")
                             .foregroundStyle(.secondary)
                     }
 

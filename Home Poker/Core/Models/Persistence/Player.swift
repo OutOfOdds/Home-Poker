@@ -6,6 +6,7 @@ final class Player {
     @Attribute(.unique) var id: UUID = UUID()
     var name: String
     var inGame: Bool = true
+    var clubMemberID: UUID? = nil
 
     @Relationship(deleteRule: .cascade)
     var transactions: [PlayerChipTransaction] = []

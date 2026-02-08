@@ -18,9 +18,10 @@ protocol SessionServiceProtocol {
     func removeBankTransaction(_ transaction: SessionBankTransaction, from session: Session) throws
 
     // Управление расходами
-    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws -> Expense
+    func addExpense(note: String, amount: Int, payer: Player?, source: ExpenseSource, to session: Session, createdAt: Date) throws -> Expense
     func removeExpenses(_ expenses: [Expense], from session: Session)
-    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)], rakeAmount: Int) throws
+    func saveExpenseDistribution(for expense: Expense, distributions: [(Player, Int)], rakeAmount: Int, in session: Session) throws
+    func coverOrganizerExpenseFromRake(_ expense: Expense, in session: Session) throws
 
     // Рейк и чаевые
     func recordRakeAndTips(for session: Session, rake: Int, tips: Int) throws
@@ -34,6 +35,8 @@ protocol SessionServiceProtocol {
 }
 
 struct SessionService: SessionServiceProtocol {
+    private let statsService = ClubMemberStatsService()
+
     // MARK: - Игрок
 
     // Создаёт нового игрока, фиксирует первичный buy-in и добавляет его в сессию.
@@ -47,6 +50,7 @@ struct SessionService: SessionServiceProtocol {
         session.players.append(player)
         refreshBankExpectation(for: session)
         updateSessionStatusIfNeeded(session: session)
+        refreshMemberStats(for: session)
     }
     
     // Регистрирует докупку (add-on) для игрока в рамках сессии.
@@ -55,6 +59,7 @@ struct SessionService: SessionServiceProtocol {
         let transaction = PlayerChipTransaction(type: .chipAddOn, amount: amount, player: player)
         player.transactions.append(transaction)
         refreshBankExpectation(for: session)
+        refreshMemberStats(for: session)
     }
     
     // Завершает игру для игрока: фиксирует вывод средств и помечает его как выбывшего.
@@ -69,6 +74,7 @@ struct SessionService: SessionServiceProtocol {
         player.inGame = false
         refreshBankExpectation(for: session)
         updateSessionStatusIfNeeded(session: session)
+        refreshMemberStats(for: session)
     }
 
     // Возвращает игрока в игру с новой закупкой.
@@ -85,6 +91,7 @@ struct SessionService: SessionServiceProtocol {
         player.inGame = true
         refreshBankExpectation(for: session)
         updateSessionStatusIfNeeded(session: session)
+        refreshMemberStats(for: session)
     }
     
     // Удаляет игрока из сессии вместе со всеми связанными транзакциями.
@@ -97,6 +104,7 @@ struct SessionService: SessionServiceProtocol {
         player.modelContext?.delete(player)
         refreshBankExpectation(for: session)
         updateSessionStatusIfNeeded(session: session)
+        refreshMemberStats(for: session)
     }
 
     // Удаляет транзакцию игрока и обновляет состояние сессии.
@@ -111,6 +119,7 @@ struct SessionService: SessionServiceProtocol {
         transaction.modelContext?.delete(transaction)
         refreshBankExpectation(for: session)
         updateSessionStatusIfNeeded(session: session)
+        refreshMemberStats(for: session)
     }
     
     // MARK: - Банк сессии
@@ -176,6 +185,10 @@ struct SessionService: SessionServiceProtocol {
         } else if type == .tipPayment {
             session.tipsPaidFromBank += amount
         }
+
+        if player != nil {
+            refreshMemberStats(for: session)
+        }
     }
 
     // Удаляет транзакцию банка и обновляет состояние сессии.
@@ -193,16 +206,27 @@ struct SessionService: SessionServiceProtocol {
 
         bank.transactions.removeAll { $0.id == transaction.id }
         transaction.modelContext?.delete(transaction)
+
+        if transaction.player != nil {
+            refreshMemberStats(for: session)
+        }
     }
 
     // MARK: - Расходы
     
     // Регистрирует расход, совершённый в рамках сессии.
-    func addExpense(note: String, amount: Int, payer: Player?, to session: Session, createdAt: Date) throws -> Expense {
+    func addExpense(note: String, amount: Int, payer: Player?, source: ExpenseSource, to session: Session, createdAt: Date) throws -> Expense {
         try validatePositiveAmount(amount)
         let trimmedNote = note.trimmed
-        let expense = Expense(amount: amount, note: trimmedNote, createdAt: createdAt, payer: payer)
+        let expense = Expense(
+            amount: amount,
+            note: trimmedNote,
+            createdAt: createdAt,
+            payer: payer,
+            source: source
+        )
         session.expenses.append(expense)
+        refreshMemberStats(for: session)
         return expense
     }
     
@@ -225,6 +249,7 @@ struct SessionService: SessionServiceProtocol {
         }
 
         session.expenses.removeAll { ids.contains($0.id) }
+        refreshMemberStats(for: session)
     }
 
     // Сохраняет распределение расхода между игроками и суммой из рейка
@@ -232,7 +257,8 @@ struct SessionService: SessionServiceProtocol {
     func saveExpenseDistribution(
         for expense: Expense,
         distributions: [(Player, Int)],
-        rakeAmount: Int
+        rakeAmount: Int,
+        in session: Session
     ) throws {
         // Валидация: сумма распределения + rakeAmount должна равняться сумме расхода
         // ИЛИ быть равной 0 (расход полностью на организаторов, без распределения)
@@ -261,6 +287,30 @@ struct SessionService: SessionServiceProtocol {
 
         // Устанавливаем сумму, оплаченную из рейка
         expense.paidFromRake = rakeAmount
+        refreshMemberStats(for: session)
+    }
+
+    /// Покрывает расход организаторов (без вычета с игроков) из доступного резерва рейка.
+    /// Полностью закрывает оставшуюся сумму расхода из рейка.
+    func coverOrganizerExpenseFromRake(_ expense: Expense, in session: Session) throws {
+        guard session.expenses.contains(where: { $0.id == expense.id }) else {
+            throw SessionServiceError.expenseNotInSession
+        }
+        guard expense.resolvedSource == .organizers, expense.totalDistributed == 0 else {
+            throw SessionServiceError.expenseNotEligibleForRakeCoverage
+        }
+
+        let remainingToCover = max(expense.amount - expense.paidFromRake, 0)
+        guard remainingToCover > 0 else { return }
+
+        let availableRake = ensureBank(for: session).availableRakeForExpenses
+        guard availableRake >= remainingToCover else {
+            throw SessionServiceError.insufficientRakeReserve
+        }
+
+        expense.paidFromRake += remainingToCover
+        expense.source = .organizers
+        refreshMemberStats(for: session)
     }
 
 
@@ -344,6 +394,8 @@ struct SessionService: SessionServiceProtocol {
             player.getsRakeback = true
             player.rakeback = amount
         }
+
+        refreshMemberStats(for: session)
     }
 
     // MARK: - Настройки сессии
@@ -421,6 +473,10 @@ struct SessionService: SessionServiceProtocol {
             session.status = .active
         }
     }
+
+    private func refreshMemberStats(for session: Session) {
+        statsService.refreshStats(for: session)
+    }
 }
 
 enum SessionServiceError: LocalizedError {
@@ -434,6 +490,9 @@ enum SessionServiceError: LocalizedError {
     case playerAlreadyInGame
     case rakeExceedsRemaining
     case rakebackExceedsAvailable
+    case expenseNotInSession
+    case expenseNotEligibleForRakeCoverage
+    case insufficientRakeReserve
 
     var errorDescription: String? {
         switch self {
@@ -457,6 +516,12 @@ enum SessionServiceError: LocalizedError {
             return "Сумма рейка и чаевых превышает остаток фишек на столе."
         case .rakebackExceedsAvailable:
             return "Сумма распределения рейкбека превышает доступную сумму."
+        case .expenseNotInSession:
+            return "Расход не найден в этой сессии."
+        case .expenseNotEligibleForRakeCoverage:
+            return "Этот расход нельзя покрыть из резерва рейка."
+        case .insufficientRakeReserve:
+            return "Недостаточно доступного рейка, чтобы покрыть расход."
         }
     }
 }

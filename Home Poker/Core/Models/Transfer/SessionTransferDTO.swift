@@ -43,6 +43,7 @@ struct SessionTransferDTO: Codable {
 struct PlayerTransferDTO: Codable {
     let id: UUID
     let name: String
+    let clubMemberID: UUID?
     let inGame: Bool
     let getsRakeback: Bool
     let rakeback: Int
@@ -89,6 +90,7 @@ struct ExpenseTransferDTO: Codable {
     let amount: Int
     let note: String
     let createdAt: Date
+    let source: String?
     let paidFromRake: Int
     let paidFromBank: Int
     let payerPlayerID: UUID?
@@ -108,9 +110,9 @@ extension SessionTransferDTO {
     /// Создает DTO из модели Session
     init(from session: Session, exportDate: Date, appVersion: String) {
         self.id = session.id
-        self.sessionTitle = session.sessionTitle
+        self.sessionTitle = session.displayTitle
         self.startTime = session.startTime
-        self.location = session.location
+        self.location = ""
         self.gameType = session.gameType.rawValue
         self.chipsToCashRatio = session.chipsToCashRatio
         self.smallBlind = session.smallBlind
@@ -138,6 +140,7 @@ extension PlayerTransferDTO {
     init(from player: Player) {
         self.id = player.id
         self.name = player.name
+        self.clubMemberID = player.clubMemberID
         self.inGame = player.inGame
         self.getsRakeback = player.getsRakeback
         self.rakeback = player.rakeback
@@ -188,6 +191,7 @@ extension ExpenseTransferDTO {
         self.amount = expense.amount
         self.note = expense.note
         self.createdAt = expense.createdAt
+        self.source = expense.source?.rawValue
         self.paidFromRake = expense.paidFromRake
         self.paidFromBank = expense.paidFromBank
         self.payerPlayerID = expense.payer?.id

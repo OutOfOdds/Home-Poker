@@ -18,21 +18,6 @@ struct SessionInfoSummary: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(.blue)
                 }
-                summaryRow(
-                    label: "Сессия:",
-                    value: session.sessionTitle.isEmpty ? "Не указано" : session.sessionTitle
-                )
-
-                divider
-
-                // Место
-                summaryRow(
-                    label: "Место:",
-                    value: session.location.isEmpty ? "Не указано" : session.location
-                )
-
-                divider
-
                 // Начало
                 HStack {
                     Text("Начало:")

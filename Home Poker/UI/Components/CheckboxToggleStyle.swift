@@ -9,14 +9,18 @@ import SwiftUI
 
 struct CheckboxToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
-        HStack {
-            Image(systemName: configuration.isOn ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(configuration.isOn ? Color.green : .secondary)
-                .imageScale(.large)
-                .onTapGesture {
-                    configuration.isOn.toggle()
-                }
+        HStack(spacing: 12) {
+            Toggle("", isOn: configuration.$isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(.green)
+                .allowsHitTesting(false)
             configuration.label
+            Spacer(minLength: 8)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            configuration.isOn.toggle()
         }
     }
 }

@@ -366,9 +366,7 @@ struct SettlementView: View {
 
         // Заголовок
         text += "РАСЧЕТ ПО ИГРЕ\n"
-        if !session.sessionTitle.isEmpty {
-            text += "Название: \(session.sessionTitle)\n"
-        }
+        text += "Сессия: \(session.displayTitle)\n"
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .long

@@ -3,15 +3,18 @@ import SwiftData
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var context
+    @Query(sort: [SortDescriptor(\Club.name)]) private var clubs: [Club]
     @AppStorage("sessionListShowDetails") private var showSessionListDetails = true
     @AppStorage("timerNotificationsEnabled") private var timerNotificationsEnabled = true
 
     // Import
     @State private var showImportPicker = false
+    @State private var showImportSetupSheet = false
     @State private var showImportSuccess = false
     @State private var showImportError = false
     @State private var importError: Error?
     @State private var importedSession: Session?
+    @State private var pendingImportData: Data?
     private let transferService: SessionTransferServiceProtocol = SessionTransferService()
 
 #if DEBUG
@@ -60,6 +63,13 @@ struct SettingsView: View {
                 } label: {
                     Label("Импортировать сессию", systemImage: "square.and.arrow.down")
                 }
+                .disabled(clubs.isEmpty)
+
+                if clubs.isEmpty {
+                    Text("Сначала создайте хотя бы один клуб.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             } header: {
                 Text("Импорт")
             } footer: {
@@ -104,11 +114,26 @@ struct SettingsView: View {
         ) { result in
             handleImport(result: result)
         }
+        .sheet(isPresented: $showImportSetupSheet) {
+            if let pendingImportData {
+                ImportSessionSetupSheet(
+                    clubs: clubs,
+                    importData: pendingImportData,
+                    transferService: transferService
+                ) { club, selectedMissingMemberNames in
+                    importPendingSession(into: club, addingClubMembers: selectedMissingMemberNames)
+                } onCancel: {
+                    resetPendingImportFlow()
+                }
+            } else {
+                EmptyView()
+            }
+        }
         .alert("Сессия импортирована", isPresented: $showImportSuccess) {
             Button("OK", role: .cancel) { }
         } message: {
             if let session = importedSession {
-                Text("Сессия «\(session.sessionTitle)» успешно импортирована")
+                Text("Сессия «\(session.displayTitle)» успешно импортирована")
             }
         }
         .alert("Ошибка импорта", isPresented: $showImportError) {
@@ -148,29 +173,53 @@ struct SettingsView: View {
         switch result {
         case .success(let urls):
             guard let fileURL = urls.first else { return }
-            importSession(from: fileURL)
+            prepareImport(from: fileURL)
         case .failure(let error):
             importError = error
             showImportError = true
         }
     }
 
-    private func importSession(from url: URL) {
+    private func prepareImport(from url: URL) {
         do {
+            guard !clubs.isEmpty else {
+                throw SettingsImportError.noClubsAvailable
+            }
             guard url.startAccessingSecurityScopedResource() else {
                 throw TransferError.fileAccessDenied
             }
             defer { url.stopAccessingSecurityScopedResource() }
 
-            let data = try Data(contentsOf: url)
-            let session = try transferService.importSession(from: data, into: context)
-
-            importedSession = session
-            showImportSuccess = true
+            pendingImportData = try Data(contentsOf: url)
+            showImportSetupSheet = true
         } catch {
             importError = error
             showImportError = true
         }
+    }
+
+    private func importPendingSession(into club: Club, addingClubMembers names: [String]) {
+        guard let pendingImportData else { return }
+        do {
+            let session = try transferService.importSession(
+                from: pendingImportData,
+                into: context,
+                in: club,
+                addingClubMembers: names
+            )
+            importedSession = session
+            showImportSuccess = true
+            resetPendingImportFlow()
+        } catch {
+            importError = error
+            showImportError = true
+            resetPendingImportFlow()
+        }
+    }
+
+    private func resetPendingImportFlow() {
+        pendingImportData = nil
+        showImportSetupSheet = false
     }
 
     #if DEBUG
@@ -179,43 +228,22 @@ struct SettingsView: View {
         isGeneratingDebugSessions = true
         defer { isGeneratingDebugSessions = false }
 
-        let titles = [
-            "Home Game",
-            "Friday Night",
-            "Deep Stack",
-            "Turbo",
-            "High Rollers",
-            "Weekend Session",
-            "Practice",
-            "Private Table",
-            "Afterparty",
-            "Midweek"
-        ]
+        let debugClub: Club
+        do {
+            debugClub = try fetchOrCreateDebugClub()
+        } catch {
+            assertionFailure("Failed to resolve debug club: \(error)")
+            return
+        }
 
-        let locations = [
-            "Moscow",
-            "Saint Petersburg",
-            "Sochi",
-            "Kazan",
-            "Novosibirsk",
-            "Online",
-            "Private Club",
-            "Home"
-        ]
-
-        for index in 1...count {
+        for _ in 1...count {
             let sessionType = [SessionType.cash, SessionType.tournament].randomElement() ?? .cash
             let gameType = [GameType.NLHoldem, GameType.PLO4].randomElement() ?? .NLHoldem
             let status = [SessionStatus.active, .awaitingForSettlements, .finished].randomElement() ?? .active
             let startTime = Date().addingTimeInterval(-Double.random(in: 0...(60 * 60 * 24 * 730)))
 
-            let title = "\(titles.randomElement() ?? "Session") \(index)"
-            let location = locations.randomElement() ?? "Home"
-
             var input = NewSessionInput(
                 startTime: startTime,
-                title: title,
-                location: location,
                 gameType: gameType,
                 sessionType: sessionType,
                 cashToChipsRatio: nil,
@@ -245,12 +273,14 @@ struct SettingsView: View {
 
             let session = Session(
                 startTime: input.startTime,
-                location: input.location.trimmed,
+                location: "",
                 gameType: input.gameType,
                 sessionType: input.sessionType,
                 status: status,
-                sessionTitle: input.title.trimmed
+                sessionTitle: Session.makeDisplayTitle(startTime: input.startTime, clubName: debugClub.name),
+                club: debugClub
             )
+            session.applyAutomaticHeader()
 
             if input.sessionType == .cash {
                 if let ratio = input.cashToChipsRatio, ratio > 0 {
@@ -305,10 +335,25 @@ struct SettingsView: View {
             try deleteAll(PlayerChipTransaction.self)
             try deleteAll(Player.self)
             try deleteAll(Session.self)
+            try deleteAll(ClubMemberSessionStats.self)
+            try deleteAll(ClubMemberStats.self)
+            try deleteAll(ClubMember.self)
+            try deleteAll(Club.self)
             try context.save()
         } catch {
             assertionFailure("Failed to clear database: \(error)")
         }
+    }
+
+    private func fetchOrCreateDebugClub() throws -> Club {
+        let descriptor = FetchDescriptor<Club>()
+        if let existing = try context.fetch(descriptor).first(where: { $0.name == "Debug Club" }) {
+            return existing
+        }
+
+        let club = Club(name: "Debug Club")
+        context.insert(club)
+        return club
     }
 
     private func deleteAll<T: PersistentModel>(_ type: T.Type) throws {
@@ -317,6 +362,17 @@ struct SettingsView: View {
         items.forEach(context.delete)
     }
     #endif
+}
+
+private enum SettingsImportError: LocalizedError {
+    case noClubsAvailable
+
+    var errorDescription: String? {
+        switch self {
+        case .noClubsAvailable:
+            return "Сначала создайте клуб, чтобы импортировать сессию."
+        }
+    }
 }
 
 #Preview {

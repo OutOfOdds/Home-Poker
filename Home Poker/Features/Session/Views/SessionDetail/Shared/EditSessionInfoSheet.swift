@@ -5,8 +5,6 @@ struct EditSessionInfoSheet: View {
     @Bindable var session: Session
     @Environment(\.dismiss) private var dismiss
 
-    @State private var sessionTitle: String
-    @State private var location: String
     @State private var startTime: Date
     @State private var gameType: GameType
     @State private var cashToChipsRatio: Int?
@@ -16,8 +14,6 @@ struct EditSessionInfoSheet: View {
 
     init(session: Session) {
         self.session = session
-        _sessionTitle = State(initialValue: session.sessionTitle)
-        _location = State(initialValue: session.location)
         _startTime = State(initialValue: session.startTime)
         _gameType = State(initialValue: session.gameType)
         _cashToChipsRatio = State(initialValue: session.chipsToCashRatio == 0 ? nil : session.chipsToCashRatio)
@@ -42,9 +38,7 @@ struct EditSessionInfoSheet: View {
 
     private var sessionInfoSection: some View {
         Section {
-            TextField("Название", text: $sessionTitle)
             DatePicker("Начало", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
-            TextField("Место проведения", text: $location)
 
             Picker("Игра", selection: $gameType) {
                 Text(GameType.NLHoldem.rawValue).tag(GameType.NLHoldem)
@@ -136,18 +130,17 @@ struct EditSessionInfoSheet: View {
     // MARK: - Validation & Saving
 
     private var canSave: Bool {
-        location.nonEmptyTrimmed != nil && cashToChipsRatio != nil
+        cashToChipsRatio != nil
     }
 
     private func saveChanges() {
-        session.sessionTitle = sessionTitle
-        session.location = location
         session.startTime = startTime
         session.gameType = gameType
         session.chipsToCashRatio = cashToChipsRatio ?? 0
         session.smallBlind = smallBlind ?? 0
         session.bigBlind = bigBlind ?? 0
         session.ante = ante ?? 0
+        session.applyAutomaticHeader()
         dismiss()
     }
 }

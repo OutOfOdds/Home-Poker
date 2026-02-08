@@ -2,23 +2,31 @@ import SwiftUI
 import SwiftData
 
 struct AddPlayerSheet: View {
-    let session: Session    
+    let session: Session
     @Environment(SessionDetailViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var playerName = ""
+    @State private var selectedClubMemberID: UUID?
     @State private var buyInAmount: Int? = nil
     @State private var settleWithBank = false
     @State private var bankContributionAmount: Int? = nil
-    @State private var nameError: String? = nil
-    
+    private let statsService = ClubMemberStatsService()
+
     private var cashRatio: Int {
         max(session.chipsToCashRatio, 1)
     }
 
-    private var isNameTaken: Bool {
-        guard let trimmed = playerName.nonEmptyTrimmed else { return false }
-        return session.players.contains {
-            $0.name.lowercased() == trimmed.lowercased()
+    private var clubMembers: [ClubMember] {
+        guard let club = session.club else { return [] }
+        return club.members.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    private var availableClubMembers: [ClubMember] {
+        let usedMemberIDs = Set(session.players.compactMap(\.clubMemberID))
+        let usedNames = Set(session.players.map { $0.name.trimmed.lowercased() })
+        return clubMembers.filter { member in
+            !usedMemberIDs.contains(member.id) && !usedNames.contains(member.name.lowercased())
         }
     }
 
@@ -35,18 +43,27 @@ struct AddPlayerSheet: View {
             cancelAction: dismiss.callAsFunction
         ) {
             Form {
-                Section("Информация об игроке") {
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField("Имя игрока", text: $playerName)
-                            .textInputAutocapitalization(.words)
-
-                        if let error = nameError {
-                            Text(error)
-                                .font(.caption)
-                                .foregroundStyle(.red)
+                Section("Участник клуба") {
+                    if session.club == nil {
+                        Text("Эта сессия не привязана к клубу")
+                            .foregroundStyle(.secondary)
+                    } else if clubMembers.isEmpty {
+                        Text("Пока нет участников в клубе")
+                            .foregroundStyle(.secondary)
+                    } else if availableClubMembers.isEmpty {
+                        Text("Все участники клуба уже добавлены в сессию")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("Выбрать участника", selection: $selectedClubMemberID) {
+                            Text("Не выбран").tag(Optional<UUID>.none)
+                            ForEach(availableClubMembers) { member in
+                                Text(member.name).tag(Optional(member.id))
+                            }
                         }
                     }
+                }
 
+                Section("Информация об игроке") {
                     GroupedIntegerTextField(
                         placeholder: "Сумма закупа",
                         value: $buyInAmount
@@ -80,11 +97,10 @@ struct AddPlayerSheet: View {
                 }
             }
         }
-        .onChange(of: playerName) { _, _ in
-            if isNameTaken {
-                nameError = "Игрок с таким именем уже существует"
-            } else {
-                nameError = nil
+        .onChange(of: availableClubMembers.map(\.id)) { _, ids in
+            guard let selected = selectedClubMemberID else { return }
+            if !ids.contains(selected) {
+                selectedClubMemberID = nil
             }
         }
         .onChange(of: buyInAmount) { _, newValue in
@@ -99,8 +115,7 @@ struct AddPlayerSheet: View {
     }
     
     private var canSubmit: Bool {
-        guard playerName.nonEmptyTrimmed != nil else { return false }
-        guard !isNameTaken else { return false }
+        guard selectedClubMemberID != nil else { return false }
         guard let amount = buyInAmount, amount > 0 else { return false }
         if settleWithBank {
             guard let bankAmount = bankContributionAmount, bankAmount > 0 else { return false }
@@ -109,14 +124,19 @@ struct AddPlayerSheet: View {
     }
 
     private func addPlayer() {
-        guard let name = playerName.nonEmptyTrimmed else { return }
+        guard let selectedID = selectedClubMemberID else { return }
+        guard let member = clubMembers.first(where: { $0.id == selectedID }) else { return }
+
+        let name = member.name
         let existingPlayerIDs = Set(session.players.map(\.id))
         guard viewModel.addPlayer(to: session, name: name, buyIn: buyInAmount) else { return }
+        let newPlayer = session.players.first(where: { !existingPlayerIDs.contains($0.id) })
+            ?? session.players.last(where: { $0.name == name })
+
+        newPlayer?.clubMemberID = member.id
 
         if settleWithBank {
             guard let bankAmount = bankContributionAmount, bankAmount > 0 else { return }
-            let newPlayer = session.players.first(where: { !existingPlayerIDs.contains($0.id) })
-                ?? session.players.last(where: { $0.name == name })
 
             if let player = newPlayer {
                 guard viewModel.recordBankDeposit(
@@ -125,11 +145,13 @@ struct AddPlayerSheet: View {
                     amount: bankAmount,
                     note: "Передал деньги в банк при первичной закупке фишек"
                 ) else {
+                    statsService.refreshStats(for: session)
                     return
                 }
             }
         }
 
+        statsService.refreshStats(for: session)
         dismiss()
     }
 }
@@ -138,6 +160,16 @@ struct AddPlayerSheet: View {
     let session = PreviewData.activeSession()
 
     AddPlayerSheet(session: session)
-        .modelContainer(for: [Session.self, Player.self, SessionBank.self, SessionBankTransaction.self], inMemory: true)
+        .modelContainer(
+            for: [
+                Club.self,
+                ClubMember.self,
+                Session.self,
+                Player.self,
+                SessionBank.self,
+                SessionBankTransaction.self
+            ],
+            inMemory: true
+        )
         .environment(SessionDetailViewModel())
 }

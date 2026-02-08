@@ -163,36 +163,16 @@ struct ExpensesDetailView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
 
-                    if expense.isFullyDistributed {
-                        // Зеленый: распределение завершено
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.green)
-                    } else {
-                        // Оранжевый: требует распределения
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                    }
+                    Image(systemName: distributionIcon(for: expense))
+                        .font(.caption2)
+                        .foregroundStyle(distributionColor(for: expense))
 
                     Text(expense.note.isEmpty ? "Расход" : expense.note)
                         .font(.body)
                 }
 
-                expensePaymentStatus(expense)
-
-                // Дополнительные подсказки о статусе
-                if !expense.isFullyDistributed {
-                    // Оранжевый флаг - не распределено
-                    Text("Требует распределения")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                } else if expense.paidFromRake > 0 && expense.paidFromBank == 0 {
-                    // Зеленый флаг, но не оплачено из кассы (взято на организаторов)
-                    Text("Ожидает выдачи из кассы")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+                sourceStatusView(expense)
+                distributionStatusView(expense)
 
                 Text(expense.createdAt, style: .date)
                     .font(.caption2)
@@ -210,31 +190,77 @@ struct ExpensesDetailView: View {
     }
 
     @ViewBuilder
-    private func expensePaymentStatus(_ expense: Expense) -> some View {
-        if expense.paidFromRake > 0 {
-            HStack(spacing: 4) {
-                Image(systemName: "dollarsign.circle.fill")
-                    .font(.caption2)
-                Text("Покрыто организаторами: \(expense.paidFromRake.asCurrency())")
-            }
-            .font(.caption2)
-            .foregroundStyle(.blue)
-        } else if expense.paidFromBank > 0 {
-            HStack(spacing: 4) {
-                Image(systemName: "banknote.fill")
-                    .font(.caption2)
-                Text("Оплачено из кассы: \(expense.paidFromBank.asCurrency())")
-            }
-            .font(.caption2)
-            .foregroundStyle(.green)
-        } else if let payerName = expense.payer?.name {
-            Text("Оплатил: \(payerName)")
+    private func sourceStatusView(_ expense: Expense) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: sourceIcon(for: expense))
                 .font(.caption2)
-                .foregroundStyle(.secondary)
-        } else {
-            Text("Не оплачен")
+            Text(expense.sourceStatusText)
+        }
+        .font(.caption2)
+        .foregroundStyle(sourceColor(for: expense))
+    }
+
+    @ViewBuilder
+    private func distributionStatusView(_ expense: Expense) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: distributionIcon(for: expense))
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+            Text(expense.distributionStatusText)
+        }
+        .font(.caption2)
+        .foregroundStyle(distributionColor(for: expense))
+    }
+
+    private func sourceIcon(for expense: Expense) -> String {
+        switch expense.resolvedSource {
+        case .later:
+            return "questionmark.circle"
+        case .player:
+            return "person.fill"
+        case .bank:
+            return "banknote.fill"
+        case .rake:
+            return "dollarsign.circle.fill"
+        case .organizers:
+            return "person.3.sequence.fill"
+        }
+    }
+
+    private func sourceColor(for expense: Expense) -> Color {
+        if expense.requiresReview {
+            return .red
+        }
+        switch expense.resolvedSource {
+        case .later, .player:
+            return .secondary
+        case .bank:
+            return .green
+        case .rake:
+            return .blue
+        case .organizers:
+            return .purple
+        }
+    }
+
+    private func distributionIcon(for expense: Expense) -> String {
+        switch expense.distributionState {
+        case .notRequired, .distributed:
+            return "checkmark.circle.fill"
+        case .needsDistribution:
+            return "exclamationmark.circle.fill"
+        case .needsReview:
+            return "xmark.octagon.fill"
+        }
+    }
+
+    private func distributionColor(for expense: Expense) -> Color {
+        switch expense.distributionState {
+        case .notRequired, .distributed:
+            return .green
+        case .needsDistribution:
+            return .orange
+        case .needsReview:
+            return .red
         }
     }
 

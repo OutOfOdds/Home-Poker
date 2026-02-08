@@ -22,6 +22,12 @@ struct RakeReservesDetailView: View {
         viewModel.availableRakebackAmount(for: session) > 0
     }
 
+    private var organizerExpensesForRakeCoverage: [Expense] {
+        session.expenses
+            .filter { $0.resolvedSource == .organizers && $0.totalDistributed == 0 && $0.paidFromRake < $0.amount }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
     var body: some View {
         List {
             if let bank = session.bank {
@@ -163,6 +169,52 @@ struct RakeReservesDetailView: View {
 
                         }
                     }
+
+                    if !organizerExpensesForRakeCoverage.isEmpty {
+                        Line()
+                            .stroke(style: .init(dash: [5]))
+                            .foregroundStyle(.secondary.opacity(0.5))
+                            .frame(height: 1)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Компенсация расходов организатора")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+
+                            ForEach(organizerExpensesForRakeCoverage, id: \.id) { expense in
+                                let remaining = remainingRakeCoverage(for: expense)
+                                let canCover = remaining <= availableRake
+
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(expense.note)
+                                                .font(.body.weight(.semibold))
+                                            Text("К покрытию: \(remaining.asCurrency())")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .monospaced()
+                                        }
+
+                                        Spacer()
+
+                                        Button("Списать из рейка") {
+                                            _ = viewModel.coverOrganizerExpenseFromRake(expense, in: session)
+                                        }
+                                        .buttonStyle(.borderedProminent)
+                                        .controlSize(.small)
+                                        .disabled(!canCover)
+                                    }
+
+                                    if !canCover {
+                                        Text("Недостаточно доступного рейка для этого расхода")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .padding(.vertical, 4)
@@ -211,6 +263,10 @@ struct RakeReservesDetailView: View {
             }
         }
 //        .disabled(!canDistributeRakeback)
+    }
+
+    private func remainingRakeCoverage(for expense: Expense) -> Int {
+        max(expense.amount - expense.paidFromRake, 0)
     }
 }
 
