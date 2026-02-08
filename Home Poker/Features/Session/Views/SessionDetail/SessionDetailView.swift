@@ -26,11 +26,9 @@ struct SessionDetailView: View {
 #Preview("Турнир") {
     @Previewable @State var tournamentSession = Session(
         startTime: Date(),
-        location: "Покер клуб",
         gameType: .NLHoldem,
         sessionType: .tournament,
-        status: .active,
-        sessionTitle: "Турнир NL50"
+        status: .active
     )
 
     NavigationStack {

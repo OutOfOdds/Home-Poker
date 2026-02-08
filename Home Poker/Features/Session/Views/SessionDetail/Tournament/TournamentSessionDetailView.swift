@@ -525,11 +525,9 @@ private enum TournamentDestination: Identifiable {
 #Preview("Активный турнир") {
     @Previewable @State var tournament = Session(
         startTime: Date(),
-        location: "Покер клуб Центральный",
         gameType: .NLHoldem,
         sessionType: .tournament,
-        status: .active,
-        sessionTitle: "Friday Night Tournament"
+        status: .active
     )
     tournament.entryFee = 5000
     tournament.startingStack = 10000
@@ -544,11 +542,9 @@ private enum TournamentDestination: Identifiable {
 #Preview("Пустой турнир") {
     @Previewable @State var tournament = Session(
         startTime: Date(),
-        location: "Home Game",
         gameType: .PLO4,
         sessionType: .tournament,
-        status: .active,
-        sessionTitle: "PLO Tournament"
+        status: .active
     )
     tournament.entryFee = 3000
     tournament.startingStack = 5000

@@ -273,14 +273,11 @@ struct SettingsView: View {
 
             let session = Session(
                 startTime: input.startTime,
-                location: "",
                 gameType: input.gameType,
                 sessionType: input.sessionType,
                 status: status,
-                sessionTitle: Session.makeDisplayTitle(startTime: input.startTime, clubName: debugClub.name),
                 club: debugClub
             )
-            session.applyAutomaticHeader()
 
             if input.sessionType == .cash {
                 if let ratio = input.cashToChipsRatio, ratio > 0 {

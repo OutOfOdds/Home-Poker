@@ -281,7 +281,7 @@ struct ExpensesDetailView: View {
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
 
-    let session = Session(startTime: Date(), location: "Test", gameType: .NLHoldem, sessionType: .cash, status: .active, sessionTitle: "Test Session")
+    let session = Session(startTime: Date(), gameType: .NLHoldem, sessionType: .cash, status: .active)
     let player1 = Player(name: "Игрок 1")
     let player2 = Player(name: "Игрок 2")
 

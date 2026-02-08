@@ -137,14 +137,11 @@ final class SessionTransferService: SessionTransferServiceProtocol {
         // 5. Создаем Session с новым ID
         let session = Session(
             startTime: dto.startTime,
-            location: dto.location,
             gameType: GameType(rawValue: dto.gameType) ?? .NLHoldem,
             sessionType: .cash,
             status: SessionStatus(rawValue: dto.status) ?? .active,
-            sessionTitle: dto.sessionTitle,
             club: club
         )
-        session.applyAutomaticHeader()
         session.chipsToCashRatio = dto.chipsToCashRatio
         session.smallBlind = dto.smallBlind
         session.bigBlind = dto.bigBlind

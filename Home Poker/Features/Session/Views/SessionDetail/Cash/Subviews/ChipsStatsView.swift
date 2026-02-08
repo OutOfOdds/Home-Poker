@@ -237,11 +237,9 @@ struct Line:Shape{
     // 4) Сценарий: экстремально большие значения buy-in/cash-out
     let huge = Session(
         startTime: Date(),
-        location: "High Stakes",
         gameType: .NLHoldem,
         sessionType: .cash,
-        status: .active,
-        sessionTitle: "Миллиардные стеки"
+        status: .active
     )
     huge.chipsToCashRatio = 1
 

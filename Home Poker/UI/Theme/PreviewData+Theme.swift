@@ -11,11 +11,9 @@ enum PreviewData {
     static func activeSession() -> Session {
         let session = Session(
             startTime: Date().addingTimeInterval(-3 * 60 * 60), // 3 часа назад
-            location: "Покер Клуб Москва",
             gameType: .NLHoldem,
             sessionType: .cash,
-            status: .active,
-            sessionTitle: "Вечерняя игра"
+            status: .active
         )
         session.smallBlind = 10
         session.bigBlind = 20
@@ -58,11 +56,9 @@ enum PreviewData {
     static func finishedSession() -> Session {
         let session = Session(
             startTime: Date().addingTimeInterval(-6 * 60 * 60), // 6 часов назад
-            location: "Royal Flush Club",
             gameType: .PLO4,
             sessionType: .cash,
-            status: .finished,
-            sessionTitle: "Дневная игра"
+            status: .finished
         )
         session.smallBlind = 5
         session.bigBlind = 10
@@ -87,11 +83,9 @@ enum PreviewData {
     static func awaitingSettlementsSession() -> Session {
         let session = Session(
             startTime: Date().addingTimeInterval(-4 * 60 * 60),
-            location: "Покерный дом",
             gameType: .NLHoldem,
             sessionType: .cash,
-            status: .awaitingForSettlements,
-            sessionTitle: "Кайфушки у Грикушки"
+            status: .awaitingForSettlements
         )
         session.smallBlind = 25
         session.bigBlind = 50
@@ -152,11 +146,9 @@ enum PreviewData {
     static func referenceSessionForCalculations() -> Session {
         let session = Session(
             startTime: Date().addingTimeInterval(-5 * 60 * 60),
-            location: "Тестовый клуб",
             gameType: .NLHoldem,
             sessionType: .cash,
-            status: .awaitingForSettlements,
-            sessionTitle: "Эталонная сессия"
+            status: .awaitingForSettlements
         )
         session.smallBlind = 50
         session.bigBlind = 100
@@ -413,11 +405,9 @@ enum PreviewData {
     static func sessionWithFullBank() -> Session {
         let session = Session(
             startTime: Date().addingTimeInterval(-4 * 60 * 60),
-            location: "Покер Клуб Премиум",
             gameType: .NLHoldem,
             sessionType: .cash,
-            status: .awaitingForSettlements,
-            sessionTitle: "Вечерняя игра с банком"
+            status: .awaitingForSettlements
         )
         session.smallBlind = 25
         session.bigBlind = 50
@@ -527,11 +517,9 @@ enum PreviewData {
     static func emptySession() -> Session {
         Session(
             startTime: Date(),
-            location: "",
             gameType: .NLHoldem,
             sessionType: .cash,
-            status: .active,
-            sessionTitle: "Новая игра"
+            status: .active
         )
     }
 

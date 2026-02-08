@@ -196,17 +196,20 @@ private extension ClubSessionsView {
     
     func generateFilename(for session: Session) -> String {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+        dateFormatter.dateFormat = "dd.MM.yyyy"
         let dateString = dateFormatter.string(from: session.startTime)
-        
-        let sanitizedTitle = session.displayTitle
-            .replacingOccurrences(of: " ", with: "_")
-            .replacingOccurrences(of: "·", with: "-")
-            .replacingOccurrences(of: "/", with: "-")
-            .replacingOccurrences(of: "\\", with: "-")
-            .replacingOccurrences(of: ":", with: "-")
-        
-        return "\(sanitizedTitle)_\(dateString).pokersession"
+
+        let clubName = session.club?.name ?? club.name
+        let compactClubName = clubName
+            .components(separatedBy: .whitespacesAndNewlines)
+            .joined()
+        let invalidCharacters = CharacterSet(charactersIn: "/\\:?%*|\"<>")
+        let sanitizedClubName = compactClubName
+            .components(separatedBy: invalidCharacters)
+            .joined()
+        let finalClubName = sanitizedClubName.isEmpty ? "Club" : sanitizedClubName
+
+        return "\(dateString)-\(finalClubName).pokersession"
     }
     
     func saveToTemporaryFile(data: Data, filename: String) throws -> URL {

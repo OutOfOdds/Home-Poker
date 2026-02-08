@@ -12,9 +12,7 @@ import Foundation
 /// Основная DTO структура для экспорта/импорта сессии
 struct SessionTransferDTO: Codable {
     let id: UUID
-    let sessionTitle: String
     let startTime: Date
-    let location: String
     let gameType: String
     let chipsToCashRatio: Int
     let smallBlind: Int
@@ -110,9 +108,7 @@ extension SessionTransferDTO {
     /// Создает DTO из модели Session
     init(from session: Session, exportDate: Date, appVersion: String) {
         self.id = session.id
-        self.sessionTitle = session.displayTitle
         self.startTime = session.startTime
-        self.location = ""
         self.gameType = session.gameType.rawValue
         self.chipsToCashRatio = session.chipsToCashRatio
         self.smallBlind = session.smallBlind

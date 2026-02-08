@@ -27,14 +27,11 @@ final class SwiftDataSessionsRepository: SessionsRepository {
     func createSession(from input: NewSessionInput, in club: Club) throws -> Session {
         let session = Session(
             startTime: input.startTime,
-            location: "",
             gameType: input.gameType,
             sessionType: input.sessionType,
             status: .active,
-            sessionTitle: Session.makeDisplayTitle(startTime: input.startTime, clubName: club.name),
             club: club
         )
-        session.applyAutomaticHeader()
 
         // Кеш-игра поля
         if input.sessionType == .cash {

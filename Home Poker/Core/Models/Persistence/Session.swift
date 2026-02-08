@@ -5,8 +5,6 @@ import SwiftData
 final class Session {
     @Attribute(.unique) var id: UUID = UUID()
     var startTime: Date
-    var sessionTitle: String
-    var location: String
     var gameType: GameType
     var sessionType: SessionType
     var chipsToCashRatio: Int = 1
@@ -58,19 +56,15 @@ final class Session {
     
     init(
         startTime: Date,
-        location: String,
         gameType: GameType,
         sessionType: SessionType,
         status: SessionStatus,
-        sessionTitle: String,
         club: Club? = nil
     ) {
         self.startTime = startTime
-        self.location = location
         self.gameType = gameType
         self.sessionType = sessionType
         self.status = status
-        self.sessionTitle = sessionTitle
         self.club = club
     }
     
@@ -159,12 +153,6 @@ extension Session {
         case .tournament:
             return 0 // турнирные фишки не конвертируются
         }
-    }
-
-    /// Пересчитывает поля заголовка/локации по новым правилам.
-    func applyAutomaticHeader() {
-        sessionTitle = displayTitle
-        location = ""
     }
 
     static func makeDisplayTitle(startTime: Date, clubName: String?) -> String {

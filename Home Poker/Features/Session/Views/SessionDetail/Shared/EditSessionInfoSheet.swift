@@ -140,7 +140,6 @@ struct EditSessionInfoSheet: View {
         session.smallBlind = smallBlind ?? 0
         session.bigBlind = bigBlind ?? 0
         session.ante = ante ?? 0
-        session.applyAutomaticHeader()
         dismiss()
     }
 }
