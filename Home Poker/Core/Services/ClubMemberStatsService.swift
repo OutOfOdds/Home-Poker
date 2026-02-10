@@ -25,10 +25,8 @@ struct ClubMemberStatsService {
                 existing.sessionTitle = row.sessionTitle
                 existing.buyIn = row.buyIn
                 existing.cashOut = row.cashOut
-                existing.pokerPnL = row.pokerPnL
                 existing.realPnL = row.realPnL
                 existing.rakeback = row.rakeback
-                existing.hasAddOn = row.hasAddOn
             } else {
                 context.insert(
                     ClubMemberSessionStats(
@@ -39,10 +37,8 @@ struct ClubMemberStatsService {
                         sessionTitle: row.sessionTitle,
                         buyIn: row.buyIn,
                         cashOut: row.cashOut,
-                        pokerPnL: row.pokerPnL,
                         realPnL: row.realPnL,
-                        rakeback: row.rakeback,
-                        hasAddOn: row.hasAddOn
+                        rakeback: row.rakeback
                     )
                 )
             }
@@ -125,19 +121,15 @@ private extension ClubMemberStatsService {
         let sessionTitle: String
         let buyIn: Int
         let cashOut: Int
-        let pokerPnL: Int
         let realPnL: Int
         let rakeback: Int
-        let hasAddOn: Bool
     }
 
     struct RowAccumulator {
         var buyIn: Int = 0
         var cashOut: Int = 0
-        var pokerPnL: Int = 0
         var realPnL: Int = 0
         var rakeback: Int = 0
-        var hasAddOn: Bool = false
     }
 
     func fetchRows(forSessionID sessionID: UUID, context: ModelContext) -> [ClubMemberSessionStats] {
@@ -180,15 +172,12 @@ private extension ClubMemberStatsService {
             let expenseShare = expenseShareByPlayer[player.id] ?? 0
             let bankNet = bankNetByPlayer[player.id] ?? 0
             let realPnL = pokerPnL + rakeback + bankNet + expensePaid - expenseShare
-            let hasAddOn = player.transactions.contains(where: { $0.type == .chipAddOn })
 
             var accumulator = accumulators[memberID] ?? RowAccumulator()
             accumulator.buyIn += buyIn
             accumulator.cashOut += cashOut
-            accumulator.pokerPnL += pokerPnL
             accumulator.realPnL += realPnL
             accumulator.rakeback += rakeback
-            accumulator.hasAddOn = accumulator.hasAddOn || hasAddOn
             accumulators[memberID] = accumulator
         }
 
@@ -202,10 +191,8 @@ private extension ClubMemberStatsService {
                 sessionTitle: session.displayTitle,
                 buyIn: accumulator.buyIn,
                 cashOut: accumulator.cashOut,
-                pokerPnL: accumulator.pokerPnL,
                 realPnL: accumulator.realPnL,
-                rakeback: accumulator.rakeback,
-                hasAddOn: accumulator.hasAddOn
+                rakeback: accumulator.rakeback
             )
         }
         return rows
@@ -281,17 +268,32 @@ private extension ClubMemberStatsService {
             context.insert(aggregate)
         }
 
+        // Keep aggregate update lightweight: one pass over rows for core metrics.
+        var sessionsCount = 0
+        var winSessionsCount = 0
+        var totalBuyIn = 0
+        var totalCashOut = 0
+        var totalRealPnL = 0
+        var totalRakeback = 0
+
+        for row in rows {
+            sessionsCount += 1
+            if row.realPnL > 0 {
+                winSessionsCount += 1
+            }
+            totalBuyIn += row.buyIn
+            totalCashOut += row.cashOut
+            totalRealPnL += row.realPnL
+            totalRakeback += row.rakeback
+        }
+
         aggregate.clubId = clubID
-        aggregate.sessionsCount = rows.count
-        aggregate.winSessionsCount = rows.filter { $0.realPnL > 0 }.count
-        aggregate.addOnSessionsCount = rows.filter { $0.hasAddOn }.count
-        aggregate.totalBuyIn = rows.reduce(0) { $0 + $1.buyIn }
-        aggregate.totalCashOut = rows.reduce(0) { $0 + $1.cashOut }
-        aggregate.totalPokerPnL = rows.reduce(0) { $0 + $1.pokerPnL }
-        aggregate.totalRealPnL = rows.reduce(0) { $0 + $1.realPnL }
-        aggregate.totalRakeback = rows.reduce(0) { $0 + $1.rakeback }
-        aggregate.bestSessionRealPnL = rows.map(\.realPnL).max() ?? 0
-        aggregate.worstSessionRealPnL = rows.map(\.realPnL).min() ?? 0
+        aggregate.sessionsCount = sessionsCount
+        aggregate.winSessionsCount = winSessionsCount
+        aggregate.totalBuyIn = totalBuyIn
+        aggregate.totalCashOut = totalCashOut
+        aggregate.totalRealPnL = totalRealPnL
+        aggregate.totalRakeback = totalRakeback
         aggregate.updatedAt = Date()
     }
 }

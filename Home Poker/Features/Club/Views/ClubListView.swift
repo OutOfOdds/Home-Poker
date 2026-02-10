@@ -71,6 +71,7 @@ struct ClubListView: View {
                     } label: {
                         clubRow(club)
                     }
+
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
                             clubToDelete = club

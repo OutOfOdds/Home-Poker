@@ -3,11 +3,15 @@ import SwiftData
 
 struct ClubSessionsView: View {
     @Bindable var club: Club
-    
+
     @Environment(\.modelContext) private var context
+    @State private var loadedSessions: [Session] = []
+    @State private var isLoadingPage = false
+    @State private var hasLoadedInitialPage = false
+    @State private var hasMorePages = true
+    @State private var nextFetchOffset = 0
     @State private var showingNewCashSession = false
     @State private var showingNewTournamentSession = false
-    @AppStorage("sessionListShowDetails") private var showSessionDetails = true
     @State private var sessionToDelete: Session?
     @State private var showDeleteConfirmation = false
     
@@ -17,6 +21,12 @@ struct ClubSessionsView: View {
     @State private var showExportError = false
     @State private var exportError: Error?
     private let transferService: SessionTransferServiceProtocol = SessionTransferService()
+    private let pageSize = 100
+    private let paginationTriggerDistance = 20
+
+    init(club: Club) {
+        self.club = club
+    }
     
     var body: some View {
         sessionList
@@ -54,10 +64,10 @@ struct ClubSessionsView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingNewCashSession) {
+            .sheet(isPresented: $showingNewCashSession, onDismiss: reloadSessions) {
                 NewSessionSheet(sessionType: .cash, club: club)
             }
-            .sheet(isPresented: $showingNewTournamentSession) {
+            .sheet(isPresented: $showingNewTournamentSession, onDismiss: reloadSessions) {
                 NewSessionSheet(sessionType: .tournament, club: club)
             }
             .sheet(isPresented: .constant(exportedFileURL != nil)) {
@@ -74,7 +84,9 @@ struct ClubSessionsView: View {
                 }
                 Button("Удалить", role: .destructive) {
                     if let selectedSession = sessionToDelete {
-                        deleteSessions([selectedSession])
+                        if deleteSessions([selectedSession]) {
+                            reloadSessions()
+                        }
                         sessionToDelete = nil
                     }
                 }
@@ -88,15 +100,24 @@ struct ClubSessionsView: View {
             } message: {
                 Text(exportError?.localizedDescription ?? "Не удалось экспортировать сессию")
             }
-    }
-    
-    private var sortedSessions: [Session] {
-        club.sessions.sorted { $0.startTime > $1.startTime }
+            .task(id: club.id) {
+                await MainActor.run {
+                    reloadSessions()
+                }
+            }
     }
     
     private var sessionList: some View {
         Group {
-            if sortedSessions.isEmpty {
+            if !hasLoadedInitialPage && isLoadingPage {
+                List {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                }
+            } else if loadedSessions.isEmpty {
                 List {
                     ContentUnavailableView(
                         "Нет сессий",
@@ -106,11 +127,14 @@ struct ClubSessionsView: View {
                 }
             } else {
                 List {
-                    ForEach(sortedSessions) { session in
+                    ForEach(loadedSessions) { session in
                         NavigationLink {
                             SessionDetailView(session: session)
                         } label: {
                             sessionRow(session)
+                        }
+                        .onAppear {
+                            loadNextPageIfNeeded(current: session)
                         }
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button {
@@ -130,6 +154,15 @@ struct ClubSessionsView: View {
                             .tint(.red)
                         }
                     }
+
+                    if isLoadingPage {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
+                        }
+                        .listRowSeparator(.hidden)
+                    }
                 }
                 .listRowSeparator(.hidden)
                 .listRowSpacing(8)
@@ -139,35 +172,25 @@ struct ClubSessionsView: View {
     
     private func sessionRow(_ session: Session) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            
-            if showSessionDetails {
-                HStack(spacing: 8) {
-                    Image(systemName: session.sessionType == .cash ? "banknote" : "trophy")
-                        .foregroundStyle(.secondary)
-                    Text(session.startTime, format: .dateTime)
-                    Group {
-                        Text(session.sessionType == .cash ? "| Cash Game" : "| Tournament")
-                    }
+            HStack(spacing: 8) {
+                Image(systemName: session.sessionType == .cash ? "banknote" : "trophy")
                     .foregroundStyle(.secondary)
+                Text(session.startTime, format: .dateTime)
+                Group {
+                    Text(session.sessionType == .cash ? "| Cash Game" : "| Tournament")
                 }
-                
-                Text("\(session.gameType.rawValue) | \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
-                    .foregroundStyle(.secondary)
-                
-                Text(session.status.rawValue)
-                    .font(.footnote.weight(.semibold))
-                    .padding(5)
-                    .background(statusColor(for: session.status).opacity(0.15), in: Capsule())
-                    .foregroundStyle(statusColor(for: session.status))
-                    .glassEffect()
-            } else {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar")
-                        .foregroundStyle(.secondary)
-                    Text(session.startTime, format: .dateTime)
-                        .foregroundStyle(.secondary)
-                }
+                .foregroundStyle(.secondary)
             }
+
+            Text("\(session.gameType.rawValue) | \(session.smallBlind.asCurrency()) / \(session.bigBlind.asCurrency())")
+                .foregroundStyle(.secondary)
+
+            Text(session.status.rawValue)
+                .font(.footnote.weight(.semibold))
+                .padding(5)
+                .background(statusColor(for: session.status).opacity(0.15), in: Capsule())
+                .foregroundStyle(statusColor(for: session.status))
+                .glassEffect()
         }
     }
     
@@ -176,6 +199,53 @@ struct ClubSessionsView: View {
         case .active: return .green
         case .awaitingForSettlements: return .orange
         case .finished: return .blue
+        }
+    }
+
+    private func reloadSessions() {
+        loadedSessions = []
+        nextFetchOffset = 0
+        hasMorePages = true
+        hasLoadedInitialPage = false
+        loadNextPage()
+    }
+
+    private func loadNextPage() {
+        guard hasMorePages, !isLoadingPage else { return }
+        isLoadingPage = true
+        defer {
+            isLoadingPage = false
+            hasLoadedInitialPage = true
+        }
+
+        let clubID = club.id
+        var descriptor = FetchDescriptor<Session>(
+            predicate: #Predicate<Session> { session in
+                session.club?.id == clubID
+            },
+            sortBy: [SortDescriptor(\Session.startTime, order: .reverse)]
+        )
+        descriptor.fetchLimit = pageSize
+        descriptor.fetchOffset = nextFetchOffset
+
+        do {
+            let page = try context.fetch(descriptor)
+            loadedSessions.append(contentsOf: page)
+            nextFetchOffset += page.count
+            hasMorePages = page.count == pageSize
+        } catch {
+            hasMorePages = false
+            assertionFailure("Failed to fetch sessions page: \(error)")
+        }
+    }
+
+    private func loadNextPageIfNeeded(current session: Session) {
+        guard hasLoadedInitialPage, hasMorePages, !isLoadingPage else { return }
+        let isNearEnd = loadedSessions
+            .suffix(paginationTriggerDistance)
+            .contains { $0.id == session.id }
+        if isNearEnd {
+            loadNextPage()
         }
     }
 }
@@ -219,13 +289,16 @@ private extension ClubSessionsView {
         return fileURL
     }
     
-    func deleteSessions(_ sessions: [Session]) {
-        guard !sessions.isEmpty else { return }
+    @discardableResult
+    func deleteSessions(_ sessions: [Session]) -> Bool {
+        guard !sessions.isEmpty else { return true }
         let repository = SwiftDataSessionsRepository(context: context)
         do {
             try repository.deleteSessions(sessions)
+            return true
         } catch {
             assertionFailure("Failed to delete sessions: \(error)")
+            return false
         }
     }
 }

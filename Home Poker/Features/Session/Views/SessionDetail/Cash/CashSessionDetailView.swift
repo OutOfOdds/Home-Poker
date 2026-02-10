@@ -1,16 +1,13 @@
 import SwiftUI
 import SwiftData
 import Observation
-import TipKit
 
 struct CashSessionDetailView: View {
     @Bindable var session: Session
     @State private var activeSheet: SheetType?
     @State private var selectedInfoTab: Int = 1
     @Environment(SessionDetailViewModel.self) var viewModel
-
-    private let addPlayerTip = AddPlayerTip()
-    private let bankTip = SessionBankTip()
+    
     enum SheetType: Identifiable {
         case addPlayer
         case addExpense
@@ -87,7 +84,6 @@ struct CashSessionDetailView: View {
                     }
                 }
                 .tint(.blue)
-                .popoverTip(bankTip, arrowEdge: .top)
             }
 
             if #available(iOS 26.0, *) {
@@ -101,7 +97,6 @@ struct CashSessionDetailView: View {
                     Image(systemName: "person.badge.plus.fill")
                 }
                 .tint(.green)
-                .popoverTip(addPlayerTip, arrowEdge: .top)
             }
         }
         .alert("Ошибка", isPresented: $bindableViewModel.showAlert) {
