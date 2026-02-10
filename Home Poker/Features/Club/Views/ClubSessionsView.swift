@@ -37,11 +37,12 @@ struct ClubSessionsView: View {
                         ClubMembersView(club: club)
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "person.3")
+                            Image(systemName: "person.2")
                             Text("Участники")
                         }
                     }
                 }
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {

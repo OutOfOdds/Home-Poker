@@ -4,15 +4,21 @@ struct TemplateEditorView: View {
     @State var template: TournamentTemplate
     @State private var validationWarnings: [ValidationWarning] = []
     @State private var sheetMode: LevelFormSheet.Mode?
+    @FocusState private var focusedField: FocusField?
 
     @Environment(TemplateViewModel.self) private var templateViewModel
     @Environment(\.dismiss) private var dismiss
+
+    private enum FocusField {
+        case templateName
+    }
 
     var body: some View {
         Form {
             // Template name
             Section("Название") {
                 TextField("Название турнира", text: $template.name)
+                    .focused($focusedField, equals: .templateName)
             }
 
             // Validation warnings
@@ -125,6 +131,9 @@ struct TemplateEditorView: View {
         }
         .onAppear {
             validateStructure()
+            DispatchQueue.main.async {
+                focusedField = .templateName
+            }
         }
     }
 

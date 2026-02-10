@@ -54,18 +54,23 @@ struct AddPlayerSheet: View {
                         Text("Все участники клуба уже добавлены в сессию")
                             .foregroundStyle(.secondary)
                     } else {
-                        Picker("Выбрать участника", selection: $selectedClubMemberID) {
-                            Text("Не выбран").tag(Optional<UUID>.none)
+                        Picker(selection: $selectedClubMemberID) {
+                            Text("Не выбран")
+                                .foregroundStyle(.red)
+                                .tag(Optional<UUID>.none)
                             ForEach(availableClubMembers) { member in
                                 Text(member.name).tag(Optional(member.id))
                             }
+                        } label: {
+                            Text("Выбрать участника")
+                                .foregroundStyle(selectedClubMemberID == nil ? .red : .primary)
                         }
                     }
                 }
 
-                Section("Информация об игроке") {
+                Section("Закуп фишек") {
                     GroupedIntegerTextField(
-                        placeholder: "Сумма закупа",
+                        placeholder: "Закуп фишек",
                         value: $buyInAmount
                     )
                 }

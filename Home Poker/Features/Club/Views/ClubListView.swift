@@ -88,11 +88,17 @@ struct ClubListView: View {
     private func clubRow(_ club: Club) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(club.name)
-                .font(.headline)
-
-            Text("Сессий: \(club.sessions.count) · Участников: \(club.members.count)")
+                .font(.title3)
+                .bold()
+            Text("Участников: \(club.members.count)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .italic()
+            Text("Сессий: \(club.sessions.count)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .italic()
+
         }
         .padding(.vertical, 2)
     }

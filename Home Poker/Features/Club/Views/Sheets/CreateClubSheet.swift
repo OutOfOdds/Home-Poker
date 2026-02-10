@@ -8,6 +8,11 @@ struct CreateClubSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var clubName = ""
     @State private var validationError: String?
+    @FocusState private var focusedField: FocusField?
+
+    private enum FocusField {
+        case clubName
+    }
 
     var body: some View {
         FormSheetView(
@@ -20,6 +25,7 @@ struct CreateClubSheet: View {
             Form {
                 Section("Название клуба") {
                     TextField("Название", text: $clubName)
+                        .focused($focusedField, equals: .clubName)
                         .textInputAutocapitalization(.words)
 
                     if let validationError {
@@ -32,6 +38,11 @@ struct CreateClubSheet: View {
         }
         .onChange(of: clubName) { _, _ in
             validate()
+        }
+        .onAppear {
+            DispatchQueue.main.async {
+                focusedField = .clubName
+            }
         }
     }
 
@@ -68,4 +79,3 @@ struct CreateClubSheet: View {
     CreateClubSheet(existingNames: [])
         .modelContainer(PreviewData.previewContainer)
 }
-

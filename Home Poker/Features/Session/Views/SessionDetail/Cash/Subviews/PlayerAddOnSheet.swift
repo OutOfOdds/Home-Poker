@@ -38,7 +38,7 @@ struct PlayerAddOnSheet: View {
                 Section {
                     QuickAmountButtons(baseAmount: player.initialBuyIn, selectedAmount: $buyInAmount)
                 } footer: {
-                    Text("Быстрая сумма докупки")
+                    Text("Быстро добавить к сумме докупки")
                 }
                 
                 Section {
@@ -120,19 +120,22 @@ struct PlayerAddOnSheet: View {
 private struct QuickAmountButtons: View {
     let baseAmount: Int
     @Binding var selectedAmount: Int?
+    @State private var lastTappedMultiplier: Int?
     
     private let multipliers = [1, 2, 3]
     
     var body: some View {
         HStack(spacing: 8) {
             ForEach(multipliers, id: \.self) { multiplier in
+                let increment = baseAmount * multiplier
                 Button {
-                    selectedAmount = baseAmount * multiplier
+                    selectedAmount = (selectedAmount ?? 0) + increment
+                    lastTappedMultiplier = multiplier
                 } label: {
                     VStack(spacing: 4) {
                         Text("×\(multiplier)")
                             .font(.caption.bold())
-                        Text(formatAmount(baseAmount * multiplier))
+                        Text(formatAmount(increment))
                             .font(.caption2)
                     }
                     .frame(maxWidth: .infinity)
@@ -149,7 +152,7 @@ private struct QuickAmountButtons: View {
     }
     
     private func isSelected(_ multiplier: Int) -> Bool {
-        selectedAmount == baseAmount * multiplier
+        lastTappedMultiplier == multiplier
     }
     
     private func formatAmount(_ amount: Int) -> String {

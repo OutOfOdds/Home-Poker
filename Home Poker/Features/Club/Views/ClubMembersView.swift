@@ -59,18 +59,20 @@ struct ClubMembersView: View {
                     description: Text("Добавьте первого участника клуба")
                 )
             } else {
-                ForEach(sortedMembers) { member in
-                    NavigationLink {
-                        ClubMemberStatsView(member: member)
-                    } label: {
-                        Text(member.name)
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            memberToDelete = member
-                            showDeleteConfirmation = true
+                Section("Нажмите для статистики") {
+                    ForEach(sortedMembers) { member in
+                        NavigationLink {
+                            ClubMemberStatsView(member: member)
                         } label: {
-                            Label("Удалить", systemImage: "trash")
+                            Text(member.name)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                memberToDelete = member
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label("Удалить", systemImage: "trash")
+                            }
                         }
                     }
                 }
